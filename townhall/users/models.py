@@ -3,10 +3,10 @@ from django.utils import timezone
 
 
 class User(models.Model):
-    username = models.CharField(max_length=127, unique=True, null=False, blank=False)
-    email = models.EmailField(max_length=255, unique=True, null=False, blank=False)
-    password = models.CharField(max_length=127, null=False, blank=False)
-    full_name = models.CharField(max_length=127, null=False, blank=False)
+    username = models.CharField(max_length=127, unique=True)
+    email = models.EmailField(max_length=255, unique=True)
+    password = models.CharField(max_length=127)
+    full_name = models.CharField(max_length=127)
     pronouns = models.CharField(max_length=63, null=True, blank=True)
     title = models.CharField(max_length=63, null=True, blank=True)
     primary_organization = models.CharField(max_length=255, null=True, blank=True)
