@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class User(models.Model):
@@ -19,6 +20,7 @@ class User(models.Model):
     profile_header = models.ImageField(
         upload_to="profile_header", null=True, blank=True
     )
+    date_joined = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return self.username
