@@ -15,7 +15,7 @@ repos:
     hooks:
       - id: run-tests
         name: Run All Tests Before Commit
-        entry: python3 townhall/manage.py test --pattern="*test*.py"
+        entry: cd townhall && python3 manage.py test tests
         language: system
         types: [python]
         pass_filenames: false
