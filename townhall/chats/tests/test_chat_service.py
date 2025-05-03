@@ -11,7 +11,7 @@ from chats.services import ChatServices
 # Running all tests: python3 manage.py test
 # Running only chat tests: python3 manage.py test chats.tests
 # Running only this specific test file:
-#   python3 manage.py test chats.tests.chat_service_tests
+#   python3 manage.py test chats.tests.test_chat_service
 
 
 class TestChatService(TestCase):
