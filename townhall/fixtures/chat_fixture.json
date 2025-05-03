@@ -1,0 +1,10 @@
+[
+  {
+    "model": "chats.chat",
+    "pk": 3,
+    "fields": {
+      "name": "Bob's Workers",
+      "created_at": "2024-01-01T12:00:00Z"
+    }
+  }
+]
