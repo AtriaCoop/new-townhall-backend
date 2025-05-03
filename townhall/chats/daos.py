@@ -5,7 +5,7 @@ from .types import CreateChatData
 
 class ChatDao:
     def get_chat(id: int) -> Optional[Chat]:
-        return Chat.objects.get(id=id)
+        return Chat.objects.prefetch_related("participants").get(id=id)
 
     def delete_chat(id: int) -> None:
         Chat.objects.get(id=id).delete()

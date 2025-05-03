@@ -14,9 +14,8 @@ from chats.services import ChatServices
 #   python3 manage.py test chats.tests.chat_service_tests
 
 
-class TestChatModel(TestCase):
+class TestChatService(TestCase):
     def setUp(self):
-        # Arrange (For all non-mock tests)
         call_command("loaddata", "fixtures/chat_fixture.json", verbosity=0)
         call_command("loaddata", "fixtures/user_fixture.json", verbosity=0)
 
@@ -31,6 +30,10 @@ class TestChatModel(TestCase):
 
         # Assert
         assert chat.name == "Bob's Workers"
+        assert chat.id == 3
+        assert chat.created_at.strftime("%Y-%m-%dT%H:%M:%SZ") == "2024-01-01T12:00:00Z"
+        assert chat.participants.count() == 2
+        assert chat.participants.filter(id=1).exists()
 
     @patch("chats.daos.ChatDao.get_chat")
     def test_get_chat_failed_not_found(self, mock_get_chat):
@@ -88,6 +91,7 @@ class TestChatModel(TestCase):
 
         # Assert
         assert chat.name == "Awesome Chat"
+        assert chat.created_at is not None
         assert chat.participants.count() == 1
         assert chat.participants.filter(id=1).exists()
 
