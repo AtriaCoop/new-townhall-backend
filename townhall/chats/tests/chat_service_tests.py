@@ -2,7 +2,6 @@ from django.test import TestCase
 from django.core.management import call_command
 from unittest.mock import patch
 from django.core.exceptions import ValidationError
-from datetime import datetime
 from chats.models import Chat
 from users.models import User
 from chats.types import CreateChatData
@@ -12,14 +11,14 @@ from chats.services import ChatServices
 # Running all tests: python3 manage.py test
 # Running only chat tests: python3 manage.py test chats.tests
 # Running only this specific test file:
-#   python3 manage.py test chats.tests.test_chat_service.py
+#   python3 manage.py test chats.tests.chat_service_tests
 
 
 class TestChatModel(TestCase):
     def setUp(self):
         # Arrange (For all non-mock tests)
-        call_command("loaddata", "fixtures/chat_fixture.json")
-        call_command("loaddata", "fixtures/user_fixture.json")
+        call_command("loaddata", "fixtures/chat_fixture.json", verbosity=0)
+        call_command("loaddata", "fixtures/user_fixture.json", verbosity=0)
 
         chat = Chat.objects.get(pk=3)
         bob = User.objects.get(pk=1)
@@ -82,17 +81,15 @@ class TestChatModel(TestCase):
 
     def test_create_chat_success(self):
         # Arrange
-        date = datetime.now().isoformat()
-        create_chat_data = CreateChatData(
-            name="Awesome Chat", created_at=date, participant_ids=[1]
-        )
+        create_chat_data = CreateChatData(name="Awesome Chat", participant_ids=[1])
 
         # Act
         chat = ChatServices.create_chat(create_chat_data)
 
         # Assert
         assert chat.name == "Awesome Chat"
-        assert chat.created_at == date
+        assert chat.participants.count() == 1
+        assert chat.participants.filter(id=1).exists()
 
     @patch("chats.daos.ChatDao.create_chat")
     def test_create_chat_validation_error(self, mock_create_chat):
@@ -100,7 +97,6 @@ class TestChatModel(TestCase):
         mock_create_chat.side_effect = ValidationError("Random Error Message")
         create_chat_data = CreateChatData(
             name="Awesome Chat",
-            created_at=datetime.now().isoformat(),
             participant_ids=[1],
         )
 

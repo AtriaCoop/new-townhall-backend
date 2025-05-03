@@ -13,7 +13,6 @@ class ChatDao:
     def create_chat(create_chat_data: CreateChatData) -> Optional[Chat]:
         chat = Chat.objects.create(
             name=create_chat_data.name,
-            created_at=create_chat_data.created_at,
         )
 
         chat.participants.add(*create_chat_data.participant_ids)
