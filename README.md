@@ -2,7 +2,7 @@
 
 Backend Django server using the Django REST Framework (DRF)
 
-## Install Dependencies
+## Guide
 
 ### Step 1: Install Python, Pip, and Git
 
