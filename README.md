@@ -13,9 +13,9 @@ First you need to install python, pip and git if you haven't already, you can ch
 - `git --version`
 
 If you don't have them installed you can install them from here:
-https://www.python.org/downloads/
-https://pip.pypa.io/en/stable/installation/
-https://git-scm.com/
+- https://www.python.org/downloads/
+- https://pip.pypa.io/en/stable/installation/
+- https://git-scm.com/
 
 ### Step 2: Clone the Repo
 
