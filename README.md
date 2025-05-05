@@ -70,7 +70,7 @@ When you want to run all the tests for a specific app/directory, run the followi
 When you want to run just a specifc test file, run the following command:
 
 - `python3 manage.py test appName.tests.testFileName`
-- To run the chat model endpoints tests in chats app, you'd use: `python3 manage.py test chats.tests.test_chat_endpoint`
+- To run the chat model endpoints tests in the chats app, you'd use: `python3 manage.py test chats.tests.test_chat_endpoint`
 
 #### Running the Server Locally:
 
