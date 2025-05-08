@@ -66,10 +66,10 @@ class UserServices:
     ) -> QuerySet[User]:
         if filter_user_data is not None:
             filters = {}
-        if filter_user_data.full_name:
-            filters["full_name__icontains"] = filter_user_data.full_name
-        if filter_user_data.email:
-            filters["email__iexact"] = filter_user_data.email
+            if filter_user_data.full_name:
+                filters["full_name__icontains"] = filter_user_data.full_name
+            if filter_user_data.email:
+                filters["email__iexact"] = filter_user_data.email
 
             return UserDao.filter_all_users(filtersDict=filters)
         else:
