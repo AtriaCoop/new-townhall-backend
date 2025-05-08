@@ -21,7 +21,6 @@ from .services import UserServices
 
 
 # USER LOGIN
-@csrf_exempt  # Disable CSRF (only for development)
 def login_user(request):
     if request.method == "POST":
         try:
@@ -63,7 +62,6 @@ def login_user(request):
 class UserViewSet(viewsets.ModelViewSet):
 
     # CREATE USER
-    @csrf_exempt
     @action(detail=False, methods=["post"], url_path="user")
     def create_user(self, request):
 
