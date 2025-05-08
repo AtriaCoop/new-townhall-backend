@@ -23,12 +23,10 @@ from debug_toolbar.toolbar import debug_toolbar_urls
 
 from users.views import UserViewSet, login_user
 
-
-
 urlpatterns = [
-    path ("admin/", admin.site.urls),
+    path("admin/", admin.site.urls),
     path("auth/login/", login_user, name="login_user"),
-    path (
+    path(
         "user/",
         UserViewSet.as_view(
             {
@@ -38,7 +36,7 @@ urlpatterns = [
         ),
         name="user"
     ),
-    path (
+    path(
         "user/<int:user_id>/",
         UserViewSet.as_view(
             {
@@ -49,7 +47,7 @@ urlpatterns = [
         ),
         name="user_id"
     ),
-    path (
+    path(
         "user/<int:pk>/complete_profile/",
         UserViewSet.as_view(
             {

@@ -14,7 +14,8 @@ from .types import CreateUserData, UpdateUserData, FilterUserData
 from .serializers import (
     UserSerializer,
     CreateUserSerializer,
-    UserProfileSerializer,UpdateUserSerializer
+    UserProfileSerializer,
+    UpdateUserSerializer
 )
 from .services import UserServices
 
@@ -70,7 +71,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         validated_data = serializer.validated_data
 
         create_user_data = CreateUserData(
@@ -108,14 +109,14 @@ class UserViewSet(viewsets.ModelViewSet):
                 {"error": "User not found."},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         serializer = UserProfileSerializer(
             user, data=request.data, partial=True
         )
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         serializer.save()
 
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
@@ -137,7 +138,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
             return Response(
                 {
-                "message": "User Retreived Successfully",
+                    "message": "User Retreived Successfully",
                     "user": response_serializer.data,
                 },
                 status=status.HTTP_200_OK,
@@ -170,7 +171,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 filter_user_data
             )
             message = "All users with the given filters retreived successfully"
-        
+
         else:
             users = UserServices.get_user_all(None)
             message = "All Users retreived successfully"
@@ -256,4 +257,3 @@ class UserViewSet(viewsets.ModelViewSet):
         except ValidationError as e:
             # If services method returns an error, return an error Response
             return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
-

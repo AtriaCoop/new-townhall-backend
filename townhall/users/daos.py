@@ -4,12 +4,13 @@ import typing
 from .models import User
 from .types import CreateUserData
 
+
 class UserDao:
 
     @staticmethod
     def get_user_all() -> typing.List[User]:
         return User.objects.all()
-    
+
     @staticmethod
     def get_user(id: int) -> typing.Optional[User]:
         return User.objects.get(id=id)

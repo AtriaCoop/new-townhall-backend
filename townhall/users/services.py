@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 from django.forms import ValidationError
 from django.core.validators import EmailValidator
 from django.contrib.auth.password_validation import validate_password
@@ -10,6 +9,8 @@ import typing
 from .models import User
 from .types import CreateUserData, UpdateUserData, FilterUserData
 from .daos import UserDao
+
+logger = logging.getLogger(__name__)
 
 
 class UserServices:
@@ -65,7 +66,6 @@ class UserServices:
     ) -> QuerySet[User]:
         if filter_user_data is not None:
             filters  = {}
-
         if filter_user_data.full_name:
             filters["full_name__icontains"] = filter_user_data.full_name
         if filter_user_data.email:
@@ -74,7 +74,6 @@ class UserServices:
             return UserDao.filter_all_users(filtersDict=filters)
         else:
             return UserDao.get_user_all()
-
 
     def update_user(update_user_data: UpdateUserData) -> User:
         user = User.objects.get(id=update_user_data.id)
@@ -111,7 +110,6 @@ class UserServices:
 
         user.save()
         return user
-
 
     def delete_user(id: int) -> None:
         try:
