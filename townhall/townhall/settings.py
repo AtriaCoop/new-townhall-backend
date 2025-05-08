@@ -62,6 +62,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Frontend URL
 ]
 
+CSRF_TRUST_ORIGINS = [
+    "http://localhost:3000"
+]
+
+# ALLOW credentials (cookies, sessions, etc.)
+CORS_ALLOW_CREDENTIALS = True
+
+AUTH_USER_MODEL = 'users.User'
+
 ROOT_URLCONF = "townhall.urls"
 
 TEMPLATES = [
