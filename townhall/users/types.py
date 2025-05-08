@@ -1,6 +1,6 @@
 from typing import Optional
 from dataclasses import dataclass
-from datetime import datetime
+
 
 @dataclass
 class CreateUserData:
@@ -21,6 +21,7 @@ class UpdateUserData:
     about_me: Optional[str] = None
     skills_interests: Optional[str] = None
     profile_image: Optional[str] = None
+
 
 @dataclass
 class FilterUserData:

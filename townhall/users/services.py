@@ -37,7 +37,6 @@ class UserServices:
 
         # Add any additional validation logic here
 
-
     def create_user(create_user_data: CreateUserData) -> User:
         try:
             UserServices.validate_user(
@@ -54,7 +53,6 @@ class UserServices:
         except ValidationError:
             raise
 
-
     def get_user(id: int) -> typing.Optional[User]:
         try:
             user = UserDao.get_user(id=id)
@@ -68,10 +66,10 @@ class UserServices:
         if filter_user_data is not None:
             filters  = {}
 
-            if filter_user_data.full_name:
-                filters["full_name__icontains"] = filter_user_data.full_name
-            if filter_user_data.email:
-                filters["email__iexact"] = filter_user_data.email
+        if filter_user_data.full_name:
+            filters["full_name__icontains"] = filter_user_data.full_name
+        if filter_user_data.email:
+            filters["email__iexact"] = filter_user_data.email
 
             return UserDao.filter_all_users(filtersDict=filters)
         else:

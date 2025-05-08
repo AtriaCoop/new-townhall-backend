@@ -16,7 +16,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from debug_toolbar.toolbar import debug_toolbar_urls
@@ -26,14 +26,11 @@ from users.views import UserViewSet, login_user
 
 
 urlpatterns = [
-    # path("users/", include("users.urls")),
-    # path("posts/", include("posts.urls")),
-    # path("chats/", include("chats.urls")),
     path ("admin/", admin.site.urls),
     path("auth/login/", login_user, name="login_user"),
     path (
         "user/",
-        UserViewSet.as_view (
+        UserViewSet.as_view(
             {
                 "get": "get_user_all",
                 "post": "create_user",
@@ -43,7 +40,7 @@ urlpatterns = [
     ),
     path (
         "user/<int:user_id>/",
-        UserViewSet.as_view (
+        UserViewSet.as_view(
             {
                 "get": "get_user",
                 "delete": "delete_user",
@@ -54,7 +51,7 @@ urlpatterns = [
     ),
     path (
         "user/<int:pk>/complete_profile/",
-        UserViewSet.as_view (
+        UserViewSet.as_view(
             {
                 "post": "complete_profile",
             }

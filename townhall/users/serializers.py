@@ -21,8 +21,9 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_image",
         ]
 
+
 class CreateUserSerializer(serializers.ModelSerializer):
-    
+
     email = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
 

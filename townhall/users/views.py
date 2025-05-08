@@ -11,48 +11,52 @@ import json
 
 from .models import User
 from .types import CreateUserData, UpdateUserData, FilterUserData
-from .serializers import UserSerializer, CreateUserSerializer, UserProfileSerializer, UpdateUserSerializer
+from .serializers import (
+    UserSerializer,
+    CreateUserSerializer,
+    UserProfileSerializer,UpdateUserSerializer
+)
 from .services import UserServices
 
 
 # USER LOGIN
 @csrf_exempt  # Disable CSRF (only for development)
 def login_user(request):
-        if request.method == "POST":
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+            password = data.get("password")
+
+            # Check if the user exists
             try:
-                data = json.loads(request.body)
-                email = data.get("email")
-                password = data.get("password")
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return JsonResponse({"error": "User not found"}, status=404)
 
-                # Check if the user exists
-                try:
-                    user = User.objects.get(email=email)
-                except User.DoesNotExist:
-                    return JsonResponse({"error": "User not found"}, status=404)
+            # Validate Password
+            if check_password(password, user.password):
+                login(
+                    request,
+                    user,
+                    backend='django.contrib.auth.backends.ModelBackend'
+                )
 
-                # Validate Password
-                if check_password(password, user.password):
-                    login(
-                        request,
-                        user,
-                        backend='django.contrib.auth.backends.ModelBackend'
-                    )
+                return JsonResponse({
+                    "message": "Login successful",
+                    "user": {
+                        "id": user.id,
+                        "full_name": user.full_name,
+                        "email": user.email,
+                    }
+                }, status=200)
+            else:
+                return JsonResponse({"error": "Invalid password"}, status=400)
 
-                    return JsonResponse ({
-                        "message": "Login successful",
-                        "user": {
-                            "id": user.id,
-                            "full_name": user.full_name,
-                            "email": user.email,
-                        }
-                    }, status=200)
-                else:
-                    return JsonResponse({"error": "Invalid password"}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-            except json.JSONDecodeError:
-                return JsonResponse({"error": "Invalid JSON"}, status=400)
-
-        return JsonResponse({"error": "Invalid request method"}, status=405)
+    return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -69,7 +73,7 @@ class UserViewSet(viewsets.ModelViewSet):
         
         validated_data = serializer.validated_data
 
-        create_user_data = CreateUserData (
+        create_user_data = CreateUserData(
             email=validated_data.get("email"),
             password=validated_data["password"]
         )
@@ -79,7 +83,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
             response_serializer = UserSerializer(user)
 
-            return Response (
+            return Response(
                 {
                     "message": "User Created Successfully",
                     "user": response_serializer.data,
@@ -87,7 +91,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            return Response (
+            return Response(
                 {
                     "message": str(e),
                 },
@@ -105,7 +109,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        serializer = UserProfileSerializer (
+        serializer = UserProfileSerializer(
             user, data=request.data, partial=True
         )
 
@@ -116,7 +120,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
-        return Response (
+        return Response(
             {"message": "Profile setup completed."},
             status=status.HTTP_201_CREATED
         )
@@ -131,7 +135,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
             response_serializer = UserSerializer(user)
 
-            return Response (
+            return Response(
                 {
                 "message": "User Retreived Successfully",
                     "user": response_serializer.data,
@@ -139,7 +143,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            return Response (
+            return Response(
                 {
                     "message": str(e),
                 },
@@ -172,7 +176,7 @@ class UserViewSet(viewsets.ModelViewSet):
             message = "All Users retreived successfully"
 
         if not users:
-            return Response (
+            return Response(
                 {
                     "message": "No Users were found"
                 },
@@ -180,7 +184,7 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         response_serializer = UserSerializer(users, many=True)
-        return Response (
+        return Response(
             {
                 "message": message,
                 "data": response_serializer.data,
@@ -197,14 +201,14 @@ class UserViewSet(viewsets.ModelViewSet):
         try:
             UserServices.delete_user(uid)
 
-            return Response (
+            return Response(
                 {
                     "message": "User Delete Successfully"
                 },
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            return Response (
+            return Response(
                 {
                     "message": str(e)
                 },
@@ -220,7 +224,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UpdateUserSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response (
+            return Response(
                 serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -243,7 +247,7 @@ class UserViewSet(viewsets.ModelViewSet):
         try:
             UserServices.update_user(update_user_data)
 
-            return Response (
+            return Response(
                 {
                     "message": "User Updated Successfully",
                 },
