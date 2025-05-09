@@ -12,5 +12,5 @@ class CreateMessageData:
     sender_id: int
     chat_id: int
     content: str
-    image_content: Optional[str]
+    image_content: Optional[str] = None
     sent_at: datetime
