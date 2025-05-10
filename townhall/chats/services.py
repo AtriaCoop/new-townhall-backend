@@ -4,6 +4,7 @@ from .models import Chat, Message
 from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData
 
+
 class ChatServices:
     def get_chat(id: int) -> Optional[Chat]:
         try:
@@ -25,6 +26,7 @@ class ChatServices:
             return chat
         except ValidationError:
             raise
+
 
 class MessageServices:
     def create_message(create_message_data: CreateMessageData) -> Optional[Message]:

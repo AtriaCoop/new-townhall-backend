@@ -10,7 +10,7 @@ class Chat(models.Model):
 
     def __str__(self):
         return str(self.id)
-    
+
 
 class Message(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)

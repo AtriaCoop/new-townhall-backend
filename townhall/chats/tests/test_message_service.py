@@ -5,9 +5,10 @@ from django.core.exceptions import ValidationError
 from chats.models import Chat, Message
 from users.models import User
 from chats.types import CreateMessageData
-from chats.services import ChatServices, MessageServices
+from chats.services import MessageServices
 from django.utils import timezone
 from datetime import datetime
+
 
 class TestMessageService(TestCase):
     def setUp(self):
@@ -54,8 +55,3 @@ class TestMessageService(TestCase):
             MessageServices.create_message(create_message_data)
 
         self.assertEqual(str(context.exception), "['Random Error Message']")
-
-
-
-
-
