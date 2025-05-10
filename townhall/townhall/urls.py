@@ -16,7 +16,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from debug_toolbar.toolbar import debug_toolbar_urls
@@ -25,6 +25,7 @@ from users.views import UserViewSet, login_user
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("chats/", include("chats.urls")),
     path("auth/login/", login_user, name="login_user"),
     path(
         "user/",
