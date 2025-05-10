@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError
 from typing import Optional
-from .models import Chat
-from .daos import ChatDao
-from .types import CreateChatData
+from .models import Chat, Message
+from .daos import ChatDao, MessageDao
+from .types import CreateChatData, CreateMessageData
 
 
 class ChatServices:
@@ -24,5 +24,15 @@ class ChatServices:
             chat = ChatDao.create_chat(create_chat_data=create_chat_data)
 
             return chat
+        except ValidationError:
+            raise
+
+
+class MessageServices:
+    def create_message(create_message_data: CreateMessageData) -> Optional[Message]:
+        try:
+            message = MessageDao.create_message(create_message_data=create_message_data)
+
+            return message
         except ValidationError:
             raise
