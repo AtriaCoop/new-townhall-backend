@@ -9,8 +9,8 @@ class CreateChatData:
 
 @dataclass
 class CreateMessageData:
-    sender_id: int
+    user_id: int
     chat_id: int
     content: str
     image_content: Optional[str] = None
-    sent_at: datetime
+    sent_at: Optional[datetime] = None

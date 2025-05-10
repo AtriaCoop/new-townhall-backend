@@ -10,11 +10,11 @@ class Chat(models.Model):
 
     def __str__(self):
         return str(self.id)
-
+    
 
 class Message(models.Model):
-    user_id = models.ForeignKey(User, on_delete=models.DO_NOTHING)
-    chat_id = models.ForeignKey(Chat, on_delete=models.DO_NOTHING)
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    chat = models.ForeignKey(Chat, on_delete=models.DO_NOTHING)
     content = models.TextField()
     image_content = models.ImageField(upload_to="post_images", null=True, blank=True)
     sent_at = models.DateTimeField(default=timezone.now)

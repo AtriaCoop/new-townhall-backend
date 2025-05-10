@@ -21,7 +21,7 @@ class ChatDao:
 class MessageDao:
     def create_message(create_message_data: CreateMessageData) -> Optional[Message]:
         message = Message.objects.create(
-            user_id = create_message_data.sender_id,
+            user_id = create_message_data.user_id,
             chat_id = create_message_data.chat_id,
             content = create_message_data.content,
             image_content = create_message_data.image_content,

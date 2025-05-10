@@ -4,7 +4,6 @@ from .models import Chat, Message
 from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData
 
-
 class ChatServices:
     def get_chat(id: int) -> Optional[Chat]:
         try:

@@ -6,6 +6,8 @@ from chats.models import Chat
 from users.models import User
 from chats.types import CreateChatData
 from chats.services import ChatServices
+from django.utils import timezone
+
 
 
 # Running all tests: python3 manage.py test
