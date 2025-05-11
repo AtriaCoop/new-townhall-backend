@@ -14,7 +14,7 @@ class TestMessageService(TestCase):
     def setUp(self):
         call_command("loaddata", "fixtures/chat_fixture.json", verbosity=0)
         call_command("loaddata", "fixtures/user_fixture.json", verbosity=0)
-        call_command("loaddata", "fixtures/message_fixture.json", verbosity=0)   
+        call_command("loaddata", "fixtures/message_fixture.json", verbosity=0)
 
         message = Message.objects.get(pk=3)
         chat = Chat.objects.get(pk=3)
