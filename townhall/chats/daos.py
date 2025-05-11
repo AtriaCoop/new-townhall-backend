@@ -20,7 +20,7 @@ class ChatDao:
 
 
 class MessageDao:
-    def create_message(create_message_data: CreateMessageData) -> Optional[Message]:
+    def create_message(create_message_data: CreateMessageData) -> Message:
         message = Message.objects.create(
             user_id=create_message_data.user_id,
             chat_id=create_message_data.chat_id,
