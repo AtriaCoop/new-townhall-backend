@@ -9,6 +9,7 @@ from .types import (
     CreateCommentData
 )
 
+
 class PostDao:
 
     def get_post(id: int) -> typing.Optional[Post]:
