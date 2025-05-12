@@ -22,6 +22,17 @@ class UserSerializer(serializers.ModelSerializer):
         ]
 
 
+class UserMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "full_name",
+            "primary_organization",
+            "profile_image"
+        ]
+
+
 class CreateUserSerializer(serializers.ModelSerializer):
 
     email = serializers.CharField(required=True)

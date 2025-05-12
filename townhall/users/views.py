@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
 from django.contrib.auth import login
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password
 import json
@@ -17,6 +18,11 @@ from .serializers import (
     UpdateUserSerializer
 )
 from .services import UserServices
+
+
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    return JsonResponse({"detail": "CSRF cookie set"})
 
 
 # USER LOGIN
