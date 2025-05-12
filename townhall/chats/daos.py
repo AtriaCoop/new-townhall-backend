@@ -1,6 +1,6 @@
 from typing import Optional
-from .models import Chat
-from .types import CreateChatData
+from .models import Chat, Message
+from .types import CreateChatData, CreateMessageData
 
 
 class ChatDao:
@@ -17,3 +17,16 @@ class ChatDao:
 
         chat.participants.add(*create_chat_data.participant_ids)
         return chat
+
+
+class MessageDao:
+    def create_message(create_message_data: CreateMessageData) -> Message:
+        message = Message.objects.create(
+            user_id=create_message_data.user_id,
+            chat_id=create_message_data.chat_id,
+            content=create_message_data.content,
+            image_content=create_message_data.image_content,
+            sent_at=create_message_data.sent_at
+        )
+
+        return message

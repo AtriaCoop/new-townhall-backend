@@ -1,0 +1,11 @@
+[
+    {
+        "model": "chats.message",
+        "pk": 3,
+        "fields": {
+            "user": 1,
+            "chat": 3,
+            "content": "Test message"
+        }
+    }
+]
