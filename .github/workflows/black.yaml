@@ -24,4 +24,4 @@ jobs:
 
       - name: Run Black
         run: |
-          black . --exclude "townhall/myapi/migrations/"
+          black . --exclude "/migrations/"
