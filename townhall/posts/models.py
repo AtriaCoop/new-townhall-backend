@@ -4,18 +4,22 @@ from users.models import User
 
 
 class Post(models.Model):
-    user_id = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     content = models.TextField()
-    image_content = models.ImageField(upload_to="post_images", null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
+    image = models.ImageField(upload_to="post_images/", null=True, blank=True)
+    likes = models.IntegerField(default=0)
+    liked_by = models.ManyToManyField(User, blank=True, related_name="liked_posts")
 
     def __str__(self):
         return str(self.id)
 
 
 class Comment(models.Model):
-    user_id = models.ForeignKey(User, on_delete=models.DO_NOTHING)
-    post_id = models.ForeignKey(Post, on_delete=models.DO_NOTHING)
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
     content = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
 
