@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-+ie=h%z6ww45m-6&_o@56_6%@u*n8t$n*)bo*!3=b&4+zcx)7)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'townhallbackend.onrender.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'townhallbackend.onrender.com', 'atriacoop.netlify.app']
 
 APPEND_SLASH = True
 
