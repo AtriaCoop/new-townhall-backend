@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 import os
-
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -59,14 +58,21 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# SECURITY: Use secure cookies + proper cross-origin settings for production
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = "None"
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Frontend URL
     "http://127.0.0.1:3000",
+    "https://atriacoop.netlify.app"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://atriacoop.netlify.app",
 ]
 
 # ALLOW credentials (cookies, sessions, etc.)
