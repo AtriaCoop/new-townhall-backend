@@ -32,15 +32,6 @@ def get_csrf_token(request):
         response["Access-Control-Allow-Origin"] = origin
         response["Access-Control-Allow-Credentials"] = "true"
 
-    # ✅ Set cookie manually with proper flags
-    response.set_cookie(
-        key="csrftoken",
-        value=request.META.get("CSRF_COOKIE"),
-        secure=True,
-        httponly=False,
-        samesite="None",
-    )
-
     return response
 
 
