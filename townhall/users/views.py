@@ -23,13 +23,24 @@ from .services import UserServices
 @ensure_csrf_cookie
 def get_csrf_token(request):
     response = JsonResponse({"detail": "CSRF cookie set"})
-    response["Access-Control-Allow-Credentials"] = "true"
+
     origin = request.headers.get("Origin")
     if origin in [
         "https://atriacoop.netlify.app",
         "http://127.0.0.1:3000",
     ]:
         response["Access-Control-Allow-Origin"] = origin
+        response["Access-Control-Allow-Credentials"] = "true"
+
+    # ✅ Set cookie manually with proper flags
+    response.set_cookie(
+        key="csrftoken",
+        value=request.META.get("CSRF_COOKIE"),
+        secure=True,
+        httponly=False,
+        samesite="None",
+    )
+
     return response
 
 
