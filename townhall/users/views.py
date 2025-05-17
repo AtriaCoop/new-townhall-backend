@@ -69,13 +69,17 @@ class UserViewSet(viewsets.ModelViewSet):
     # CREATE USER
     @action(detail=False, methods=["post"], url_path="user")
     def create_user(self, request):
+        print("➡️ Received request to create user")
+        print("📨 Request data:", request.data)
 
         serializer = CreateUserSerializer(data=request.data)
 
         if not serializer.is_valid():
+            print("❌ Serializer invalid:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated_data = serializer.validated_data
+        print("✅ Serializer validated data:", validated_data)
 
         create_user_data = CreateUserData(
             email=validated_data.get("email"),
@@ -83,9 +87,12 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
         try:
+            print("🔧 Calling UserServices.create_user")
             user = UserServices.create_user(create_user_data)
+            print("✅ User created successfully:", user)
 
             response_serializer = UserSerializer(user)
+            print("📦 Serialized user:", response_serializer.data)
 
             return Response(
                 {
@@ -95,12 +102,22 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
+            print("❌ ValidationError while creating user:", str(e))
             return Response(
                 {
                     "message": str(e),
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+        except Exception as e:
+            print("🔥 Unexpected error while creating user:", str(e))
+            return Response(
+                {
+                    "message": "Internal server error",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
     # COMPLETE USER INFORMATION (SETUP)
     @action(detail=True, methods=["post"], url_path="complete_profile")

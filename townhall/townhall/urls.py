@@ -18,14 +18,21 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
+from rest_framework.routers import DefaultRouter
+from users.views import UserViewSet
 
 def root(request):
     return JsonResponse({"message": "Backend running"})
 
+router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='users')
+
 urlpatterns = [
-    path("", root),
-    path("admin/", admin.site.urls),
-    path("", include("users.urls")),
-    path("", include("posts.urls")),
-    path("", include("chats.urls")),
+    path('admin/', admin.site.urls),
+    path('', include(router.urls)),
+    path('', include('users.urls')),
+    path('', include('posts.urls')),
+    path('', include('chats.urls')),
+    
+    path('', root),
 ]
