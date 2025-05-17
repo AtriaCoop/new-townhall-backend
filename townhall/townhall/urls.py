@@ -25,7 +25,7 @@ def root(request):
     return JsonResponse({"message": "Backend running"})
 
 router = DefaultRouter()
-router.register(r'users', UserViewSet, basename='users')
+router.register(r'user', UserViewSet, basename='user')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

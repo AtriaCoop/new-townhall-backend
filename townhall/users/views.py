@@ -67,7 +67,8 @@ def login_user(request):
 class UserViewSet(viewsets.ModelViewSet):
 
     # CREATE USER
-    def create(self, request):
+    @action(detail=False, methods=["post"], url_path="user")
+    def create_user(self, request):
         print("➡️ Received request to create user")
         print("📨 Request data:", request.data)
 
