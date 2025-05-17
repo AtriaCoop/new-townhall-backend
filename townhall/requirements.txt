@@ -62,3 +62,4 @@ whitenoise==6.9.0
 zope.event==5.0
 zope.interface==6.1
 dj-database-url==2.3.0
+psycopg2-binary==2.9.10
