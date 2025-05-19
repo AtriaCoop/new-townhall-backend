@@ -15,7 +15,7 @@ from .serializers import (
     UserSerializer,
     CreateUserSerializer,
     UserProfileSerializer,
-    UpdateUserSerializer
+    UpdateUserSerializer,
 )
 from .services import UserServices
 
@@ -42,19 +42,20 @@ def login_user(request):
             # Validate Password
             if check_password(password, user.password):
                 login(
-                    request,
-                    user,
-                    backend='django.contrib.auth.backends.ModelBackend'
+                    request, user, backend="django.contrib.auth.backends.ModelBackend"
                 )
 
-                return JsonResponse({
-                    "message": "Login successful",
-                    "user": {
-                        "id": user.id,
-                        "full_name": user.full_name,
-                        "email": user.email,
-                    }
-                }, status=200)
+                return JsonResponse(
+                    {
+                        "message": "Login successful",
+                        "user": {
+                            "id": user.id,
+                            "full_name": user.full_name,
+                            "email": user.email,
+                        },
+                    },
+                    status=200,
+                )
             else:
                 return JsonResponse({"error": "Invalid password"}, status=400)
 
@@ -82,8 +83,7 @@ class UserViewSet(viewsets.ModelViewSet):
         print("✅ Serializer validated data:", validated_data)
 
         create_user_data = CreateUserData(
-            email=validated_data.get("email"),
-            password=validated_data["password"]
+            email=validated_data.get("email"), password=validated_data["password"]
         )
 
         try:
@@ -107,7 +107,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 {
                     "message": str(e),
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
             print("🔥 Unexpected error while creating user:", str(e))
@@ -115,9 +115,8 @@ class UserViewSet(viewsets.ModelViewSet):
                 {
                     "message": "Internal server error",
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
 
     # COMPLETE USER INFORMATION (SETUP)
     @action(detail=True, methods=["post"], url_path="complete_profile")
@@ -126,24 +125,20 @@ class UserViewSet(viewsets.ModelViewSet):
             user = User.objects.get(id=pk)
         except User.DoesNotExist:
             return Response(
-                {"error": "User not found."},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = UserProfileSerializer(
-            user, data=request.data, partial=True
-        )
+        serializer = UserProfileSerializer(user, data=request.data, partial=True)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
 
-        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
         return Response(
-            {"message": "Profile setup completed."},
-            status=status.HTTP_201_CREATED
+            {"message": "Profile setup completed."}, status=status.HTTP_201_CREATED
         )
 
     # GET a User
@@ -168,7 +163,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 {
                     "message": str(e),
                 },
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
     # GET ALL USERS
@@ -184,12 +179,10 @@ class UserViewSet(viewsets.ModelViewSet):
 
             filter_user_data = FilterUserData(
                 full_name=validated_data.get("full_name", None),
-                email=validated_data.get("email", None)
+                email=validated_data.get("email", None),
             )
 
-            users = UserServices.get_user_all(
-                filter_user_data
-            )
+            users = UserServices.get_user_all(filter_user_data)
             message = "All users with the given filters retreived successfully"
 
         else:
@@ -198,9 +191,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if not users:
             return Response(
-                {
-                    "message": "No Users were found"
-                },
+                {"message": "No Users were found"},
                 status=status.HTTP_200_OK,
             )
 
@@ -210,7 +201,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 "message": message,
                 "data": response_serializer.data,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
     # DELETE A USER
@@ -223,18 +214,11 @@ class UserViewSet(viewsets.ModelViewSet):
             UserServices.delete_user(uid)
 
             return Response(
-                {
-                    "message": "User Delete Successfully"
-                },
+                {"message": "User Delete Successfully"},
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            return Response(
-                {
-                    "message": str(e)
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
     # UPDATE A USER BY ID
     @action(detail=True, methods=["patch"], url_path="user")
@@ -245,10 +229,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UpdateUserSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated_data = serializer.validated_data
 

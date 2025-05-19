@@ -26,7 +26,12 @@ SECRET_KEY = "django-insecure-+ie=h%z6ww45m-6&_o@56_6%@u*n8t$n*)bo*!3=b&4+zcx)7)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'townhallbackend.onrender.com', 'atriacoop.netlify.app']
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "townhallbackend.onrender.com",
+    "atriacoop.netlify.app",
+]
 
 APPEND_SLASH = True
 
@@ -68,7 +73,7 @@ CSRF_COOKIE_HTTPONLY = False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Frontend URL
     "http://127.0.0.1:3000",
-    "https://atriacoop.netlify.app"
+    "https://atriacoop.netlify.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -81,7 +86,7 @@ CSRF_TRUSTED_ORIGINS = [
 # ALLOW credentials (cookies, sessions, etc.)
 CORS_ALLOW_CREDENTIALS = True
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
 
 ROOT_URLCONF = "townhall.urls"
 
@@ -108,15 +113,13 @@ WSGI_APPLICATION = "townhall.wsgi.application"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 # fallback to SQLite (for local dev)
-if os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600)
-    }
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / "db.sqlite3",
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
