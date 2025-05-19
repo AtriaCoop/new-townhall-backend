@@ -3,7 +3,6 @@
     "model": "users.user",
     "pk": 1,
     "fields": {
-      "username": "Bob",
       "email": "bob@gmail.com",
       "password": "987password",
       "full_name": "Bob The Builder",
@@ -14,7 +13,7 @@
       "other_networks": null,
       "about_me": null,
       "skills_interests": null,
-      "profile_picture": null,
+      "profile_image": null,
       "profile_header": null,
       "date_joined": "2023-02-01T10:00:00Z"
     }
@@ -23,7 +22,6 @@
     "model": "users.user",
     "pk": 2,
     "fields": {
-      "username": "Jerome",
       "email": "jerome@gmail.com",
       "password": "password123",
       "full_name": "Jerome The Jerome",
@@ -34,7 +32,7 @@
       "other_networks": null,
       "about_me": null,
       "skills_interests": null,
-      "profile_picture": null,
+      "profile_image": null,
       "profile_header": null,
       "date_joined": "2024-01-01T10:00:00Z"
     }
