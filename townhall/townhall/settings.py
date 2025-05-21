@@ -65,8 +65,8 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_DOMAIN = 'atriacoop.netlify.app'
-SESSION_COOKIE_DOMAIN = 'atriacoop.netlify.app'
+CSRF_COOKIE_DOMAIN = None
+SESSION_COOKIE_DOMAIN = None
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Frontend URL
