@@ -20,6 +20,8 @@ from django.urls import path, include
 from django.http import JsonResponse
 from rest_framework.routers import DefaultRouter
 from users.views import UserViewSet
+from django.conf import settings
+from django.conf.urls.static import static
 
 def root(request):
     return JsonResponse({"message": "Backend running"})
@@ -33,6 +35,9 @@ urlpatterns = [
     path('', include('users.urls')),
     path('', include('posts.urls')),
     path('', include('chats.urls')),
-    
     path('', root),
 ]
+
+# Serve media files even in production (temporary fix)
+if not settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
