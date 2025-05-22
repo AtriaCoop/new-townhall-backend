@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     "users",
     "posts",
     "chats",
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -189,3 +191,12 @@ DEBUG_TOOLBAR_PANELS = [
     "debug_toolbar.panels.redirects.RedirectsPanel",
     "debug_toolbar.panels.profiling.ProfilingPanel",
 ]
+
+# CLOUDINARY
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dgxfqcdzn',
+    'API_KEY': '359449515635167',
+    'API_SECRET': 'h1EfWz6ga5gU6lUIYNhHFLpl2HM',
+}
