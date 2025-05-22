@@ -196,7 +196,7 @@ DEBUG_TOOLBAR_PANELS = [
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dgxfqcdzn',
-    'API_KEY': '359449515635167',
-    'API_SECRET': 'h1EfWz6ga5gU6lUIYNhHFLpl2HM',
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
