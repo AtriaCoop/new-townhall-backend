@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "chats",
     'cloudinary',
     'cloudinary_storage',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -113,6 +114,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "townhall.wsgi.application"
+ASGI_APPLICATION = "townhall.asgi.application"
 
 
 # Database
@@ -213,3 +215,12 @@ cloudinary.config(
   api_key = os.getenv('CLOUDINARY_API_KEY'), 
   api_secret = os.getenv('CLOUDINARY_API_SECRET') 
 )
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
