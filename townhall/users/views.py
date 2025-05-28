@@ -7,6 +7,7 @@ from django.contrib.auth import login
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password
+from django.middleware.csrf import get_token
 import json
 
 from .models import User
@@ -22,7 +23,8 @@ from .services import UserServices
 
 @ensure_csrf_cookie
 def get_csrf_token(request):
-    return JsonResponse({"detail": "CSRF cookie set"})
+    token = get_token(request)
+    return JsonResponse({"detail": "CSRF cookie set", "csrfToken": token})
 
 
 # USER LOGIN
