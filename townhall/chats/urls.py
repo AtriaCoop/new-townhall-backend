@@ -3,7 +3,7 @@ from .views import ChatViewSet
 
 urlpatterns = [
     path(
-        "chats/",
+        "",
         ChatViewSet.as_view(
             {
                 "post": "create_chat_request",
@@ -12,7 +12,7 @@ urlpatterns = [
         name="chats",
     ),
     path(
-        "chats/<int:id>/",
+        "<int:id>/",
         ChatViewSet.as_view(
             {
                 "get": "get_chat_request",

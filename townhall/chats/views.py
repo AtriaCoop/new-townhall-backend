@@ -9,14 +9,8 @@ from .services import ChatServices
 from .serializers import ChatSerializer
 from .types import CreateChatData
 
-from .models import Chat
-
 
 class ChatViewSet(viewsets.ModelViewSet):
-
-    queryset = Chat.objects.all()
-    serializer_class = ChatSerializer
-
     # GET One Chat
     @action(detail=True, methods=["get"], url_path="chats")
     def get_chat_request(self, request, id):

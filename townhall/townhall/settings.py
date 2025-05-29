@@ -13,12 +13,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 import dj_database_url
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,9 +24,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-+ie=h%z6ww45m-6&_o@56_6%@u*n8t$n*)bo*!3=b&4+zcx)7)"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'townhallbackend.onrender.com', 'atriacoop.netlify.app']
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "townhallbackend.onrender.com",
+    "atriacoop.netlify.app",
+]
 
 APPEND_SLASH = True
 
@@ -51,9 +50,6 @@ INSTALLED_APPS = [
     "users",
     "posts",
     "chats",
-    'cloudinary',
-    'cloudinary_storage',
-    'channels',
 ]
 
 MIDDLEWARE = [
@@ -72,15 +68,12 @@ MIDDLEWARE = [
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_DOMAIN = None
-SESSION_COOKIE_DOMAIN = None
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Frontend URL
     "http://127.0.0.1:3000",
-    "https://atriacoop.netlify.app"
+    "https://atriacoop.netlify.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -93,7 +86,7 @@ CSRF_TRUSTED_ORIGINS = [
 # ALLOW credentials (cookies, sessions, etc.)
 CORS_ALLOW_CREDENTIALS = True
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
 
 ROOT_URLCONF = "townhall.urls"
 
@@ -114,22 +107,19 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "townhall.wsgi.application"
-ASGI_APPLICATION = "townhall.asgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 # fallback to SQLite (for local dev)
-if os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600)
-    }
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / "db.sqlite3",
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
@@ -199,28 +189,3 @@ DEBUG_TOOLBAR_PANELS = [
     "debug_toolbar.panels.redirects.RedirectsPanel",
     "debug_toolbar.panels.profiling.ProfilingPanel",
 ]
-
-
-# CLOUDINARY
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
-}
-
-cloudinary.config( 
-  cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'), 
-  api_key = os.getenv('CLOUDINARY_API_KEY'), 
-  api_secret = os.getenv('CLOUDINARY_API_SECRET') 
-)
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
-    },
-}
