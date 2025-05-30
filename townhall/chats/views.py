@@ -5,9 +5,10 @@ from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
 
-from .services import ChatServices
-from .serializers import ChatSerializer
-from .types import CreateChatData
+from .services import ChatServices, MessageServices
+from .serializers import ChatSerializer, MessageSerializer
+from .types import CreateChatData, CreateMessageData
+from django.utils import timezone
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -89,6 +90,52 @@ class ChatViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "message": "Chat Created Successfully",
+                    "success": True,
+                    "data": response_serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except ValidationError as e:
+            return Response(
+                {
+                    "message": str(e),
+                    "success": False,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    # POST (Create) message
+    @action(detail=False, methods=["post"], url_path="messages")
+    def create_message_request(self, request):
+        serializer = MessageSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": str(serializer.errors),
+                    "success": False,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        validated_data = serializer.validated_data
+        created_message_data = CreateMessageData(
+            user_id=validated_data["user"].id,
+            chat_id=validated_data["chat"].id,
+            content=validated_data["content"],
+            image_content=validated_data.get("image_content", None),
+            sent_at=timezone.now(),
+        )
+
+        try:
+            message = MessageServices.create_message(created_message_data)
+            response_serializer = MessageSerializer(message)
+
+            return Response(
+                {
+                    "message": "Message sent successfully",
                     "success": True,
                     "data": response_serializer.data,
                 },
