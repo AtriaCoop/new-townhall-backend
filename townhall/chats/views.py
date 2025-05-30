@@ -6,11 +6,18 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from .services import ChatServices
-from .serializers import ChatSerializer
+from .serializers import ChatSerializer, MessageSerializer
 from .types import CreateChatData
+
+from .models import Chat
+from .models import Message
 
 
 class ChatViewSet(viewsets.ModelViewSet):
+
+    queryset = Chat.objects.all()
+    serializer_class = ChatSerializer
+
     # GET One Chat
     @action(detail=True, methods=["get"], url_path="chats")
     def get_chat_request(self, request, id):
@@ -35,6 +42,34 @@ class ChatViewSet(viewsets.ModelViewSet):
                     "success": False,
                 },
                 status=status.HTTP_404_NOT_FOUND,
+            )
+    
+    # GET all chats for a user
+    @action(detail=False, methods=["get"], url_path="chats")
+    def get_user_chats(self, request):
+        user_id = request.query_params.get("user_id")
+
+        if not user_id:
+            return Response(
+                {"message": "Missing user_id"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            chats = Chat.objects.filter(participants__id=user_id).distinct()
+            serializer = ChatSerializer(chats, many=True)
+            return Response(
+                {
+                    "message": "Chats fetched successfully",
+                    "success": True,
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"message": str(e), "success": False},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     # DELETE Chat
@@ -83,16 +118,16 @@ class ChatViewSet(viewsets.ModelViewSet):
         )
 
         try:
-            chat = ChatServices.create_chat(create_chat_data)
+            chat, created = ChatServices.get_or_create_chat(create_chat_data)
             response_serializer = ChatSerializer(chat)
 
             return Response(
                 {
-                    "message": "Chat Created Successfully",
+                    "message": "Chat Created Successfully" if created else "Chat Already Exists",
                     "success": True,
                     "data": response_serializer.data,
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
             )
         except ValidationError as e:
             return Response(
@@ -102,3 +137,9 @@ class ChatViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    @action(detail=True, methods=["get"], url_path="messages")
+    def get_chat_messages(self, request, id):
+        messages = Message.objects.filter(chat_id=id).order_by("sent_at")
+        serializer = MessageSerializer(messages, many=True)
+        return Response({"messages": serializer.data})

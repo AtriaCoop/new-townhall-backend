@@ -27,9 +27,9 @@ class UserServices:
         # Validates the password
         try:
             validate_password(password)
-        except ValidationError:
-            logger.error(f"Password validation error for email: {email}")
-            raise ValidationError("Invalid password.")
+        except ValidationError as e:
+            logger.error(f"Password validation error for email: {email} | Reason: {e.messages}")
+            raise ValidationError(e.messages[0]) 
 
         # Prevent emails that are too similar to the password
         if email.lower() in password.lower() or password.lower() in email.lower():
@@ -40,6 +40,8 @@ class UserServices:
 
     def create_user(create_user_data: CreateUserData) -> User:
         try:
+            if User.objects.filter(email=create_user_data.email).exists():
+                raise ValidationError("A User with this email already exists.")
             UserServices.validate_user(
                 create_user_data.email, create_user_data.password
             )
