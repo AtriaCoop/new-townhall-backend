@@ -45,10 +45,7 @@ class TestMessageService(TestCase):
         mock_create_message.side_effect = ValidationError("Random Error Message")
 
         create_message_data = CreateMessageData(
-            user_id=1,
-            chat_id=3,
-            content="Test message",
-            sent_at=timezone.now()
+            user_id=1, chat_id=3, content="Test message", sent_at=timezone.now()
         )
 
         with self.assertRaises(ValidationError) as context:
