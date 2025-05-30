@@ -110,3 +110,23 @@ class TestChatService(TestCase):
 
         # Assert
         assert str(context.exception) == "['Random Error Message']"
+
+    def test_get_chat_all_found(self):
+        # Act
+        chats = ChatServices.get_chat_all()
+
+        # Assert
+        self.assertTrue(chats.exists(), "some chats should exist for now.")
+        chat_ids = [chat.id for chat in chats]
+        self.assertIn(3, chat_ids)
+
+    def test_get_chat_all_not_found(self):
+        # Arrange
+        Chat.objects.all().delete()
+
+        # Act and Assert
+        with self.assertRaises(ValidationError) as noChats:
+            ChatServices.get_chat_all()
+
+        # Assert
+        self.assertEqual(str(noChats.exception), "['No chats were found.']")
