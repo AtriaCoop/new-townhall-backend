@@ -6,6 +6,7 @@ urlpatterns = [
         "chats/",
         ChatViewSet.as_view(
             {
+                "get": "get_user_chats",
                 "post": "create_chat_request",
             }
         ),
@@ -20,5 +21,14 @@ urlpatterns = [
             }
         ),
         name="chats_id",
+    ),
+    path(
+        "chats/<int:id>/messages/",
+        ChatViewSet.as_view(
+            {
+                "get": "get_chat_messages"
+            }
+        ),
+        name="chat_messages",
     ),
 ]

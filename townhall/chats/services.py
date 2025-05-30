@@ -3,6 +3,7 @@ from typing import Optional
 from .models import Chat, Message
 from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData
+from django.db.models import Count
 
 
 class ChatServices:
@@ -19,13 +20,27 @@ class ChatServices:
         except Chat.DoesNotExist:
             raise ValidationError(f"Chat with the given id: {id}, does not exist.")
 
-    def create_chat(create_chat_data: CreateChatData) -> Optional[Chat]:
-        try:
-            chat = ChatDao.create_chat(create_chat_data=create_chat_data)
+    @staticmethod
+    def get_or_create_chat(data: CreateChatData):
+        participant_ids = sorted([u.id for u in data.participant_ids])
 
-            return chat
-        except ValidationError:
-            raise
+        # Check all chats that this user is in
+        possible_chats = Chat.objects.annotate(
+            num_participants=Count("participants")
+        ).filter(
+            participants__id__in=participant_ids,
+            num_participants=len(participant_ids)
+        ).distinct()
+
+        for chat in possible_chats:
+            existing_ids = sorted(chat.participants.values_list("id", flat=True))
+            if existing_ids == participant_ids:
+                return chat, False  # Found existing chat
+
+        # Create new chat if none found
+        chat = Chat.objects.create(name=data.name)
+        chat.participants.set(participant_ids)
+        return chat, True
 
 
 class MessageServices:
