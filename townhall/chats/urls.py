@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ChatViewSet
+from .views import ChatViewSet, MessageViewSet
 
 urlpatterns = [
     path(
@@ -20,5 +20,14 @@ urlpatterns = [
             }
         ),
         name="chats_id",
+    ),
+    path(
+        "messages/",
+        MessageViewSet.as_view(
+            {
+                "post": "create_message_request",
+            }
+        ),
+        name="messages",
     ),
 ]
