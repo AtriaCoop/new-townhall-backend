@@ -5,7 +5,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
     BaseUserManager
 )
-
+from cloudinary.models import CloudinaryField
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -39,12 +39,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     other_networks = models.TextField(null=True, blank=True)
     about_me = models.TextField(null=True, blank=True)
     skills_interests = models.TextField(null=True, blank=True)
-    profile_image = models.ImageField(
-        upload_to="profile_image", null=True, blank=True
-    )
-    profile_header = models.ImageField(
-        upload_to="profile_header", null=True, blank=True
-    )
+    profile_image = CloudinaryField('image', null=True, blank=True)
+    profile_header = CloudinaryField('image', null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
 
     is_active = models.BooleanField(default=True)
