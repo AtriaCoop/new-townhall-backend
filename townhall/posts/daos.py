@@ -19,6 +19,10 @@ class PostDao:
         return Post.objects.all()
 
     def create_post(post_data: CreatePostData) -> Post:
+        
+        print("Image type:", type(post_data.image))
+        print("Image value:", post_data.image)
+
         post = Post.objects.create(
             user_id=post_data.user_id,
             content=post_data.content,
