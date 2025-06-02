@@ -4,6 +4,7 @@ from .models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
+    profile_image = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -21,8 +22,15 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_image",
         ]
 
+    def get_profile_image(self, obj):
+        if obj.profile_image:
+            return obj.profile_image.url
+        return None
+
 
 class UserMiniSerializer(serializers.ModelSerializer):
+    profile_image = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
         fields = [
@@ -31,6 +39,11 @@ class UserMiniSerializer(serializers.ModelSerializer):
             "primary_organization",
             "profile_image"
         ]
+
+    def get_profile_image(self, obj):
+        if obj.profile_image:
+            return obj.profile_image.url
+        return None
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
