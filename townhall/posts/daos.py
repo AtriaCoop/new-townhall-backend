@@ -27,7 +27,6 @@ class PostDao:
             user_id=post_data.user_id,
             content=post_data.content,
             created_at=post_data.created_at,
-            image=post_data.image,
         )
 
         if post_data.image:
