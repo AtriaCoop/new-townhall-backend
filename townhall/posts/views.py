@@ -47,6 +47,7 @@ class PostViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="post")
     def create_post(self, request):
         serializer = PostSerializer(data=request.data)
+        print("FILES:", request.FILES)
 
         if not serializer.is_valid():
             print("Serializer errors:", serializer.errors)

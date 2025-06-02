@@ -224,3 +224,9 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+print("DEBUG:", DEBUG)
+print("DEFAULT_FILE_STORAGE:", DEFAULT_FILE_STORAGE)
+print("CLOUD_NAME:", os.getenv("CLOUDINARY_CLOUD_NAME"))
+print("API_KEY:", os.getenv("CLOUDINARY_API_KEY"))
+print("API_SECRET:", os.getenv("CLOUDINARY_API_SECRET"))
