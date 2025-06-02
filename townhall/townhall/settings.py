@@ -213,10 +213,12 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
 }
 
+CLOUDINARY_URL = f"cloudinary://{os.getenv('CLOUDINARY_API_KEY')}:{os.getenv('CLOUDINARY_API_SECRET')}@{os.getenv('CLOUDINARY_CLOUD_NAME')}"
+
 cloudinary.config( 
   cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'), 
   api_key = os.getenv('CLOUDINARY_API_KEY'), 
-  api_secret = os.getenv('CLOUDINARY_API_SECRET') 
+  api_secret = os.getenv('CLOUDINARY_API_SECRET'),
 )
 
 CHANNEL_LAYERS = {
