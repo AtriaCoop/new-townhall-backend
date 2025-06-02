@@ -30,6 +30,9 @@ class PostDao:
             image=post_data.image,
         )
 
+        if post_data.image:
+            post.image.save(post_data.image.name, post_data.image, save=True)
+
         return post
 
     def update_post(id: int, post_data: UpdatePostData) -> Post:
