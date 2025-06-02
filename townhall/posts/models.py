@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from users.models import User
+from cloudinary.models import CloudinaryField
 
 
 class Post(models.Model):
@@ -8,7 +9,7 @@ class Post(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     content = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
-    image = models.ImageField(upload_to="post_images/", null=True, blank=True)
+    image = CloudinaryField('image', blank=True, null=True)
     likes = models.IntegerField(default=0)
     liked_by = models.ManyToManyField(User, blank=True, related_name="liked_posts")
 

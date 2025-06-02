@@ -19,7 +19,6 @@ class PostDao:
         return Post.objects.all()
 
     def create_post(post_data: CreatePostData) -> Post:
-        
         print("Image type:", type(post_data.image))
         print("Image value:", post_data.image)
 
@@ -27,10 +26,8 @@ class PostDao:
             user_id=post_data.user_id,
             content=post_data.content,
             created_at=post_data.created_at,
+            image=post_data.image,
         )
-
-        if post_data.image:
-            post.image.save(post_data.image.name, post_data.image, save=True)
 
         return post
 
