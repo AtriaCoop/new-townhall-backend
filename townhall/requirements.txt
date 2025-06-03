@@ -40,3 +40,4 @@ redis==5.3.0
 requests==2.32.3
 whitenoise==6.9.0
 python-dateutil==2.9.0.post0
+daphne==4.1.2
