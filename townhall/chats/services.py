@@ -22,7 +22,7 @@ class ChatServices:
 
     @staticmethod
     def get_or_create_chat(data: CreateChatData):
-        participant_ids = sorted([u.id for u in data.participant_ids])
+        participant_ids = sorted(data.participant_ids)
 
         # Check all chats that this user is in
         possible_chats = Chat.objects.annotate(

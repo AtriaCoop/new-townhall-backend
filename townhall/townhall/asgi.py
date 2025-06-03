@@ -12,7 +12,7 @@ import django
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from django.core.asgi import get_asgi_application
-from townhall import routing as chats_routing
+import townhall.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'townhall.settings')
 django.setup()
@@ -21,7 +21,7 @@ application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": AuthMiddlewareStack(
         URLRouter(
-            chats_routing.websocket_urlpatterns
+            townhall.routing.websocket_urlpatterns
         )
     ),
 })

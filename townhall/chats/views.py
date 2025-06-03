@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from .services import ChatServices
-from .serializers import ChatSerializer, MessageSerializer
+from .serializers import ChatSerializer, MessageSerializer, CreateChatSerializer
 from .types import CreateChatData
 
 from .models import Chat
@@ -100,7 +100,7 @@ class ChatViewSet(viewsets.ModelViewSet):
     # POST (Create) Chat
     @action(detail=False, methods=["post"], url_path="chats")
     def create_chat_request(self, request):
-        serializer = ChatSerializer(data=request.data)
+        serializer = CreateChatSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(

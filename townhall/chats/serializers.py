@@ -17,6 +17,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ["id", "full_name", "profile_image", "title"] 
 
 
+class CreateChatSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    participants = serializers.ListField(
+        child=serializers.IntegerField(), allow_empty=False
+    )
+
+
 class ChatSerializer(serializers.ModelSerializer):
     
     participants = UserProfileSerializer(many=True, read_only=True)
