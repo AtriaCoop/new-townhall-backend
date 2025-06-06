@@ -22,25 +22,30 @@ class ChatServices:
 
     @staticmethod
     def get_or_create_chat(data: CreateChatData):
-        participant_ids = sorted(data.participant_ids)
+        try:
+            participant_ids = sorted(data.participant_ids)
 
-        # Check all chats that this user is in
-        possible_chats = Chat.objects.annotate(
-            num_participants=Count("participants")
-        ).filter(
-            participants__id__in=participant_ids,
-            num_participants=len(participant_ids)
-        ).distinct()
+            # Check all chats that this user is in
+            possible_chats = (
+                Chat.objects.annotate(num_participants=Count("participants"))
+                .filter(
+                    participants__id__in=participant_ids,
+                    num_participants=len(participant_ids),
+                )
+                .distinct()
+            )
 
-        for chat in possible_chats:
-            existing_ids = sorted(chat.participants.values_list("id", flat=True))
-            if existing_ids == participant_ids:
-                return chat, False  # Found existing chat
+            for chat in possible_chats:
+                existing_ids = sorted(chat.participants.values_list("id", flat=True))
+                if existing_ids == participant_ids:
+                    return chat, False  # Found existing chat
 
-        # Create new chat if none found
-        chat = Chat.objects.create(name=data.name)
-        chat.participants.set(participant_ids)
-        return chat, True
+            # Create new chat if none found
+            chat = ChatDao.create_chat(create_chat_data=data)
+            return chat, True
+
+        except ValidationError:
+            raise
 
 
 class MessageServices:
