@@ -87,13 +87,13 @@ class TestChatService(TestCase):
         create_chat_data = CreateChatData(name="Awesome Chat", participant_ids=[1])
 
         # Act
-        chat = ChatServices.create_chat(create_chat_data)
+        chat = ChatServices.get_or_create_chat(create_chat_data)
 
         # Assert
-        assert chat.name == "Awesome Chat"
-        assert chat.created_at is not None
-        assert chat.participants.count() == 1
-        assert chat.participants.filter(id=1).exists()
+        assert chat[0].name == "Awesome Chat"
+        assert chat[0].created_at is not None
+        assert chat[0].participants.count() == 1
+        assert chat[0].participants.filter(id=1).exists()
 
     @patch("chats.daos.ChatDao.create_chat")
     def test_create_chat_validation_error(self, mock_create_chat):
@@ -106,7 +106,7 @@ class TestChatService(TestCase):
 
         # Act & Assert
         with self.assertRaises(ValidationError) as context:
-            ChatServices.create_chat(create_chat_data)
+            ChatServices.get_or_create_chat(create_chat_data)
 
         # Assert
         assert str(context.exception) == "['Random Error Message']"
