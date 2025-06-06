@@ -20,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
             "about_me",
             "skills_interests",
             "profile_image",
+            "date_joined"
         ]
 
     def get_profile_image(self, obj):
