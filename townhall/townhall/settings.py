@@ -37,6 +37,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "townhallbackend.onrender.com",
     "atriacoop.netlify.app",
+    "townhallfrontend.onrender.com"
 ]
 
 APPEND_SLASH = True
@@ -86,12 +87,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Frontend URL
     "http://127.0.0.1:3000",
     "https://atriacoop.netlify.app",
+    "https://townhallfrontend.onrender.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://atriacoop.netlify.app",
+    "https://townhallfrontend.onrender.com",
     "https://townhallbackend.onrender.com",
 ]
 
