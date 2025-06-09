@@ -69,6 +69,7 @@ def login_user(request):
 
 
 # USER LOGOUT
+@csrf_exempt
 def logout_user(request):
     if request.method == "POST":
         logout(request)
