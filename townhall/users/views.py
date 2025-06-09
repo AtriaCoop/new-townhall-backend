@@ -72,7 +72,11 @@ def login_user(request):
 def logout_user(request):
     if request.method == "POST":
         logout(request)
-        return JsonResponse({"message": "Logged out successfully."}, status=200)
+        response = JsonResponse({"message": "Logged out successfully."})
+        response.delete_cookie('sessionid')
+        response.delete_cookie('csrftoken')
+        return response
+
     return JsonResponse({"error": "Invalid request method."}, status=405)
 
 
