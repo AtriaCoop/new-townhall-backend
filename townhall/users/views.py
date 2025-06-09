@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
-from django.contrib.auth import login
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.contrib.auth import login, logout
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password
 from django.middleware.csrf import get_token
@@ -66,6 +66,14 @@ def login_user(request):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# USER LOGOUT
+def logout_user(request):
+    if request.method == "POST":
+        logout(request)
+        return JsonResponse({"message": "Logged out successfully."}, status=200)
+    return JsonResponse({"error": "Invalid request method."}, status=405)
 
 
 class UserViewSet(viewsets.ModelViewSet):

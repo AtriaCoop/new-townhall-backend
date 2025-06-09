@@ -3,11 +3,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from debug_toolbar.toolbar import debug_toolbar_urls
 
-from users.views import UserViewSet, login_user, get_csrf_token
+from users.views import UserViewSet, login_user, logout_user, get_csrf_token
 
 
 urlpatterns = [
     path("auth/login/", login_user, name="login_user"),
+    path("auth/logout/", logout_user),
     path("auth/csrf/", get_csrf_token),
     path(
         "user/",
