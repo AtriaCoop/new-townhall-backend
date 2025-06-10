@@ -1,11 +1,21 @@
 from typing import Optional
 from .models import Chat, Message
 from .types import CreateChatData, CreateMessageData
+from django.db.models import QuerySet
+from django.db import DatabaseError
 
 
 class ChatDao:
     def get_chat(id: int) -> Optional[Chat]:
         return Chat.objects.prefetch_related("participants").get(id=id)
+
+    @staticmethod
+    def get_chat_all() -> QuerySet[Chat]:
+        try:
+            return Chat.objects.prefetch_related("participants").all()
+        except DatabaseError as error:
+            print(f"A Database Error has occured {error}")
+            return None
 
     def delete_chat(id: int) -> None:
         Chat.objects.get(id=id).delete()
