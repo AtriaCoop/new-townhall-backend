@@ -31,4 +31,12 @@ urlpatterns = [
         ),
         name="chat_messages",
     ),
+    path(
+        "groups/<str:group_name>/messages/",
+        ChatViewSet.as_view(
+            {
+                "get": "get_group_messages"
+            }
+        ),
+    ),
 ]

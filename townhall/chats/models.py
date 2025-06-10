@@ -21,3 +21,13 @@ class Message(models.Model):
 
     def __str__(self):
         return str(self.id)
+
+
+class GroupMessage(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    group_name = models.CharField(max_length=100)
+    content = models.TextField()
+    sent_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return str(self.id)

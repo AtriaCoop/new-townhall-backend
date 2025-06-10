@@ -11,6 +11,7 @@ from .types import CreateChatData
 
 from .models import Chat
 from .models import Message
+from .models import GroupMessage
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -138,8 +139,24 @@ class ChatViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+    # GET Message
     @action(detail=True, methods=["get"], url_path="messages")
     def get_chat_messages(self, request, id):
         messages = Message.objects.filter(chat_id=id).order_by("sent_at")
         serializer = MessageSerializer(messages, many=True)
         return Response({"messages": serializer.data})
+
+    # GET Group Message
+    @action(detail=False, methods=["get"], url_path="group-messages/(?P<group_name>[^/.]+)")
+    def get_group_messages(self, request, group_name=None):
+        messages = GroupMessage.objects.filter(group_name=group_name).order_by("sent_at")
+        return Response({
+            "messages": [
+                {
+                    "sender": m.user.id,
+                    "full_name": m.user.full_name,
+                    "content": m.content,
+                    "timestamp": m.sent_at
+                } for m in messages
+            ]
+        })

@@ -122,6 +122,17 @@ class GroupConsumer(AsyncWebsocketConsumer):
             }
         )
 
+        from chats.models import GroupMessage
+        from django.utils import timezone
+        from users.models import User
+
+        await sync_to_async(GroupMessage.objects.create)(
+            user_id=sender,
+            group_name=self.group_name,
+            content=message,
+            sent_at=timezone.now()
+        )
+
     async def group_message(self, event):
         await self.send(text_data=json.dumps({
             'message': event['message'],
