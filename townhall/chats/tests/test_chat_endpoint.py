@@ -39,7 +39,8 @@ class TestChatEndpoint(TestCase):
         assert response.data["data"]["name"] == "Bob's Workers"
         assert response.data["data"]["created_at"] == "2024-01-01T12:00:00Z"
         assert response.data["data"]["id"] == 3
-        assert set(response.data["data"]["participants"]) == set([1, 2])
+        assert response.data["data"]["participants"][0]["id"] == 1
+        assert response.data["data"]["participants"][1]["id"] == 2
 
     def test_get_chat_fail_service_error(self):
         # Arrange
@@ -106,7 +107,8 @@ class TestChatEndpoint(TestCase):
         assert response.data["data"]["name"] == "The Avengers"
         assert response.data["data"]["created_at"] is not None
         assert response.data["data"]["id"] is not None
-        assert set(response.data["data"]["participants"]) == set([1, 2])
+        assert response.data["data"]["participants"][0]["id"] == 1
+        assert response.data["data"]["participants"][1]["id"] == 2
 
     def test_create_chat_fail_invalid_data(self):
         # Arrange
@@ -123,7 +125,7 @@ class TestChatEndpoint(TestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert not response.data["success"]
 
-    @patch("chats.services.ChatServices.create_chat")
+    @patch("chats.services.ChatServices.get_or_create_chat")
     def test_create_chat_fail_service_error(self, mock_create_chat):
         # Arrange
         mock_create_chat.side_effect = ValidationError("random message")

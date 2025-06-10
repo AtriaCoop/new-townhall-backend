@@ -4,11 +4,10 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
-
-from .services import ChatServices
 from .serializers import ChatSerializer, MessageSerializer, CreateChatSerializer
-from .types import CreateChatData
-
+from .services import ChatServices, MessageServices
+from .types import CreateChatData, CreateMessageData
+from django.utils import timezone
 from .models import Chat
 from .models import Message
 from .models import GroupMessage
@@ -30,7 +29,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
             return Response(
                 {
-                    "message": "Chat Retreived Successfully",
+                    "message": "Chat Retrieved Successfully",
                     "success": True,
                     "data": response_serializer.data,
                 },
@@ -44,7 +43,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
-    
+
     # GET all chats for a user
     @action(detail=False, methods=["get"], url_path="chats")
     def get_user_chats(self, request):
@@ -124,7 +123,11 @@ class ChatViewSet(viewsets.ModelViewSet):
 
             return Response(
                 {
-                    "message": "Chat Created Successfully" if created else "Chat Already Exists",
+                    "message": (
+                        "Chat Created Successfully"
+                        if created
+                        else "Chat Already Exists"
+                    ),
                     "success": True,
                     "data": response_serializer.data,
                 },
