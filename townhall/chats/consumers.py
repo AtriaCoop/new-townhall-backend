@@ -2,8 +2,10 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print("🟥 ChatConsumer connected")
         self.chat_id = self.scope['url_route']['kwargs']['chat_id']
         self.room_group_name = f'chat_{self.chat_id}'
 
@@ -43,13 +45,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         )
 
+        from users.models import User
+
+        user = await sync_to_async(User.objects.get)(id=sender)
+
         # Broadcast to chat group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
                 'message': message,
-                'sender': sender,
+                'sender_id': sender,
+                'full_name': user.full_name,
+                'organization': user.primary_organization,
+                'profile_image': user.profile_image.url if user.profile_image else None,
             }
         )
 
@@ -72,12 +81,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
             'message': event['message'],
-            'sender': event['sender'],
+            'sender_id': event['sender_id'],
+            'full_name': event['full_name'],
+            'organization': event['organization'],
+            'profile_image': event['profile_image'],
         }))
 
 
 class UserConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print("🟦 UserConsumer connected for user:", self.scope['url_route']['kwargs']['user_id'])
         self.user_id = self.scope['url_route']['kwargs']['user_id']
         self.group_name = f'user_{self.user_id}'
 
@@ -93,6 +106,7 @@ class UserConsumer(AsyncWebsocketConsumer):
 
 class GroupConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print("🟩 GroupConsumer connected for group:", self.scope['url_route']['kwargs']['group_name'])
         self.group_name = self.scope['url_route']['kwargs']['group_name']
         self.room_group_name = f"group_{self.group_name}"
 
@@ -109,22 +123,27 @@ class GroupConsumer(AsyncWebsocketConsumer):
         )
 
     async def receive(self, text_data):
+        from chats.models import GroupMessage
+        from django.utils import timezone
+        from users.models import User
+        
         data = json.loads(text_data)
         message = data['message']
         sender = data['sender']
+
+        user = await sync_to_async(User.objects.get)(id=sender)
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'group_message',
                 'message': message,
-                'sender': sender,
+                'sender_id': sender,
+                'full_name': user.full_name,
+                'organization': user.primary_organization,
+                'profile_image': user.profile_image.url if user.profile_image else None,
             }
         )
-
-        from chats.models import GroupMessage
-        from django.utils import timezone
-        from users.models import User
 
         await sync_to_async(GroupMessage.objects.create)(
             user_id=sender,
@@ -136,5 +155,8 @@ class GroupConsumer(AsyncWebsocketConsumer):
     async def group_message(self, event):
         await self.send(text_data=json.dumps({
             'message': event['message'],
-            'sender': event['sender'],
+            'sender_id': event['sender_id'],
+            'full_name': event['full_name'],
+            'organization': event['organization'],
+            'profile_image': event['profile_image'],
         }))
