@@ -2,6 +2,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.chat_id = self.scope['url_route']['kwargs']['chat_id']
@@ -55,7 +56,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # Broadcast to user listeners
         chat = await sync_to_async(Chat.objects.get)(id=self.chat_id)
-        participant_ids = await sync_to_async(list)(chat.participants.values_list("id", flat=True))
+        participant_ids = await sync_to_async(list)(
+            chat.participants.values_list("id", flat=True)
+        )
 
         for user_id in participant_ids:
             await self.channel_layer.group_send(
@@ -124,7 +127,7 @@ class GroupConsumer(AsyncWebsocketConsumer):
 
         from chats.models import GroupMessage
         from django.utils import timezone
-        from users.models import User
+        # from users.models import User
 
         await sync_to_async(GroupMessage.objects.create)(
             user_id=sender,

@@ -5,9 +5,11 @@ from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
 from .serializers import ChatSerializer, MessageSerializer, CreateChatSerializer
-from .services import ChatServices, MessageServices
-from .types import CreateChatData, CreateMessageData
-from django.utils import timezone
+from .services import ChatServices
+# from .services import MessageServices
+from .types import CreateChatData
+# from .types import CreateMessageData
+# from django.utils import timezone
 from .models import Chat
 from .models import Message
 from .models import GroupMessage
@@ -150,9 +152,16 @@ class ChatViewSet(viewsets.ModelViewSet):
         return Response({"messages": serializer.data})
 
     # GET Group Message
-    @action(detail=False, methods=["get"], url_path="group-messages/(?P<group_name>[^/.]+)")
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="group-messages/(?P<group_name>[^/.]+)"
+    )
     def get_group_messages(self, request, group_name=None):
-        messages = GroupMessage.objects.filter(group_name=group_name).order_by("sent_at")
+        messages = (
+            GroupMessage.objects.filter(group_name=group_name)
+            .order_by("sent_at")
+        )
         return Response({
             "messages": [
                 {

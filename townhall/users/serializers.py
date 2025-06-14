@@ -31,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserMiniSerializer(serializers.ModelSerializer):
     profile_image = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = User
         fields = [

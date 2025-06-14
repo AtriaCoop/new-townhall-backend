@@ -23,6 +23,7 @@ from users.views import UserViewSet
 from django.conf import settings
 from django.conf.urls.static import static
 
+
 def root(request):
     return JsonResponse({"message": "Backend running"})
 

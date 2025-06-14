@@ -9,7 +9,6 @@ from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password
 from django.middleware.csrf import get_token
 import json
-from django.middleware.csrf import get_token
 
 from .models import User
 from .types import CreateUserData, UpdateUserData, FilterUserData

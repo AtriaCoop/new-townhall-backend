@@ -28,8 +28,11 @@ class UserServices:
         try:
             validate_password(password)
         except ValidationError as e:
-            logger.error(f"Password validation error for email: {email} | Reason: {e.messages}")
-            raise ValidationError(e.messages[0]) 
+            logger.error(
+                f"Password validation error for email: {email} | "
+                f"Reason: {e.messages}"
+            )
+            raise ValidationError(e.messages[0])
 
         # Prevent emails that are too similar to the password
         if email.lower() in password.lower() or password.lower() in email.lower():

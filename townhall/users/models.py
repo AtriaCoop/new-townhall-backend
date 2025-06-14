@@ -7,6 +7,7 @@ from django.contrib.auth.models import (
 )
 from cloudinary.models import CloudinaryField
 
+
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:

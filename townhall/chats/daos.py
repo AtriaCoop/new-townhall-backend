@@ -4,10 +4,11 @@ from .types import CreateChatData, CreateMessageData
 from django.db.models import QuerySet
 from django.db import DatabaseError
 
+
 class ChatDao:
     def get_chat(id: int) -> Optional[Chat]:
         return Chat.objects.prefetch_related("participants").get(id=id)
-    
+
     @staticmethod
     def get_chat_all() -> QuerySet[Chat]:
         try:

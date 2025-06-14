@@ -14,7 +14,7 @@ class ChatServices:
             return chat
         except Chat.DoesNotExist:
             raise ValidationError(f"Chat with the given id: {id}, does not exist.")
-    
+
     def get_chat_all() -> QuerySet[Chat]:
         chats = ChatDao.get_chat_all()
         if not chats.exists():

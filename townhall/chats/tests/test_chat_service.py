@@ -110,7 +110,7 @@ class TestChatService(TestCase):
 
         # Assert
         assert str(context.exception) == "['Random Error Message']"
-    
+
     def test_get_chat_all_found(self):
         # Act
         chats = ChatServices.get_chat_all()
