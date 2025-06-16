@@ -158,17 +158,18 @@ class ChatViewSet(viewsets.ModelViewSet):
         url_path="group-messages/(?P<group_name>[^/.]+)"
     )
     def get_group_messages(self, request, group_name=None):
-        messages = (
-            GroupMessage.objects.filter(group_name=group_name)
-            .order_by("sent_at")
-        )
+        messages = GroupMessage.objects.filter(group_name=group_name).order_by("sent_at")
+  
         return Response({
             "messages": [
                 {
                     "sender": m.user.id,
                     "full_name": m.user.full_name,
                     "content": m.content,
-                    "timestamp": m.sent_at
+                    "timestamp": m.sent_at,
+                    "organization": m.user.primary_organization,
+                    "profile_image": m.user.profile_image.url if m.user.profile_image else None,
                 } for m in messages
             ]
         })
+
