@@ -6,8 +6,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from .serializers import ChatSerializer, MessageSerializer, CreateChatSerializer
 from .services import ChatServices
+
 # from .services import MessageServices
 from .types import CreateChatData
+
 # from .types import CreateMessageData
 # from django.utils import timezone
 from .models import Chat
@@ -153,23 +155,25 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # GET Group Message
     @action(
-        detail=False,
-        methods=["get"],
-        url_path="group-messages/(?P<group_name>[^/.]+)"
+        detail=False, methods=["get"], url_path="group-messages/(?P<group_name>[^/.]+)"
     )
     def get_group_messages(self, request, group_name=None):
-        messages = GroupMessage.objects.filter(group_name=group_name).order_by("sent_at")
-  
-        return Response({
-            "messages": [
-                {
-                    "sender": m.user.id,
-                    "full_name": m.user.full_name,
-                    "content": m.content,
-                    "timestamp": m.sent_at,
-                    "organization": m.user.primary_organization,
-                    "profile_image": m.user.profile_image.url if m.user.profile_image else None,
-                } for m in messages
-            ]
-        })
+        msgs = GroupMessage.objects.filter(group_name=group_name).order_by("sent_at")
 
+        return Response(
+            {
+                "messages": [
+                    {
+                        "sender": m.user.id,
+                        "full_name": m.user.full_name,
+                        "content": m.content,
+                        "timestamp": m.sent_at,
+                        "organization": m.user.primary_organization,
+                        "profile_image": (
+                            m.user.profile_image.url if m.user.profile_image else None
+                        ),
+                    }
+                    for m in msgs
+                ]
+            }
+        )
