@@ -35,7 +35,7 @@ class TestChatEndpoint(TestCase):
         # Assert
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
-        assert response.data["message"] == "Chat Retreived Successfully"
+        assert response.data["message"] == "Chat Retrieved Successfully"
         assert response.data["data"]["name"] == "Bob's Workers"
         assert response.data["data"]["created_at"] == "2024-01-01T12:00:00Z"
         assert response.data["data"]["id"] == 3
