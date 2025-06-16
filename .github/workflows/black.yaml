@@ -24,4 +24,4 @@ jobs:
 
       - name: Run Black
         run: |
-          black . --exclude "/migrations/"
+          black . --exclude 'migrations'
