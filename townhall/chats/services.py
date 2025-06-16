@@ -4,6 +4,7 @@ from .models import Chat, Message
 from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData
 from django.db.models import Count
+from django.db.models import QuerySet
 
 
 class ChatServices:
@@ -13,6 +14,12 @@ class ChatServices:
             return chat
         except Chat.DoesNotExist:
             raise ValidationError(f"Chat with the given id: {id}, does not exist.")
+
+    def get_chat_all() -> QuerySet[Chat]:
+        chats = ChatDao.get_chat_all()
+        if not chats.exists():
+            raise ValidationError("No chats were found.")
+        return chats
 
     def delete_chat(id: int) -> None:
         try:

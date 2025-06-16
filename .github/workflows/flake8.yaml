@@ -23,4 +23,4 @@ jobs:
           pip install -r townhall/requirements.txt
 
       - name: Run Flake8
-        run: flake8 --max-line-length=88 --extend-ignore=E203,E701 --exclude "/migrations/"
+        run: flake8 --max-line-length=88 --extend-ignore=E203,E701 --exclude "migrations"
