@@ -153,6 +153,40 @@ class ChatViewSet(viewsets.ModelViewSet):
         serializer = MessageSerializer(messages, many=True)
         return Response({"messages": serializer.data})
 
+    # POST Message
+    @action(detail=False, methods=["post"], url_path="direct-message")
+    def create_direct_message(self, request):
+        try:
+            user = request.user
+            chat_id = request.data.get("chat_id")
+            content = request.data.get("content", "")
+            image = request.FILES.get("image_content", None)
+
+            if not chat_id:
+                return Response({"success": False, "error": "chat_id is required"}, status=400)
+
+            message = Message.objects.create(
+                user=user,
+                chat_id=chat_id,
+                content=content,
+                image_content=image
+            )
+
+            return Response({
+                "success": True,
+                "data": {
+                    "sender": message.user.id,
+                    "full_name": message.user.full_name,
+                    "content": message.content,
+                    "image": message.image_content.url if message.image_content else None,
+                    "timestamp": message.sent_at,
+                    "organization": message.user.primary_organization,
+                    "profile_image": message.user.profile_image.url if message.user.profile_image else None
+                }
+            })
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=400)
+
     # GET Group Message
     @action(
         detail=False, methods=["get"], url_path="group-messages/(?P<group_name>[^/.]+)"

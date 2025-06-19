@@ -32,6 +32,11 @@ urlpatterns = [
         name="chat_messages",
     ),
     path(
+        "chats/send/",
+        ChatViewSet.as_view({"post": "create_direct_message"}),
+        name="create_direct_message",
+    ),
+    path(
         "groups/<str:group_name>/messages/",
         ChatViewSet.as_view(
             {
