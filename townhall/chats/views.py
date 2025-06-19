@@ -172,8 +172,40 @@ class ChatViewSet(viewsets.ModelViewSet):
                         "profile_image": (
                             m.user.profile_image.url if m.user.profile_image else None
                         ),
+                        "image": m.image.url if m.image else None,
                     }
                     for m in msgs
                 ]
             }
         )
+
+    # POST Group Message
+    @action(detail=False, methods=["post"], url_path="group-messages")
+    def create_group_message(self, request):
+        try:
+            user = request.user  # You must be using authentication
+            group_name = request.data.get("group_name")
+            content = request.data.get("content", "")
+            image = request.FILES.get("image", None)
+
+            msg = GroupMessage.objects.create(
+                user=user,
+                group_name=group_name,
+                content=content,
+                image=image
+            )
+
+            return Response({
+                "success": True,
+                "data": {
+                    "sender": msg.user.id,
+                    "full_name": msg.user.full_name,
+                    "content": msg.content,
+                    "image": msg.image.url if msg.image else None,
+                    "timestamp": msg.sent_at,
+                    "organization": msg.user.primary_organization,
+                    "profile_image": msg.user.profile_image.url if msg.user.profile_image else None
+                }
+            })
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=400)

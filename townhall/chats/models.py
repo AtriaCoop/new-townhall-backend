@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from users.models import User
+from cloudinary.models import CloudinaryField
 
 
 class Chat(models.Model):
@@ -27,6 +28,7 @@ class GroupMessage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     group_name = models.CharField(max_length=100)
     content = models.TextField()
+    image = CloudinaryField('image', blank=True, null=True)
     sent_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):

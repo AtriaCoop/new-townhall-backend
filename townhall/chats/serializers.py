@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from chats.models import Chat, Message
+from chats.models import Chat, Message, GroupMessage
 from users.models import User
 from users.serializers import UserMiniSerializer
 
@@ -60,3 +60,12 @@ class MessageSerializer(serializers.ModelSerializer):
             "sent_at",
         ]
         read_only_fields = ["id"]
+
+
+class GroupMessageSerializer(serializers.ModelSerializer):
+    user = UserMiniSerializer(read_only=True)
+    image = serializers.ImageField(required=False, allow_null=True)
+
+    class Meta:
+        model = GroupMessage
+        fields = ['id', 'user', 'group_name', 'content', 'image', 'sent_at']

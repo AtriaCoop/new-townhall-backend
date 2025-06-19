@@ -40,4 +40,9 @@ urlpatterns = [
         ),
         name="group_messages",
     ),
+    path(
+        "groups/messages/",
+        ChatViewSet.as_view({"post": "create_group_message"}),
+        name="create_group_message",
+    ),
 ]
