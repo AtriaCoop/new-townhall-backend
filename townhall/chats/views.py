@@ -163,27 +163,34 @@ class ChatViewSet(viewsets.ModelViewSet):
             image = request.FILES.get("image_content", None)
 
             if not chat_id:
-                return Response({"success": False, "error": "chat_id is required"}, status=400)
+                return Response(
+                    {"success": False, "error": "chat_id is required"}, status=400
+                )
 
             message = Message.objects.create(
-                user=user,
-                chat_id=chat_id,
-                content=content,
-                image_content=image
+                user=user, chat_id=chat_id, content=content, image_content=image
             )
 
-            return Response({
-                "success": True,
-                "data": {
-                    "sender": message.user.id,
-                    "full_name": message.user.full_name,
-                    "content": message.content,
-                    "image": message.image_content.url if message.image_content else None,
-                    "timestamp": message.sent_at,
-                    "organization": message.user.primary_organization,
-                    "profile_image": message.user.profile_image.url if message.user.profile_image else None
+            return Response(
+                {
+                    "success": True,
+                    "data": {
+                        "sender": message.user.id,
+                        "full_name": message.user.full_name,
+                        "content": message.content,
+                        "image": (
+                            message.image_content.url if message.image_content else None
+                        ),
+                        "timestamp": message.sent_at,
+                        "organization": message.user.primary_organization,
+                        "profile_image": (
+                            message.user.profile_image.url
+                            if message.user.profile_image
+                            else None
+                        ),
+                    },
                 }
-            })
+            )
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
 
@@ -223,23 +230,26 @@ class ChatViewSet(viewsets.ModelViewSet):
             image = request.FILES.get("image", None)
 
             msg = GroupMessage.objects.create(
-                user=user,
-                group_name=group_name,
-                content=content,
-                image=image
+                user=user, group_name=group_name, content=content, image=image
             )
 
-            return Response({
-                "success": True,
-                "data": {
-                    "sender": msg.user.id,
-                    "full_name": msg.user.full_name,
-                    "content": msg.content,
-                    "image": msg.image.url if msg.image else None,
-                    "timestamp": msg.sent_at,
-                    "organization": msg.user.primary_organization,
-                    "profile_image": msg.user.profile_image.url if msg.user.profile_image else None
+            return Response(
+                {
+                    "success": True,
+                    "data": {
+                        "sender": msg.user.id,
+                        "full_name": msg.user.full_name,
+                        "content": msg.content,
+                        "image": msg.image.url if msg.image else None,
+                        "timestamp": msg.sent_at,
+                        "organization": msg.user.primary_organization,
+                        "profile_image": (
+                            msg.user.profile_image.url
+                            if msg.user.profile_image
+                            else None
+                        ),
+                    },
                 }
-            })
+            )
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
