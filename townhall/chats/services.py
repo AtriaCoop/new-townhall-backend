@@ -54,6 +54,24 @@ class ChatServices:
         except ValidationError:
             raise
 
+    @staticmethod
+    def update_chat_participants(chat_id: int, new_participant_ids: list[int]) -> Chat:
+        try:
+            ChatDao.get_chat(chat_id)
+            if len(new_participant_ids) < 2:
+                raise ValidationError("Chat must have at least two participants.")
+
+            updated_chat = ChatDao.update_chat_participants(
+                chat_id=chat_id, new_participant_ids=new_participant_ids
+            )
+            return updated_chat
+
+        except Chat.DoesNotExist:
+            raise ValidationError(f"Chat with id {chat_id} does not exist.")
+
+        except Exception as e:
+            raise ValidationError(f"Failed: {str(e)}")
+
 
 class MessageServices:
     def create_message(create_message_data: CreateMessageData) -> Optional[Message]:
