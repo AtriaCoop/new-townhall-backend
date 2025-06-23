@@ -78,6 +78,7 @@ To run the backend server locally you'll want to run:
 
 - `python3 manage.py runserver`
 - `daphne -p 8000 townhall.asgi:application` (This runs the ASGI server for WebSocket support, etc.)
+- `redis-server` (Starts Redis, which is required for Django Channels to handle WebSocket communication and background tasks.)
 
 It should print a few lines to your terminal as well as a url to access the backend server with: `http://127.0.0.1:8000/`. To check if your server is running, on google (or whatever browser you like), search the following urls: `http://localhost:8000/` or `http://localhost:8000/admin/`. With the admin url, it'll give the option to login, you'll want to create a superuser for that (check the next section).
 
