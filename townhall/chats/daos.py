@@ -36,7 +36,13 @@ class MessageDao:
             chat_id=create_message_data.chat_id,
             content=create_message_data.content,
             image_content=create_message_data.image_content,
-            sent_at=create_message_data.sent_at
+            sent_at=create_message_data.sent_at,
         )
 
         return message
+
+    def get_message(id: int) -> Optional[Message]:
+        return Message.objects.get(id=id)
+
+    def delete_message(id: int) -> None:
+        Message.objects.get(id=id).delete()
