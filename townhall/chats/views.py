@@ -1,17 +1,12 @@
 from django.forms import ValidationError
-
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
 from .serializers import ChatSerializer, MessageSerializer, CreateChatSerializer
-from .services import ChatServices
-
-# from .services import MessageServices
-from .types import CreateChatData
-
-# from .types import CreateMessageData
-# from django.utils import timezone
+from .services import ChatServices, MessageServices
+from .types import CreateChatData, CreateMessageData
+from django.utils import timezone
 from .models import Chat
 from .models import Message
 from .models import GroupMessage
@@ -163,27 +158,34 @@ class ChatViewSet(viewsets.ModelViewSet):
             image = request.FILES.get("image_content", None)
 
             if not chat_id:
-                return Response({"success": False, "error": "chat_id is required"}, status=400)
+                return Response(
+                    {"success": False, "error": "chat_id is required"}, status=400
+                )
 
             message = Message.objects.create(
-                user=user,
-                chat_id=chat_id,
-                content=content,
-                image_content=image
+                user=user, chat_id=chat_id, content=content, image_content=image
             )
 
-            return Response({
-                "success": True,
-                "data": {
-                    "sender": message.user.id,
-                    "full_name": message.user.full_name,
-                    "content": message.content,
-                    "image": message.image_content.url if message.image_content else None,
-                    "timestamp": message.sent_at,
-                    "organization": message.user.primary_organization,
-                    "profile_image": message.user.profile_image.url if message.user.profile_image else None
+            return Response(
+                {
+                    "success": True,
+                    "data": {
+                        "sender": message.user.id,
+                        "full_name": message.user.full_name,
+                        "content": message.content,
+                        "image": (
+                            message.image_content.url if message.image_content else None
+                        ),
+                        "timestamp": message.sent_at,
+                        "organization": message.user.primary_organization,
+                        "profile_image": (
+                            message.user.profile_image.url
+                            if message.user.profile_image
+                            else None
+                        ),
+                    },
                 }
-            })
+            )
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
 
@@ -223,23 +225,72 @@ class ChatViewSet(viewsets.ModelViewSet):
             image = request.FILES.get("image", None)
 
             msg = GroupMessage.objects.create(
-                user=user,
-                group_name=group_name,
-                content=content,
-                image=image
+                user=user, group_name=group_name, content=content, image=image
             )
 
-            return Response({
-                "success": True,
-                "data": {
-                    "sender": msg.user.id,
-                    "full_name": msg.user.full_name,
-                    "content": msg.content,
-                    "image": msg.image.url if msg.image else None,
-                    "timestamp": msg.sent_at,
-                    "organization": msg.user.primary_organization,
-                    "profile_image": msg.user.profile_image.url if msg.user.profile_image else None
+            return Response(
+                {
+                    "success": True,
+                    "data": {
+                        "sender": msg.user.id,
+                        "full_name": msg.user.full_name,
+                        "content": msg.content,
+                        "image": msg.image.url if msg.image else None,
+                        "timestamp": msg.sent_at,
+                        "organization": msg.user.primary_organization,
+                        "profile_image": (
+                            msg.user.profile_image.url
+                            if msg.user.profile_image
+                            else None
+                        ),
+                    },
                 }
-            })
+            )
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    # POST (Create) message
+    @action(detail=False, methods=["post"], url_path="messages")
+    def create_message_request(self, request):
+        serializer = MessageSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": str(serializer.errors),
+                    "success": False,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        validated_data = serializer.validated_data
+        created_message_data = CreateMessageData(
+            user_id=validated_data["user"].id,
+            chat_id=validated_data["chat"].id,
+            content=validated_data["content"],
+            image_content=validated_data.get("image_content", None),
+            sent_at=timezone.now(),
+        )
+
+        try:
+            message = MessageServices.create_message(created_message_data)
+            response_serializer = MessageSerializer(message)
+
+            return Response(
+                {
+                    "message": "Message sent successfully",
+                    "success": True,
+                    "data": response_serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except ValidationError as e:
+            return Response(
+                {
+                    "message": str(e),
+                    "success": False,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
