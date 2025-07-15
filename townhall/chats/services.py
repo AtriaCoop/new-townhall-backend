@@ -54,6 +54,12 @@ class ChatServices:
         except ValidationError:
             raise
 
+    def add_user(chat_id: int, user_id: int):
+        try:
+            ChatDao.add_user(chat_id=chat_id, user_id=user_id)
+        except ValidationError as e:
+            raise ValidationError(f"Failed to add user: {e}")
+
 
 class MessageServices:
     def create_message(create_message_data: CreateMessageData) -> Optional[Message]:

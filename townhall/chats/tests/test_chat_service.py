@@ -130,3 +130,38 @@ class TestChatService(TestCase):
 
         # Assert
         self.assertEqual(str(noChats.exception), "['No chats were found.']")
+
+    def test_add_user_success(self):
+        # Arrange
+        chat_id = 3
+        new_user = User.objects.create(
+            id=5, email="newuser5@example.com", full_name="newuser"
+        )
+        # Act
+        ChatServices.add_user(chat_id=chat_id, user_id=new_user.id)
+        # Assert
+        chat = Chat.objects.get(id=chat_id)
+        self.assertTrue(
+            chat.participants.filter(id=new_user.id).exists(),
+            "User should be added to chat participants.",
+        )
+
+    def test_add_user_failure(self):
+        # User already in chat
+        chat_id = 3
+        existing_user_id = 1
+        with self.assertRaises(ValidationError) as context:
+            ChatServices.add_user(chat_id=chat_id, user_id=existing_user_id)
+        self.assertIn("already a participant", str(context.exception))
+
+        # User does not exist
+        non_existent_user_id = 9999
+        with self.assertRaises(ValidationError) as context:
+            ChatServices.add_user(chat_id=chat_id, user_id=non_existent_user_id)
+        self.assertIn("does not exist", str(context.exception))
+
+        # Chat does not exist
+        non_existent_chat_id = 9999
+        with self.assertRaises(ValidationError) as context:
+            ChatServices.add_user(chat_id=non_existent_chat_id, user_id=1)
+        self.assertIn("does not exist", str(context.exception))
