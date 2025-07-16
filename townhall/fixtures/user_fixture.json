@@ -36,5 +36,24 @@
       "profile_header": null,
       "date_joined": "2024-01-01T10:00:00Z"
     }
+  },
+  {
+    "model": "users.user",
+    "pk": 3,
+    "fields": {
+      "email": "kate@gmail.com",
+      "password": "password123",
+      "full_name": "Kate Spade",
+      "pronouns": null,
+      "title": null,
+      "primary_organization": null,
+      "other_organizations": null,
+      "other_networks": null,
+      "about_me": null,
+      "skills_interests": null,
+      "profile_image": null,
+      "profile_header": null,
+      "date_joined": "2024-01-01T10:00:00Z"
+    }
   }
 ]

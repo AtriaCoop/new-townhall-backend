@@ -28,6 +28,12 @@ class ChatDao:
         chat.participants.add(*create_chat_data.participant_ids)
         return chat
 
+    @staticmethod
+    def update_chat_participants(chat_id: int, new_participant_ids: list[int]) -> Chat:
+        chat = Chat.objects.get(id=chat_id)
+        chat.participants.set(new_participant_ids)
+        return chat
+
 
 class MessageDao:
     def create_message(create_message_data: CreateMessageData) -> Message:
@@ -36,7 +42,7 @@ class MessageDao:
             chat_id=create_message_data.chat_id,
             content=create_message_data.content,
             image_content=create_message_data.image_content,
-            sent_at=create_message_data.sent_at
+            sent_at=create_message_data.sent_at,
         )
 
         return message
