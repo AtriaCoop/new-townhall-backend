@@ -45,6 +45,12 @@ class ChatDao:
         user = UserServices.get_user(user_id)
         chat.participants.add(user)
 
+    @staticmethod
+    def update_chat_participants(chat_id: int, new_participant_ids: list[int]) -> Chat:
+        chat = Chat.objects.get(id=chat_id)
+        chat.participants.set(new_participant_ids)
+        return chat
+
 
 class MessageDao:
     def create_message(create_message_data: CreateMessageData) -> Message:

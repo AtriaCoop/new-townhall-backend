@@ -165,3 +165,46 @@ class TestChatService(TestCase):
         with self.assertRaises(ValidationError) as context:
             ChatServices.add_user(chat_id=non_existent_chat_id, user_id=1)
         self.assertIn("does not exist", str(context.exception))
+
+    def test_update_chat_participants_success(self):
+        # Arrange
+        chat_id = 3
+        new_participant_ids = [1, 2, 3]
+
+        # Act
+        updated_chat = ChatServices.update_chat_participants(
+            chat_id, new_participant_ids
+        )
+
+        # Assert
+        self.assertEqual(updated_chat.id, chat_id)
+        self.assertEqual(updated_chat.participants.count(), 3)
+        self.assertEqual(
+            set(updated_chat.participants.values_list("id", flat=True)), {1, 2, 3}
+        )
+
+    def test_update_chat_not_found(self):
+        # Arrange
+        chat_id = 999  # Assumed non-existent chat ID
+        new_participant_ids = [1, 2]
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as context:
+            ChatServices.update_chat_participants(chat_id, new_participant_ids)
+
+        # Assert
+        self.assertIn("Chat with id 999 does not exist", str(context.exception))
+
+    def test_update_chat_less_than_two_people(self):
+        # Arrange
+        chat_id = 3
+        new_participant_ids = [1]
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as context:
+            ChatServices.update_chat_participants(chat_id, new_participant_ids)
+
+        # Assert
+        self.assertIn(
+            "Chat must have at least two participants", str(context.exception)
+        )
