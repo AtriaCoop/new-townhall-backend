@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from dataclasses import dataclass
 
 
@@ -21,6 +21,7 @@ class UpdateUserData:
     about_me: Optional[str] = None
     skills_interests: Optional[str] = None
     profile_image: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 
 @dataclass
