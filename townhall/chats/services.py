@@ -55,6 +55,12 @@ class ChatServices:
         except ValidationError:
             raise
 
+    def add_user(chat_id: int, user_id: int):
+        try:
+            ChatDao.add_user(chat_id=chat_id, user_id=user_id)
+        except ValidationError as e:
+            raise ValidationError(f"Failed to add user: {e}")
+
     @staticmethod
     def update_chat_participants(chat_id: int, new_participant_ids: list[int]) -> Chat:
         try:

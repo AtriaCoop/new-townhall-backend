@@ -3,6 +3,8 @@ from .models import Chat, Message
 from .types import CreateChatData, CreateMessageData
 from django.db.models import QuerySet
 from django.db import DatabaseError
+from django.core.exceptions import ValidationError
+from users.services import UserServices
 
 
 class ChatDao:
@@ -27,6 +29,21 @@ class ChatDao:
 
         chat.participants.add(*create_chat_data.participant_ids)
         return chat
+
+    def add_user(chat_id: int, user_id: int) -> None:
+
+        try:
+            chat = Chat.objects.get(id=chat_id)
+        except Chat.DoesNotExist:
+            raise ValidationError(f"Chat with id {chat_id} does not exist.")
+
+        if chat.participants.filter(id=user_id).exists():
+            raise ValidationError(
+                f"User {user_id} is already a participant in chat {chat_id}."
+            )
+
+        user = UserServices.get_user(user_id)
+        chat.participants.add(user)
 
     @staticmethod
     def update_chat_participants(chat_id: int, new_participant_ids: list[int]) -> Chat:
