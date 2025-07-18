@@ -1,17 +1,12 @@
 from django.forms import ValidationError
-
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
 from .serializers import ChatSerializer, MessageSerializer, CreateChatSerializer
-from .services import ChatServices
-
-# from .services import MessageServices
-from .types import CreateChatData
-
-# from .types import CreateMessageData
-# from django.utils import timezone
+from .services import ChatServices, MessageServices
+from .types import CreateChatData, CreateMessageData
+from django.utils import timezone
 from .models import Chat
 from .models import Message
 from .models import GroupMessage
@@ -253,3 +248,49 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    # POST (Create) message
+    @action(detail=False, methods=["post"], url_path="messages")
+    def create_message_request(self, request):
+        serializer = MessageSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": str(serializer.errors),
+                    "success": False,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        validated_data = serializer.validated_data
+        created_message_data = CreateMessageData(
+            user_id=validated_data["user"].id,
+            chat_id=validated_data["chat"].id,
+            content=validated_data["content"],
+            image_content=validated_data.get("image_content", None),
+            sent_at=timezone.now(),
+        )
+
+        try:
+            message = MessageServices.create_message(created_message_data)
+            response_serializer = MessageSerializer(message)
+
+            return Response(
+                {
+                    "message": "Message sent successfully",
+                    "success": True,
+                    "data": response_serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except ValidationError as e:
+            return Response(
+                {
+                    "message": str(e),
+                    "success": False,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )

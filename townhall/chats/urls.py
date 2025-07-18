@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ChatViewSet
+from .views import ChatViewSet, MessageViewSet
 
 urlpatterns = [
     path(
@@ -24,11 +24,7 @@ urlpatterns = [
     ),
     path(
         "chats/<int:id>/messages/",
-        ChatViewSet.as_view(
-            {
-                "get": "get_chat_messages"
-            }
-        ),
+        ChatViewSet.as_view({"get": "get_chat_messages"}),
         name="chat_messages",
     ),
     path(
@@ -38,16 +34,21 @@ urlpatterns = [
     ),
     path(
         "groups/<str:group_name>/messages/",
-        ChatViewSet.as_view(
-            {
-                "get": "get_group_messages"
-            }
-        ),
+        ChatViewSet.as_view({"get": "get_group_messages"}),
         name="group_messages",
     ),
     path(
         "groups/messages/",
         ChatViewSet.as_view({"post": "create_group_message"}),
         name="create_group_message",
+    ),
+    path(
+        "chats/messages/",
+        MessageViewSet.as_view(
+            {
+                "post": "create_message_request",
+            }
+        ),
+        name="messages",
     ),
 ]
