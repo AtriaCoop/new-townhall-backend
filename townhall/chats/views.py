@@ -294,3 +294,28 @@ class MessageViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    # DELETE message
+    @action(detail=True, methods=["delete"], url_path="messages")
+    def delete_message_request(self, request, id):
+        message_id = id
+
+        try:
+            MessageServices.delete_message(message_id)
+
+            return Response(
+                {
+                    "message": "Message Deleted Successfully",
+                    "success": True,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except ValidationError as e:
+            # If services method returns an error, return an error Response
+            return Response(
+                {
+                    "message": str(e),
+                    "success": False,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
