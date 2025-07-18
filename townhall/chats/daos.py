@@ -46,3 +46,9 @@ class MessageDao:
         )
 
         return message
+
+    def get_message(id: int) -> Optional[Message]:
+        return Message.objects.get(id=id)
+
+    def delete_message(id: int) -> None:
+        Message.objects.get(id=id).delete()

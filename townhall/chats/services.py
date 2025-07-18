@@ -5,6 +5,7 @@ from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData
 from django.db.models import Count
 from django.db.models import QuerySet
+import typing
 
 
 class ChatServices:
@@ -81,3 +82,16 @@ class MessageServices:
             return message
         except ValidationError:
             raise
+
+    def get_message(id: int) -> typing.Optional[Message]:
+        try:
+            message = MessageDao.get_message(id=id)
+            return message
+        except Message.DoesNotExist:
+            raise ValidationError(f"Message with the given id: {id}, does not exist.")
+
+    def delete_message(id: int) -> None:
+        try:
+            MessageDao.delete_message(id=id)
+        except Message.DoesNotExist:
+            raise ValidationError(f"Message with the given id: {id}, does not exist.")
