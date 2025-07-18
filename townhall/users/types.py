@@ -21,7 +21,7 @@ class UpdateUserData:
     about_me: Optional[str] = None
     skills_interests: Optional[str] = None
     profile_image: Optional[str] = None
-    tags: Optional[List[str]] = None  # <-- Add this line
+    tags: Optional[List[str]] = None
 
 
 @dataclass
