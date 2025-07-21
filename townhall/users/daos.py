@@ -38,6 +38,8 @@ class UserDao:
         Sets the user's tags to the provided list of tag names.
         Returns True if successful, False if user does not exist.
         """
+        if not tag_names:
+            return False
         try:
             user = User.objects.get(id=user_id)
             tags = Tag.objects.filter(name__in=tag_names)
