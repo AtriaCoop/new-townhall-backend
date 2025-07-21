@@ -2,6 +2,7 @@ from django.db.models.query import QuerySet
 import typing
 
 from .models import User
+from .models import Tag
 from .types import CreateUserData
 
 
@@ -18,8 +19,7 @@ class UserDao:
     @staticmethod
     def create_user(create_user_data: CreateUserData) -> User:
         user = User.objects.create(
-            email=create_user_data.email,
-            password=create_user_data.password
+            email=create_user_data.email, password=create_user_data.password
         )
 
         return user
@@ -28,5 +28,22 @@ class UserDao:
     def delete_user(user_id: int) -> None:
         User.objects.get(id=user_id).delete()
 
+    @staticmethod
     def filter_all_users(filtersDict) -> QuerySet[User]:
         return User.objects.filter(**filtersDict)
+
+    @staticmethod
+    def update_user_tags(user_id: int, tag_names: typing.List[str]) -> bool:
+        """
+        Sets the user's tags to the provided list of tag names.
+        Returns True if successful, False if user does not exist.
+        """
+        if not tag_names:
+            return True
+        try:
+            user = User.objects.get(id=user_id)
+            tags = Tag.objects.filter(name__in=tag_names)
+            user.tags.set(tags)
+            return True
+        except User.DoesNotExist:
+            return False
