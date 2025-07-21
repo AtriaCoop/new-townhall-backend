@@ -39,7 +39,7 @@ class UserDao:
         Returns True if successful, False if user does not exist.
         """
         if not tag_names:
-            return False
+            return True
         try:
             user = User.objects.get(id=user_id)
             tags = Tag.objects.filter(name__in=tag_names)
