@@ -48,12 +48,8 @@ class UserServices:
             UserServices.validate_user(
                 create_user_data.email, create_user_data.password
             )
-            create_user_data.password = make_password(
-                create_user_data.password
-            )
-            user = UserDao.create_user(
-                create_user_data=create_user_data
-            )
+            create_user_data.password = make_password(create_user_data.password)
+            user = UserDao.create_user(create_user_data=create_user_data)
 
             return user
         except ValidationError:
@@ -81,7 +77,10 @@ class UserServices:
             return UserDao.get_user_all()
 
     def update_user(update_user_data: UpdateUserData) -> User:
-        user = User.objects.get(id=update_user_data.id)
+        try:
+            user = User.objects.get(id=update_user_data.id)
+        except User.DoesNotExist:
+            raise ValidationError("User does not exist.")
 
         if update_user_data.full_name is not None:
             user.full_name = update_user_data.full_name
@@ -112,6 +111,12 @@ class UserServices:
 
         if update_user_data.profile_image is not None:
             user.profile_image = update_user_data.profile_image
+
+        if update_user_data.tags is not None:
+            if not UserDao.update_user_tags(
+                user_id=user.id, tag_names=update_user_data.tags
+            ):
+                raise ValidationError("Failed to update user tags.")
 
         user.save()
         return user
