@@ -18,6 +18,7 @@ urlpatterns = [
             {
                 "get": "get_chat_request",
                 "delete": "delete_chat_request",
+                "patch": "update_chat_participants",
             }
         ),
         name="chats_id",

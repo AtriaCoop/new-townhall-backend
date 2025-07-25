@@ -142,3 +142,34 @@ class TestChatEndpoint(TestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert not response.data["success"]
         assert response.data["message"] == "['random message']"
+
+    def test_update_chat_participants_success(self):
+        # Arrange
+        chat_id = 3
+        url = f"/chats/{chat_id}/"
+        updated_participants = {"participant_ids": [1, 2, 3]}
+
+        # Act
+        response = self.client.patch(url, updated_participants, format="json")
+
+        # Assert
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"]
+        assert response.data["message"] == "Chat participants updated successfully."
+        participant_ids = [p["id"] for p in response.data["data"]["participants"]]
+        assert sorted(participant_ids) == sorted(
+            updated_participants["participant_ids"]
+        )
+
+    def test_update_chat_participants_fail_invalid_data(self):
+        # Arrange
+        chat_id = 3
+        url = f"/chats/{chat_id}/"
+
+        # Act
+        response = self.client.patch(url, {"participant_ids": []}, format="json")
+
+        # Assert
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not response.data["success"]
+        assert "at least two participants" in response.data["message"].lower()
