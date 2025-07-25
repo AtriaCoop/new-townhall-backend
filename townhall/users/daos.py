@@ -43,7 +43,9 @@ class UserDao:
         try:
             user = User.objects.get(id=user_id)
             tags = Tag.objects.filter(name__in=tag_names)
-            user.tags.set(tags)
+            if not tags.exists():
+                return True  # No changes made if no tags found
+            user.tags.add(*tags)
             return True
         except User.DoesNotExist:
             return False
