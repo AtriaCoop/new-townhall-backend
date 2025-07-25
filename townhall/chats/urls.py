@@ -51,4 +51,9 @@ urlpatterns = [
         ),
         name="messages",
     ),
+    path(
+        "chats/messages/<int:id>/",
+        MessageViewSet.as_view({"delete": "delete_message_request"}),
+        name="messages",
+    ),
 ]
