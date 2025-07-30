@@ -33,8 +33,6 @@ class TestMessageEndpoint(TestCase):
         # Act
         response = self.client.post(url, valid_data, format="json")
 
-        print(response)
-
         # Assert
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["success"]
@@ -61,3 +59,35 @@ class TestMessageEndpoint(TestCase):
         # Assert
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert not response.data["success"]
+
+    def test_delete_message_success(self):
+        # Arrange
+        url = "/chats/messages/3/"
+
+        # Act
+        response = self.client.delete(url, format="json")
+
+        # Assert
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"]
+        assert response.data["message"] == "Message Deleted Successfully"
+        try:
+            Message.objects.get(id=3)
+            self.fail("Should have returned a Message or Does Not Exist Error")
+        except Message.DoesNotExist:
+            pass
+
+    def test_delete_message_fail_does_not_exist(self):
+        # Arrange
+        url = "/chats/messages/99999/"
+
+        # Act
+        response = self.client.delete(url, format="json")
+
+        # Assert
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not response.data["success"]
+        assert (
+            response.data["message"]
+            == "['Message with the given id: 99999, does not exist.']"
+        )
