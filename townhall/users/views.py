@@ -73,8 +73,8 @@ def logout_user(request):
     if request.method == "POST":
         logout(request)
         response = JsonResponse({"message": "Logged out successfully."})
-        response.delete_cookie('sessionid')
-        response.delete_cookie('csrftoken')
+        response.delete_cookie("sessionid")
+        response.delete_cookie("csrftoken")
         return response
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
@@ -238,16 +238,12 @@ class UserViewSet(viewsets.ModelViewSet):
     # UPDATE A USER BY ID
     @action(detail=True, methods=["patch"], url_path="user")
     def update_user(self, request, user_id):
-
         uid = user_id
-
         serializer = UpdateUserSerializer(data=request.data)
-
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated_data = serializer.validated_data
-
         update_user_data = UpdateUserData(
             id=uid,
             full_name=validated_data.get("full_name"),
@@ -260,6 +256,7 @@ class UserViewSet(viewsets.ModelViewSet):
             about_me=validated_data.get("about_me"),
             skills_interests=validated_data.get("skills_interests"),
             profile_image=request.FILES.get("profile_image"),
+            tags=validated_data.get("tags", []),
         )
         try:
             UserServices.update_user(update_user_data)
@@ -271,5 +268,15 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            # If services method returns an error, return an error Response
-            return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            # Extract the actual error message from ValidationError
+            if hasattr(e, "messages") and e.messages:
+                error_message = e.messages[0]
+            elif hasattr(e, "message"):
+                error_message = e.message
+            else:
+                # Fallback: clean up string representation
+                error_message = str(e).strip("[]'\"")
+
+            return Response(
+                {"message": error_message}, status=status.HTTP_404_NOT_FOUND
+            )
