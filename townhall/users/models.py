@@ -40,12 +40,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     other_networks = models.TextField(null=True, blank=True)
     about_me = models.TextField(null=True, blank=True)
     skills_interests = models.TextField(null=True, blank=True)
-    profile_image = CloudinaryField(
-        "image", null=True, blank=True
-    )  # Changed back to CloudinaryField
-    profile_header = CloudinaryField(
-        "image", null=True, blank=True
-    )  # Changed back to CloudinaryField
+    profile_image = CloudinaryField("image", null=True, blank=True)
+    profile_header = CloudinaryField("image", null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
 
     is_active = models.BooleanField(default=True)
