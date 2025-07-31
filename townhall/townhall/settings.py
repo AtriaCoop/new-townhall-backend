@@ -37,7 +37,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "townhallbackend.onrender.com",
     "atriacoop.netlify.app",
-    "townhallfrontend.onrender.com"
+    "townhallfrontend.onrender.com",
 ]
 
 APPEND_SLASH = True
@@ -57,9 +57,9 @@ INSTALLED_APPS = [
     "users",
     "posts",
     "chats",
-    'cloudinary',
-    'cloudinary_storage',
-    'channels',
+    "cloudinary",
+    "cloudinary_storage",
+    "channels",
 ]
 
 MIDDLEWARE = [
@@ -78,7 +78,7 @@ MIDDLEWARE = [
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_DOMAIN = None
 SESSION_COOKIE_DOMAIN = None
@@ -178,6 +178,39 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Media files (user uploads)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# File Storage Configuration
+# Default to Cloudinary, fallback to local storage if no credentials
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+# Get Cloudinary credentials from environment variables
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
+
+# Configure Cloudinary if all credentials are provided
+if all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET]):
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": CLOUDINARY_CLOUD_NAME,
+        "API_KEY": CLOUDINARY_API_KEY,
+        "API_SECRET": CLOUDINARY_API_SECRET,
+    }
+
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+    )
+else:
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -203,25 +236,22 @@ DEBUG_TOOLBAR_PANELS = [
 
 
 # CLOUDINARY
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# CLOUDINARY_URL = (
+#     f"cloudinary://{CLOUDINARY_API_KEY}:"
+#     f"{CLOUDINARY_API_SECRET}@"
+#     f"{CLOUDINARY_CLOUD_NAME}"
+# ) if all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET]) else None
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
-}
-
-CLOUDINARY_URL = (
-    f"cloudinary://{os.getenv('CLOUDINARY_API_KEY')}:"
-    f"{os.getenv('CLOUDINARY_API_SECRET')}@"
-    f"{os.getenv('CLOUDINARY_CLOUD_NAME')}"
-)
-
-cloudinary.config(
-  cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-  api_key=os.getenv('CLOUDINARY_API_KEY'),
-  api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-)
+# Only configure cloudinary if credentials are available
+# if all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET]):
+#     cloudinary.config(
+#         cloud_name=CLOUDINARY_CLOUD_NAME,
+#         api_key=CLOUDINARY_API_KEY,
+#         api_secret=CLOUDINARY_API_SECRET,
+#     )
+#     print("✅ Cloudinary configured successfully!")
+# else:
+#     print("❌ Cloudinary not configured - image uploads will fail!")
 
 CHANNEL_LAYERS = {
     "default": {
@@ -231,10 +261,3 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
-
-print("DEBUG:", DEBUG)
-print("DEFAULT_FILE_STORAGE:", DEFAULT_FILE_STORAGE)
-print("CLOUD_NAME:", os.getenv("CLOUDINARY_CLOUD_NAME"))
-print("API_KEY:", os.getenv("CLOUDINARY_API_KEY"))
-print("API_SECRET:", os.getenv("CLOUDINARY_API_SECRET"))

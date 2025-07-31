@@ -73,8 +73,8 @@ def logout_user(request):
     if request.method == "POST":
         logout(request)
         response = JsonResponse({"message": "Logged out successfully."})
-        response.delete_cookie('sessionid')
-        response.delete_cookie('csrftoken')
+        response.delete_cookie("sessionid")
+        response.delete_cookie("csrftoken")
         return response
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
@@ -85,29 +85,21 @@ class UserViewSet(viewsets.ModelViewSet):
     # CREATE USER
     @action(detail=False, methods=["post"], url_path="user")
     def create_user(self, request):
-        print("➡️ Received request to create user")
-        print("📨 Request data:", request.data)
-
         serializer = CreateUserSerializer(data=request.data)
 
         if not serializer.is_valid():
-            print("❌ Serializer invalid:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated_data = serializer.validated_data
-        print("✅ Serializer validated data:", validated_data)
 
         create_user_data = CreateUserData(
             email=validated_data.get("email"), password=validated_data["password"]
         )
 
         try:
-            print("🔧 Calling UserServices.create_user")
             user = UserServices.create_user(create_user_data)
-            print("✅ User created successfully:", user)
 
             response_serializer = UserSerializer(user)
-            print("📦 Serialized user:", response_serializer.data)
 
             return Response(
                 {
@@ -117,15 +109,13 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            print("❌ ValidationError while creating user:", str(e))
             return Response(
                 {
                     "message": str(e),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
-            print("🔥 Unexpected error while creating user:", str(e))
+        except Exception:
             return Response(
                 {
                     "message": "Internal server error",
@@ -238,7 +228,6 @@ class UserViewSet(viewsets.ModelViewSet):
     # UPDATE A USER BY ID
     @action(detail=True, methods=["patch"], url_path="user")
     def update_user(self, request, user_id):
-
         uid = user_id
 
         serializer = UpdateUserSerializer(data=request.data)
@@ -259,8 +248,10 @@ class UserViewSet(viewsets.ModelViewSet):
             other_networks=validated_data.get("other_networks"),
             about_me=validated_data.get("about_me"),
             skills_interests=validated_data.get("skills_interests"),
-            profile_image=request.FILES.get("profile_image"),
+            profile_image=validated_data.get("profile_image"),
+            profile_header=validated_data.get("profile_header"),
         )
+
         try:
             UserServices.update_user(update_user_data)
 
@@ -271,5 +262,14 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            # If services method returns an error, return an error Response
-            return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"User with id {uid} does not exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception:
+            return Response(
+                {"message": "Internal server error while updating user"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

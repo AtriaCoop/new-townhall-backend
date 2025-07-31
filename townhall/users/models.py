@@ -3,9 +3,9 @@ from django.utils import timezone
 from django.contrib.auth.models import (
     AbstractBaseUser,
     PermissionsMixin,
-    BaseUserManager
+    BaseUserManager,
 )
-from cloudinary.models import CloudinaryField
+from cloudinary.models import CloudinaryField  # Uncommented for Cloudinary
 
 
 class UserManager(BaseUserManager):
@@ -19,8 +19,8 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
 
         if not extra_fields.get("is_staff"):
             raise ValueError("Superuser must have is_staff=True.")
@@ -40,8 +40,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     other_networks = models.TextField(null=True, blank=True)
     about_me = models.TextField(null=True, blank=True)
     skills_interests = models.TextField(null=True, blank=True)
-    profile_image = CloudinaryField('image', null=True, blank=True)
-    profile_header = CloudinaryField('image', null=True, blank=True)
+    profile_image = CloudinaryField(
+        "image", null=True, blank=True
+    )  # Changed back to CloudinaryField
+    profile_header = CloudinaryField(
+        "image", null=True, blank=True
+    )  # Changed back to CloudinaryField
     date_joined = models.DateTimeField(default=timezone.now)
 
     is_active = models.BooleanField(default=True)
@@ -49,8 +53,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'  # for authentication
-    REQUIRED_FIELDS = []      # email is required by default
+    USERNAME_FIELD = "email"  # for authentication
+    REQUIRED_FIELDS = []  # email is required by default
 
     def __str__(self):
         return self.email

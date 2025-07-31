@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from dataclasses import dataclass
 
 
@@ -20,7 +20,12 @@ class UpdateUserData:
     other_networks: Optional[str] = None
     about_me: Optional[str] = None
     skills_interests: Optional[str] = None
-    profile_image: Optional[str] = None
+    profile_image: Optional[Union[str, object]] = (
+        None  # Can be string (URL) or file object
+    )
+    profile_header: Optional[Union[str, object]] = (
+        None  # Can be string (URL) or file object
+    )
 
 
 @dataclass
