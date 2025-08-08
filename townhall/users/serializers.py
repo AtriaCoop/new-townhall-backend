@@ -20,7 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
             "about_me",
             "skills_interests",
             "profile_image",
-            "date_joined"
+            "date_joined",
         ]
 
     def get_profile_image(self, obj):
@@ -34,12 +34,7 @@ class UserMiniSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            "id",
-            "full_name",
-            "primary_organization",
-            "profile_image"
-        ]
+        fields = ["id", "full_name", "primary_organization", "profile_image"]
 
     def get_profile_image(self, obj):
         if obj.profile_image:
@@ -54,10 +49,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            "email",
-            "password"
-        ]
+        fields = ["email", "password"]
 
 
 class UpdateUserSerializer(serializers.Serializer):
@@ -71,6 +63,20 @@ class UpdateUserSerializer(serializers.Serializer):
     about_me = serializers.CharField(required=False, allow_blank=True)
     skills_interests = serializers.CharField(required=False, allow_blank=True)
     profile_image = serializers.ImageField(required=False, allow_null=True)
+    tags = serializers.ListField(
+        child=serializers.CharField(), required=False, allow_empty=True
+    )
+
+    def validate_tags(self, value):
+        """Custom validation for tags to ensure all items are strings"""
+        # Check the raw input data before DRF processes it
+        if "tags" in self.initial_data:
+            raw_tags = self.initial_data["tags"]
+            if isinstance(raw_tags, list):
+                for tag in raw_tags:
+                    if not isinstance(tag, str):
+                        raise serializers.ValidationError("All tags must be strings")
+        return value
 
     # Make sure atleast 1 field has a Value
     def validate(self, data):
@@ -85,7 +91,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "full_name", "email", "pronouns", "title",
-            "primary_organization", "other_organizations", "other_networks",
-            "about_me", "skills_interests", "profile_image"
+            "full_name",
+            "email",
+            "pronouns",
+            "title",
+            "primary_organization",
+            "other_organizations",
+            "other_networks",
+            "about_me",
+            "skills_interests",
+            "profile_image",
         ]
