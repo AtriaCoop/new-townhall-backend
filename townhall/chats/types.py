@@ -21,8 +21,8 @@ class CreateMessageData:
 @dataclass
 class UpdateMessageData:
     id: int
-    user_id: int
-    chat_id: int
-    content: str
+    user_id: Optional[int] = None
+    chat_id: Optional[int] = None
+    content: Optional[str] = None
     image_content: Optional[str] = None
     sent_at: Optional[datetime] = None
