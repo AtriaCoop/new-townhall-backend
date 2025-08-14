@@ -141,6 +141,36 @@ class ChatViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+    # PATCH (Update) Chat
+    @action(detail=True, methods=["patch"], url_path="chats")
+    def update_chat_participants(self, request, id):
+        participant_ids = request.data.get("participant_ids", [])
+
+        try:
+            chat = ChatServices.update_chat_participants(
+                chat_id=id, new_participant_ids=participant_ids
+            )
+            data = ChatSerializer(chat).data
+            return Response(
+                {
+                    "message": "Chat participants updated successfully.",
+                    "success": True,
+                    "data": data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValidationError as e:
+            return Response(
+                {"message": str(e), "success": False},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+            return Response(
+                {"message": f"Unexpected error: {str(e)}", "success": False}, status=500
+            )
+
     # GET Message
     @action(detail=True, methods=["get"], url_path="messages")
     def get_chat_messages(self, request, id):
