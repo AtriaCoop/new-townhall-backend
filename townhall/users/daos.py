@@ -38,32 +38,10 @@ class UserDao:
         Sets the user's tags to the provided list of tag names.
         Returns True if successful, False if user does not exist.
         """
-        if not tag_names:
-            return True
         try:
             user = User.objects.get(id=user_id)
             tags = Tag.objects.filter(name__in=tag_names)
-            if not tags.exists():
-                return True  # No changes made if no tags found
-            user.tags.add(*tags)
-            return True
-        except User.DoesNotExist:
-            return False
-
-    @staticmethod
-    def delete_tag_from_user(user_id: int, tag_names: typing.List[str]) -> bool:
-        """
-        Deletes the the specified tags from the specified user.
-        Returns True if successful, False if user does not exist.
-        """
-        if not tag_names:
-            return True
-        try:
-            user = User.objects.get(id=user_id)
-            tags = Tag.objects.filter(name__in=tag_names)
-            if not tags.exists():
-                return True  # No changes made if no tags found
-            user.tags.remove(*tags)
+            user.tags.set(tags)
             return True
         except User.DoesNotExist:
             return False
