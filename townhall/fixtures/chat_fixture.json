@@ -6,5 +6,13 @@
       "name": "Bob's Workers",
       "created_at": "2024-01-01T12:00:00Z"
     }
+  },
+  {
+    "model": "chats.chat",
+    "pk": 21,
+    "fields": {
+      "name": "Volunteer for seniors",
+      "created_at": "2025-08-04T12:00:00Z"
+    }
   }
 ]
