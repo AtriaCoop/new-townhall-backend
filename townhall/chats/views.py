@@ -3,9 +3,14 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
-from .serializers import ChatSerializer, MessageSerializer, CreateChatSerializer
+from .serializers import (
+    ChatSerializer,
+    MessageSerializer,
+    CreateChatSerializer,
+    OptionalMessageSerializer,
+)
 from .services import ChatServices, MessageServices
-from .types import CreateChatData, CreateMessageData
+from .types import CreateChatData, CreateMessageData, UpdateMessageData
 from django.utils import timezone
 from .models import Chat
 from .models import Message
@@ -347,5 +352,47 @@ class MessageViewSet(viewsets.ModelViewSet):
                     "message": str(e),
                     "success": False,
                 },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    # PATCH (uppdate) message
+    @action(detail=True, methods=["patch"], url_path="messages")
+    def update_message_request(self, request, id):
+        message_id = id
+
+        # Use a serializer to check if the data is valid
+        serializer = OptionalMessageSerializer(data=request.data)
+
+        # If the data is NOT valid return with message serializers errors
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # If here, the data was validated
+        validated_data = serializer.validated_data
+
+        # Convert the data to the UpdateMessageData type
+        update_message_data = UpdateMessageData(
+            id=id,
+            user_id=validated_data.get("user_id"),
+            chat_id=validated_data.get("chat_id"),
+            content=validated_data.get("content"),
+            image_content=validated_data.get("image_content"),
+            sent_at=validated_data.get("sent_at"),
+        )
+
+        try:
+            MessageServices.update_message(message_id, update_message_data)
+
+            return Response(
+                {
+                    "message": "Message updated successfully",
+                    "success": True,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except ValidationError as e:
+            # Return an error if the services method returns an error
+            return Response(
+                {"message": str(e), "success": False},
                 status=status.HTTP_404_NOT_FOUND,
             )

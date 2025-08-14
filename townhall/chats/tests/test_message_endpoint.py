@@ -91,3 +91,38 @@ class TestMessageEndpoint(TestCase):
             response.data["message"]
             == "['Message with the given id: 99999, does not exist.']"
         )
+
+    def test_update_message_success(self):
+        # Arrange
+        url = "/chats/messages/3/"
+        updated_data = {
+            "content": "New updated message",
+            "image_content": "New image",
+        }
+
+        # Act
+        response = self.client.patch(url, updated_data, format="json")
+
+        # Assert
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"]
+        assert response.data["message"] == "Message updated successfully"
+
+    def test_update_message_fail_does_not_exist(self):
+        # Arrange
+        url = "/chats/messages/999999999/"  # assume this message does not exist
+        updated_data = {
+            "content": "New updated message",
+            "image_content": "New image",
+        }
+
+        # Act
+        response = self.client.patch(url, updated_data, format="json")
+
+        # Assert
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not response.data["success"]
+        assert (
+            response.data["message"]
+            == "['Message with the given id: 999999999, does not exist.']"
+        )
