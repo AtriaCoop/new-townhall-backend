@@ -19,14 +19,12 @@ class PostViewSet(viewsets.ModelViewSet):
         try:
             post = PostServices.get_post(id=pk)
             serializer = PostSerializer(post)
-            return Response({
-                "message": "Post fetched successfully",
-                "post": serializer.data
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Post fetched successfully", "post": serializer.data},
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response({
-                "error": str(e)
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
     # GET ALL POSTS
     @action(detail=False, methods=["get"], url_path="post")
@@ -34,14 +32,14 @@ class PostViewSet(viewsets.ModelViewSet):
         try:
             posts = PostServices.get_all_posts()
             serializer = PostSerializer(posts, many=True)
-            return Response({
-                "message": "Posts fetched successfully",
-                "posts": serializer.data
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Posts fetched successfully", "posts": serializer.data},
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response({
-                "error": str(e)
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     # CREATE POST
     @action(detail=False, methods=["post"], url_path="post")
@@ -81,8 +79,7 @@ class PostViewSet(viewsets.ModelViewSet):
             post = Post.objects.get(pk=pk)
         except Post.DoesNotExist:
             return Response(
-                {"error": "Post not found"},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         serializer = PostSerializer(post, data=request.data, partial=True)
@@ -96,11 +93,11 @@ class PostViewSet(viewsets.ModelViewSet):
         )
 
         from .services import PostServices as PostServices
+
         PostServices.update_post(pk, update_post_data)
 
         return Response(
-            {"message": "Post Updated Successfully"},
-            status=status.HTTP_200_OK
+            {"message": "Post Updated Successfully"}, status=status.HTTP_200_OK
         )
 
     # DELETE A POST
@@ -110,13 +107,10 @@ class PostViewSet(viewsets.ModelViewSet):
             PostServices.delete_post(post_id=pk)
             return Response(
                 {"message": "Post deleted successfully"},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_204_NO_CONTENT,
             )
         except ValidationError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
     # LIKE A POST
     @action(detail=True, methods=["patch"], url_path="like")
@@ -128,16 +122,14 @@ class PostViewSet(viewsets.ModelViewSet):
             user_id = request.session.get("_auth_user_id")
             if not user_id:
                 return Response(
-                    {"error": "Not authenticated"},
-                    status=status.HTTP_401_UNAUTHORIZED
+                    {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
                 )
 
             try:
                 user = User.objects.get(id=user_id)
             except User.DoesNotExist:
                 return Response(
-                    {"error": "User not found"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
                 )
 
             if user in post.liked_by.all():
@@ -145,28 +137,21 @@ class PostViewSet(viewsets.ModelViewSet):
                 post.likes -= 1
                 post.save()
                 return Response(
-                    {
-                        "message": "Post unliked",
-                        "likes": post.likes
-                    },
-                    status=status.HTTP_200_OK
+                    {"message": "Post unliked", "likes": post.likes},
+                    status=status.HTTP_200_OK,
                 )
             else:
                 post.liked_by.add(user)
                 post.likes += 1
                 post.save()
                 return Response(
-                    {
-                        "message": "Post liked",
-                        "likes": post.likes
-                    },
-                    status=status.HTTP_200_OK
+                    {"message": "Post liked", "likes": post.likes},
+                    status=status.HTTP_200_OK,
                 )
 
         except Post.DoesNotExist:
             return Response(
-                {"error": "Post not found"},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
 
@@ -215,28 +200,24 @@ class CommentViewSet(viewsets.ModelViewSet):
             comment = self.get_object()
         except Comment.DoesNotExist:
             return Response(
-                {"error": "Comment not found"},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         # Get current user from session
         user_id = request.session.get("_auth_user_id")
         if not user_id:
             return Response(
-                {"error": "Not authenticated"},
-                status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
         # Allow only the author to delete
         if comment.user.id != int(user_id):
             return Response(
-                {"error": "Permission denied"},
-                status=status.HTTP_403_FORBIDDEN
+                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
             )
 
         # Authorized – delete it
         comment.delete()
         return Response(
-            {"message": "Comment deleted"},
-            status=status.HTTP_204_NO_CONTENT
+            {"message": "Comment deleted"}, status=status.HTTP_204_NO_CONTENT
         )

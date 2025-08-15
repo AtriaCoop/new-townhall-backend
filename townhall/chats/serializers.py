@@ -68,4 +68,4 @@ class GroupMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupMessage
-        fields = ['id', 'user', 'group_name', 'content', 'image', 'sent_at']
+        fields = ["id", "user", "group_name", "content", "image", "sent_at"]

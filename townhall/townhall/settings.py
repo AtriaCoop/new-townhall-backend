@@ -37,7 +37,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "townhallbackend.onrender.com",
     "atriacoop.netlify.app",
-    "townhallfrontend.onrender.com"
+    "townhallfrontend.onrender.com",
 ]
 
 APPEND_SLASH = True
@@ -57,9 +57,9 @@ INSTALLED_APPS = [
     "users",
     "posts",
     "chats",
-    'cloudinary',
-    'cloudinary_storage',
-    'channels',
+    "cloudinary",
+    "cloudinary_storage",
+    "channels",
 ]
 
 MIDDLEWARE = [
@@ -78,7 +78,7 @@ MIDDLEWARE = [
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_DOMAIN = None
 SESSION_COOKIE_DOMAIN = None
@@ -203,12 +203,12 @@ DEBUG_TOOLBAR_PANELS = [
 
 
 # CLOUDINARY
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
 }
 
 CLOUDINARY_URL = (
@@ -218,9 +218,9 @@ CLOUDINARY_URL = (
 )
 
 cloudinary.config(
-  cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-  api_key=os.getenv('CLOUDINARY_API_KEY'),
-  api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
 
 CHANNEL_LAYERS = {

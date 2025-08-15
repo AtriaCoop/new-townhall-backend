@@ -17,7 +17,7 @@ class Message(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     content = models.TextField()
-    image_content = CloudinaryField('image', null=True, blank=True)
+    image_content = CloudinaryField("image", null=True, blank=True)
     sent_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -28,7 +28,7 @@ class GroupMessage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     group_name = models.CharField(max_length=100)
     content = models.TextField()
-    image = CloudinaryField('image', blank=True, null=True)
+    image = CloudinaryField("image", blank=True, null=True)
     sent_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):

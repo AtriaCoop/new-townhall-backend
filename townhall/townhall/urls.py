@@ -32,12 +32,12 @@ router = DefaultRouter()
 router.register(r"users", UserViewSet, basename="users")
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include(router.urls)),
-    path('', include('users.urls')),
-    path('', include('posts.urls')),
-    path('', include('chats.urls')),
-    path('', root),
+    path("admin/", admin.site.urls),
+    path("", include(router.urls)),
+    path("", include("users.urls")),
+    path("", include("posts.urls")),
+    path("", include("chats.urls")),
+    path("", root),
 ]
 
 # Serve media files even in production (temporary fix)
