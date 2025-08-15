@@ -35,9 +35,7 @@ class PostSerializer(serializers.ModelSerializer):
     user = UserMiniSerializer(read_only=True)
 
     user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        write_only=True,
-        source="user"
+        queryset=User.objects.all(), write_only=True, source="user"
     )
 
     image = serializers.ImageField(required=False, allow_null=True)
@@ -48,7 +46,15 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ["id", "user", "user_id",
-                  "content", "created_at", "image",
-                  "likes", "liked_by", "comments"]
+        fields = [
+            "id",
+            "user",
+            "user_id",
+            "content",
+            "created_at",
+            "image",
+            "likes",
+            "liked_by",
+            "comments",
+        ]
         read_only_fields = ["id", "created_at", "likes", "liked_by", "comments"]

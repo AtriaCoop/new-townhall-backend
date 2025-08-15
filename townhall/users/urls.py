@@ -18,7 +18,7 @@ urlpatterns = [
                 "post": "create_user",
             }
         ),
-        name="user"
+        name="user",
     ),
     path(
         "user/<int:user_id>/",
@@ -29,7 +29,7 @@ urlpatterns = [
                 "patch": "update_user",
             }
         ),
-        name="user_id"
+        name="user_id",
     ),
     path(
         "user/<int:pk>/complete_profile/",
@@ -38,8 +38,8 @@ urlpatterns = [
                 "post": "complete_profile",
             }
         ),
-        name="complete_profile"
-    )
+        name="complete_profile",
+    ),
 ] + debug_toolbar_urls()
 
 # Serve media files during development
