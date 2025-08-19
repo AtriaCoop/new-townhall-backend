@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from typing import Optional
 from .models import Chat, Message
 from .daos import ChatDao, MessageDao
-from .types import CreateChatData, CreateMessageData
+from .types import CreateChatData, CreateMessageData, UpdateMessageData
 from django.db.models import Count
 from django.db.models import QuerySet
 import typing
@@ -99,5 +99,11 @@ class MessageServices:
     def delete_message(id: int) -> None:
         try:
             MessageDao.delete_message(id=id)
+        except Message.DoesNotExist:
+            raise ValidationError(f"Message with the given id: {id}, does not exist.")
+
+    def update_message(id: int, update_message_data: UpdateMessageData) -> None:
+        try:
+            MessageDao.update_message(id=id, update_message_data=update_message_data)
         except Message.DoesNotExist:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")

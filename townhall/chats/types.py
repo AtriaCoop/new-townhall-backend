@@ -16,3 +16,13 @@ class CreateMessageData:
     content: str
     image_content: Optional[str] = None
     sent_at: Optional[datetime] = None
+
+
+@dataclass
+class UpdateMessageData:
+    id: int
+    user_id: Optional[int] = None
+    chat_id: Optional[int] = None
+    content: Optional[str] = None
+    image_content: Optional[str] = None
+    sent_at: Optional[datetime] = None

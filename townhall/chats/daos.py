@@ -1,6 +1,6 @@
 from typing import Optional
 from .models import Chat, Message
-from .types import CreateChatData, CreateMessageData
+from .types import CreateChatData, CreateMessageData, UpdateMessageData
 from django.db.models import QuerySet
 from django.db import DatabaseError
 from django.core.exceptions import ValidationError
@@ -69,3 +69,19 @@ class MessageDao:
 
     def delete_message(id: int) -> None:
         Message.objects.get(id=id).delete()
+
+    def update_message(id: int, update_message_data: UpdateMessageData) -> None:
+        message = Message.objects.get(id=id)
+
+        if update_message_data.user_id:
+            message.user_id = update_message_data.user_id
+        if update_message_data.chat_id:
+            message.chat_id = update_message_data.chat_id
+        if update_message_data.content:
+            message.content = update_message_data.content
+        if update_message_data.image_content:
+            message.image_content = update_message_data.image_content
+        if update_message_data.sent_at:
+            message.sent_at = update_message_data.sent_at
+
+        message.save()

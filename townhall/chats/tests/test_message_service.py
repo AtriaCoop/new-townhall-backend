@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.core.exceptions import ValidationError
 from chats.models import Chat, Message
 from users.models import User
-from chats.types import CreateMessageData
+from chats.types import CreateMessageData, UpdateMessageData
 from chats.services import MessageServices
 from django.utils import timezone
 from datetime import datetime
@@ -103,6 +103,48 @@ class TestMessageService(TestCase):
         # Act & Assert
         with self.assertRaises(ValidationError) as context:
             MessageServices.delete_message(message_id)
+
+        # Assert
+        assert (
+            str(context.exception)
+            == f"['Message with the given id: {message_id}, does not exist.']"
+        )
+
+    def test_update_message_success(self):
+        # Check message before update
+        message_before_update = MessageServices.get_message(id=3)
+        assert message_before_update.user_id == 1
+        assert message_before_update.chat_id == 3
+        assert message_before_update.content == "Test message"
+
+        # Create data for updating
+        update_message_data = UpdateMessageData(
+            id=3, user_id=4, chat_id=21, content="Updated message"
+        )
+
+        # Update the message
+        MessageServices.update_message(id=3, update_message_data=update_message_data)
+
+        # Get the updated message and assert
+        updated_message = MessageServices.get_message(id=3)
+
+        assert updated_message.user_id == 4
+        assert updated_message.chat_id == 21
+        assert updated_message.content == "Updated message"
+
+    @patch("chats.daos.MessageDao.update_message")
+    def test_update_message_failed_not_found(self, mock_update_data):
+        # Arrange
+        mock_update_data.side_effect = Message.DoesNotExist
+        message_id = -1  # Assume this message id does not exist
+
+        update_message_data = UpdateMessageData(
+            id=3, user_id=4, chat_id=21, content="Updated message"
+        )
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as context:
+            MessageServices.update_message(message_id, update_message_data)
 
         # Assert
         assert (
