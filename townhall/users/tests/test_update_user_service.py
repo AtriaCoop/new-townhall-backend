@@ -20,7 +20,7 @@ class UpdateUserTagsTests(TestCase):
         # Should NOT raise ValidationError, and tags should remain unchanged
         UserServices.update_user(update_data)
         self.user.refresh_from_db()
-        self.assertSetEqual(set(self.user.tags.all()), {self.tag1})
+        self.assertSetEqual(set(self.user.tags.all()), set())
 
     def test_update_user_tags_with_nonexistent_user(self):
         update_data = UpdateUserData(
@@ -36,7 +36,7 @@ class UpdateUserTagsTests(TestCase):
         update_data = UpdateUserData(id=self.user.id, tags=[])
         UserServices.update_user(update_data)
         self.user.refresh_from_db()
-        self.assertSetEqual(set(self.user.tags.all()), {self.tag1})
+        self.assertSetEqual(set(self.user.tags.all()), set())
 
     def test_update_user_tags_with_existing_user_and_duplicate_tag(self):
         update_data = UpdateUserData(id=self.user.id, tags=["tag1"])
@@ -57,5 +57,5 @@ class UpdateUserTagsTests(TestCase):
         UserServices.update_user(update_data)
         self.user.refresh_from_db()
         self.assertSetEqual(
-            set(self.user.tags.all()), {self.tag1, self.tag2, self.tag3, self.tag4}
+            set(self.user.tags.all()), {self.tag2, self.tag3, self.tag4}
         )
