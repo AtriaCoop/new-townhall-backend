@@ -62,6 +62,28 @@ class MessageSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
+class OptionalMessageSerializer(serializers.ModelSerializer):
+    user = UserMiniSerializer(required=False)
+    chat = ChatMiniSerializer(required=False)
+    content = serializers.CharField(required=False)
+    image_content = serializers.CharField(required=False)
+    sent_at = serializers.DateTimeField(required=False)
+
+    class Meta:
+        model = Message
+        fields = [
+            "id",
+            "user",
+            "user_id",
+            "chat",
+            "chat_id",
+            "content",
+            "image_content",
+            "sent_at",
+        ]
+        read_only_fields = ["id"]
+
+
 class GroupMessageSerializer(serializers.ModelSerializer):
     user = UserMiniSerializer(read_only=True)
     image = serializers.ImageField(required=False, allow_null=True)
