@@ -11,7 +11,15 @@ class UpdateUserTagsTests(TestCase):
         self.tag2 = Tag.objects.create(name="tag2")
         self.tag3 = Tag.objects.create(name="tag3")
         self.tag4 = Tag.objects.create(name="tag4")
+        self.user.receive_emails = True
+        self.user.save()
         self.user.tags.add(self.tag1)
+
+    def test_update_user_tags_with_receive_email(self):
+        update_data = UpdateUserData(id=self.user.id, receive_emails=False)
+        UserServices.update_user(update_data)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.receive_emails, False)
 
     def test_update_user_tags_with_nonexistent_tags(self):
         update_data = UpdateUserData(

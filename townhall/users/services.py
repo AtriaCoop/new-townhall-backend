@@ -112,6 +112,8 @@ class UserServices:
         if update_user_data.profile_image is not None:
             user.profile_image = update_user_data.profile_image
 
+        user.save()
+
         if update_user_data.receive_emails is not None:
             if not (
                 UserDao.update_receive_emails(
@@ -126,7 +128,6 @@ class UserServices:
             ):
                 raise ValidationError("Failed to update user tags.")
 
-        user.save()
         return user
 
     def delete_user(id: int) -> None:

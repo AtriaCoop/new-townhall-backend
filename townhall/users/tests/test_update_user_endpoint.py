@@ -12,6 +12,30 @@ class UpdateUserEndpointTagsTests(TestCase):
         self.url = f"/user/{self.user_id}/"
 
     @patch("users.views.UserServices.update_user")
+    def test_update_user_with_receive_emails_success(self, mock_update_user):
+        "Test succesful user update with receive_emails"
+        mock_update_user.return_value = None
+
+        data = {"receive_emails": False}
+        response = self.client.patch(self.url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "User Updated Successfully")
+
+        mock_update_user.assert_called_once()
+        call_args = mock_update_user.call_args[0][0]  # Get the UpdateUserData object
+        self.assertEqual(call_args.receive_emails, False)
+
+    @patch("users.views.UserServices.update_user")
+    def test_update_user_with_invalid_receive_email(self, mock_update_user):
+        "Test for a fail with invalid receive_emails"
+        mock_update_user.return_value = None
+
+        data = {"receive_emails": "Hello"}
+        response = self.client.patch(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("users.views.UserServices.update_user")
     def test_update_user_with_tags_success(self, mock_update_user):
         """Test successful user update with tags"""
         mock_update_user.return_value = None
