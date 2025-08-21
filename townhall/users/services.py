@@ -112,6 +112,14 @@ class UserServices:
         if update_user_data.profile_image is not None:
             user.profile_image = update_user_data.profile_image
 
+        if update_user_data.receive_emails is not None:
+            if not (
+                UserDao.update_receive_emails(
+                    user_id=user.id, receive_emails=update_user_data.receive_emails
+                )
+            ):
+                raise ValidationError("Failed to update receive emails")
+
         if update_user_data.tags is not None:
             if not UserDao.update_user_tags(
                 user_id=user.id, tag_names=update_user_data.tags

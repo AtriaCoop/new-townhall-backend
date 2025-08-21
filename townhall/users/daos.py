@@ -45,3 +45,13 @@ class UserDao:
             return True
         except User.DoesNotExist:
             return False
+
+    @staticmethod
+    def update_receive_emails(user_id: int, receive_emails: bool) -> bool:
+        try:
+            user = User.objects.get(id=user_id)
+            user.receive_emails = receive_emails
+            user.save()
+            return True
+        except User.DoesNotExist:
+            return False

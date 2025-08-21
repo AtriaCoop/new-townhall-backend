@@ -21,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
             "skills_interests",
             "profile_image",
             "date_joined",
+            "receive_emails",
         ]
 
     def get_profile_image(self, obj):
@@ -62,6 +63,7 @@ class UpdateUserSerializer(serializers.Serializer):
     other_networks = serializers.CharField(required=False, allow_blank=True)
     about_me = serializers.CharField(required=False, allow_blank=True)
     skills_interests = serializers.CharField(required=False, allow_blank=True)
+    receive_emails = serializers.BooleanField(required=False)
     profile_image = serializers.ImageField(required=False, allow_null=True)
     tags = serializers.ListField(
         child=serializers.CharField(), required=False, allow_empty=True
