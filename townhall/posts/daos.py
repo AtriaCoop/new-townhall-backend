@@ -3,11 +3,7 @@ import typing
 from django.forms import ValidationError
 
 from .models import Post, Comment
-from .types import (
-    CreatePostData,
-    UpdatePostData,
-    CreateCommentData
-)
+from .types import CreatePostData, UpdatePostData, CreateCommentData
 
 
 class PostDao:
