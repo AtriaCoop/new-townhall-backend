@@ -45,3 +45,10 @@ class UserDao:
             return True
         except User.DoesNotExist:
             return False
+
+    @staticmethod
+    def get_users_by_tags(tag_names: list[str]) -> QuerySet[User]:
+        """
+        Returns a QuerySet of users associated with any of the given tag names.
+        """
+        return User.objects.filter(tags__name__in=tag_names).distinct()
