@@ -21,6 +21,7 @@ class UpdateUserData:
     about_me: Optional[str] = None
     skills_interests: Optional[str] = None
     profile_image: Optional[str] = None
+    receive_emails: bool = None
     tags: Optional[List[str]] = None
 
 
