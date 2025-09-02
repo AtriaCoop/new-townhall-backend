@@ -50,6 +50,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_image = CloudinaryField("image", null=True, blank=True)
     profile_header = CloudinaryField("image", null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
+    receive_emails = models.BooleanField(default=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Required for admin panel access

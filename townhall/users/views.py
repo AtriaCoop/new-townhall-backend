@@ -256,6 +256,7 @@ class UserViewSet(viewsets.ModelViewSet):
             about_me=validated_data.get("about_me"),
             skills_interests=validated_data.get("skills_interests"),
             profile_image=request.FILES.get("profile_image"),
+            receive_emails=validated_data.get("receive_emails"),
             tags=validated_data.get("tags", []),
         )
         try:
@@ -280,3 +281,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(
                 {"message": error_message}, status=status.HTTP_404_NOT_FOUND
             )
+        except Exception as e:
+            # Print the error for debugging
+            print(f"Unexpected error in update_user: {e}")
+            print(f"Error type: {type(e).__name__}")
