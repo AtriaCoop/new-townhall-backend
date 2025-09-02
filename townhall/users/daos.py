@@ -47,7 +47,7 @@ class UserDao:
             return False
 
     @staticmethod
-    def get_users_by_list_of_tags(tag_names: list[str]) -> QuerySet[User]:
+    def get_users_by_tags(tag_names: list[str]) -> QuerySet[User]:
         """
         Returns a QuerySet of users associated with any of the given tag names.
         """
