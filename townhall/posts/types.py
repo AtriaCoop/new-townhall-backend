@@ -23,3 +23,8 @@ class CreateCommentData:
     post_id: int
     content: str
     created_at: datetime
+
+
+@dataclass
+class UpdateCommentData:
+    content: str
