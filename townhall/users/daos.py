@@ -55,3 +55,7 @@ class UserDao:
             return True
         except User.DoesNotExist:
             return False
+
+    @staticmethod
+    def get_tags_given_prefix(prefix: str) -> typing.List[Tag]:
+        return Tag.objects.filter(name__istartswith=prefix)
