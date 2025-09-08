@@ -55,3 +55,7 @@ class UserDao:
             return True
         except User.DoesNotExist:
             return False
+
+    @staticmethod
+    def get_all_tags() -> typing.List[Tag]:
+        return Tag.objects.all()
