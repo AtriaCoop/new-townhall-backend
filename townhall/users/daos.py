@@ -47,6 +47,12 @@ class UserDao:
             return False
 
     @staticmethod
+    def get_users_by_tags(tag_names: list[str]) -> QuerySet[User]:
+        """
+        Returns a QuerySet of users associated with any of the given tag names.
+        """
+        return User.objects.filter(tags__name__in=tag_names).distinct()
+
     def update_receive_emails(user_id: int, receive_emails: bool) -> bool:
         try:
             user = User.objects.get(id=user_id)
