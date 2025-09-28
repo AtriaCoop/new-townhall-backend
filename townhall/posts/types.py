@@ -23,3 +23,10 @@ class CreateCommentData:
     post_id: int
     content: str
     created_at: datetime
+
+
+@dataclass
+class ReportedPostsData:
+    user_id: int
+    post_id: int
+    created_at: datetime
