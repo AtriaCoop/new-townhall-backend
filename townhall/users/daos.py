@@ -47,6 +47,12 @@ class UserDao:
             return False
 
     @staticmethod
+    def get_users_by_tags(tag_names: list[str]) -> QuerySet[User]:
+        """
+        Returns a QuerySet of users associated with any of the given tag names.
+        """
+        return User.objects.filter(tags__name__in=tag_names).distinct()
+
     def update_receive_emails(user_id: int, receive_emails: bool) -> bool:
         try:
             user = User.objects.get(id=user_id)
@@ -55,3 +61,11 @@ class UserDao:
             return True
         except User.DoesNotExist:
             return False
+
+    @staticmethod
+    def get_tags_for_user(user_id: int) -> typing.List[str]:
+        try:
+            user = User.objects.get(id=user_id)
+            return list(user.tags.values_list("name", flat=True))
+        except User.DoesNotExist:
+            return []
