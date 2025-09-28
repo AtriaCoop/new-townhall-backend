@@ -1,9 +1,9 @@
 from django.forms import ValidationError
 import typing
 
-from .models import Post
-from .types import CreatePostData, UpdatePostData, CreateCommentData
-from .daos import PostDao, CommentDao
+from .models import Post, ReportedPosts
+from .types import CreatePostData, UpdatePostData, CreateCommentData, ReportedPostsData
+from .daos import PostDao, CommentDao, ReportedPostsDao
 
 from .profanity import censor_text
 
@@ -58,3 +58,23 @@ def _mask_post_instance(post: Post) -> Post:
 
 def _mask_post_list(posts: typing.Iterable[Post]) -> typing.List[Post]:
     return [_mask_post_instance(post) for post in posts]
+
+
+class ReportedPostsServices:
+    @staticmethod
+    def create_reported_post(
+        create_reported_post_data: ReportedPostsData,
+    ) -> ReportedPosts:
+
+        # A user should only be able to report a post once
+        if ReportedPosts.objects.filter(
+            user_id=create_reported_post_data.user_id,
+            post_id=create_reported_post_data.post_id,
+        ).exists():
+            raise ValueError("You have already reported this post.")
+
+        reported_post = ReportedPostsDao.create_reported_post(
+            create_reported_post_data=create_reported_post_data
+        )
+
+        return reported_post
