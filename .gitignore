@@ -5,6 +5,7 @@
 __pycache__
 db.sqlite3
 media
+.pre-commit-config.yaml
 
 # Backup files # 
 *.bak 
