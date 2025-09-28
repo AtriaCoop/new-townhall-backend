@@ -66,6 +66,13 @@ class ReportedPostsServices:
         create_reported_post_data: ReportedPostsData,
     ) -> ReportedPosts:
 
+        # handle invlaid inputs
+        if (
+            not create_reported_post_data.user_id
+            or not create_reported_post_data.post_id
+        ):
+            raise ValidationError("Invalid user_id or post_id")
+
         # A user should only be able to report a post once
         if ReportedPosts.objects.filter(
             user_id=create_reported_post_data.user_id,
