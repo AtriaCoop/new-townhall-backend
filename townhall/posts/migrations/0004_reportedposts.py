@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="ReportedPosts",
+            name="ReportedPost",
             fields=[
                 ("id", models.AutoField(primary_key=True, serialize=False)),
                 ("created_at", models.DateTimeField(default=django.utils.timezone.now)),
