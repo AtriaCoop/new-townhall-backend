@@ -3,7 +3,7 @@ import typing
 from django.forms import ValidationError
 
 from .models import Post, Comment
-from .types import CreatePostData, UpdatePostData, CreateCommentData
+from .types import CreatePostData, UpdatePostData, CreateCommentData, UpdateCommentData
 
 
 class PostDao:
@@ -60,4 +60,16 @@ class CommentDao:
             created_at=create_comment_data.created_at,
         )
 
+        return comment
+
+    def update_comment(id: int, update_content_data: UpdateCommentData) -> Comment:
+        try:
+            comment = Comment.objects.get(id=id)
+        except Comment.DoesNotExist:
+            raise ValidationError(f"Comment with ID {id} does not exist.")
+
+        if update_content_data.content is not None:
+            comment.content = update_content_data.content
+
+        comment.save()
         return comment

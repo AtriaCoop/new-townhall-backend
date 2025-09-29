@@ -1,0 +1,13 @@
+[
+  {
+    "model": "posts.post",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "content": "Hello World",
+      "created_at": "2025-09-03T12:00:00Z",
+      "image": null,
+      "likes": 0
+    }
+  }
+]
