@@ -63,7 +63,7 @@ class UserDao:
             return False
 
     @staticmethod
-    def get_all_tags() -> typing.List[Tag]:
+    def get_all_tags() -> QuerySet[Tag]:
         return Tag.objects.all()
 
     def get_tags_for_user(user_id: int) -> typing.List[str]:
