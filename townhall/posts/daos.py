@@ -2,8 +2,14 @@ import typing
 
 from django.forms import ValidationError
 from django.db import IntegrityError
-from .models import Post, Comment, ReportedPosts
-from .types import CreatePostData, UpdatePostData, CreateCommentData, ReportedPostsData
+from .models import Post, Comment, ReportedPost
+from .types import (
+    CreatePostData,
+    UpdatePostData,
+    CreateCommentData,
+    UpdateCommentData,
+    ReportedPostData,
+)
 from users.models import User
 
 
@@ -63,10 +69,22 @@ class CommentDao:
 
         return comment
 
+    def update_comment(id: int, update_content_data: UpdateCommentData) -> Comment:
+        try:
+            comment = Comment.objects.get(id=id)
+        except Comment.DoesNotExist:
+            raise ValidationError(f"Comment with ID {id} does not exist.")
 
-class ReportedPostsDao:
+        if update_content_data.content is not None:
+            comment.content = update_content_data.content
+
+        comment.save()
+        return comment
+
+
+class ReportedPostDao:
     @staticmethod
-    def create_reported_post(reported_posts_data: ReportedPostsData) -> ReportedPosts:
+    def create_reported_post(reported_posts_data: ReportedPostData) -> ReportedPost:
 
         existing_post = Post.objects.get(id=reported_posts_data.post_id)
         if not existing_post:
@@ -81,7 +99,7 @@ class ReportedPostsDao:
             )
 
         try:
-            reported_post = ReportedPosts.objects.create(
+            reported_post = ReportedPost.objects.create(
                 user_id=reported_posts_data.user_id,
                 post_id=reported_posts_data.post_id,
                 created_at=reported_posts_data.created_at,
