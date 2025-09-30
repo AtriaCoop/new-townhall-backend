@@ -61,3 +61,17 @@ class UserDao:
             return True
         except User.DoesNotExist:
             return False
+
+    @staticmethod
+    def get_tags_given_prefix(prefix: str) -> typing.List[Tag]:
+        return Tag.objects.filter(name__istartswith=prefix)
+
+    def get_all_tags() -> QuerySet[Tag]:
+        return Tag.objects.all()
+
+    def get_tags_for_user(user_id: int) -> typing.List[str]:
+        try:
+            user = User.objects.get(id=user_id)
+            return list(user.tags.values_list("name", flat=True))
+        except User.DoesNotExist:
+            return []
