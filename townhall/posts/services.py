@@ -10,7 +10,7 @@ from .types import (
     UpdateCommentData,
 )
 from .daos import PostDao, CommentDao, ReportedPostDao
-
+from users.models import User
 from .profanity import censor_text
 
 
@@ -83,6 +83,18 @@ class ReportedPostServices:
             or not create_reported_post_data.post_id
         ):
             raise ValidationError("Invalid user_id or post_id")
+
+        # Check if the user exists
+        if not User.objects.filter(id=create_reported_post_data.user_id).exists():
+            raise ValidationError(
+                f"User with id {create_reported_post_data.user_id} doesn't exist."
+            )
+
+        # Check if the post exists
+        if not Post.objects.filter(id=create_reported_post_data.post_id).exists():
+            raise ValidationError(
+                f"Post with id {create_reported_post_data.post_id} doesn't exist."
+            )
 
         # A user should only be able to report a post once
         if ReportedPost.objects.filter(

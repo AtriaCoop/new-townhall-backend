@@ -10,7 +10,6 @@ from .types import (
     UpdateCommentData,
     ReportedPostData,
 )
-from users.models import User
 
 
 class PostDao:
@@ -84,25 +83,15 @@ class CommentDao:
 
 class ReportedPostDao:
     @staticmethod
-    def create_reported_post(reported_posts_data: ReportedPostData) -> ReportedPost:
-
-        existing_post = Post.objects.get(id=reported_posts_data.post_id)
-        if not existing_post:
-            raise ValidationError(
-                f"Post with ID {reported_posts_data.post_id} does not exist."
-            )
-
-        existing_user = User.objects.get(id=reported_posts_data.user_id)
-        if not existing_user:
-            raise ValidationError(
-                f"User with ID {reported_posts_data.user_id} does not exist."
-            )
+    def create_reported_post(
+        create_reported_post_data: ReportedPostData,
+    ) -> ReportedPost:
 
         try:
             reported_post = ReportedPost.objects.create(
-                user_id=reported_posts_data.user_id,
-                post_id=reported_posts_data.post_id,
-                created_at=reported_posts_data.created_at,
+                user_id=create_reported_post_data.user_id,
+                post_id=create_reported_post_data.post_id,
+                created_at=create_reported_post_data.created_at,
             )
         except IntegrityError as e:
             raise ValueError(f"Database constraint issues: {e}")
