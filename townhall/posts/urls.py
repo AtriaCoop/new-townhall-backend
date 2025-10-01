@@ -42,4 +42,5 @@ urlpatterns = [
             }
         ),
     ),
+    path("post/<int:pk>/report", PostViewSet.as_view({"post": "report_post"})),
 ]

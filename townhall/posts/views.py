@@ -4,11 +4,15 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
 from django.utils import timezone
-
 from .models import User, Post, Comment
-from .types import CreatePostData, UpdatePostData, CreateCommentData
-from .serializers import PostSerializer, CreateCommentSerializer, CommentSerializer
-from .services import PostServices, CommentServices
+from .types import CreatePostData, UpdatePostData, CreateCommentData, ReportedPostData
+from .serializers import (
+    PostSerializer,
+    CreateCommentSerializer,
+    CommentSerializer,
+    ReportedPostSerializer,
+)
+from .services import PostServices, CommentServices, ReportedPostServices
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -153,6 +157,37 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+    # REPORT A POST
+    @action(detail=True, methods=["post"], url_path="report")
+    def report_post(self, request, pk=None):
+        serializer = ReportedPostSerializer(request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        validated_data = serializer.validated_data
+
+        create_reported_post_data = ReportedPostData(
+            user_id=validated_data["user"].id,
+            post_id=validated_data["post"].id,
+            created_at=validated_data["created_at"],
+        )
+
+        try:
+            reported_post = ReportedPostServices.create_reported_post(
+                create_reported_post_data=create_reported_post_data
+            )
+            response_serializer = ReportedPostSerializer(reported_post)
+            return Response(
+                {
+                    "message": "Successfully reported post",
+                    "reported_post": response_serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except ValidationError as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CommentViewSet(viewsets.ModelViewSet):

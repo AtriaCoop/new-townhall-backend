@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from users.serializers import UserMiniSerializer
-from .models import User, Post, Comment
+from .models import ReportedPost, User, Post, Comment
 
 
 class CreateCommentSerializer(serializers.ModelSerializer):
@@ -58,3 +58,22 @@ class PostSerializer(serializers.ModelSerializer):
             "comments",
         ]
         read_only_fields = ["id", "created_at", "likes", "liked_by", "comments"]
+
+
+class ReportedPostSerializer(serializers.ModelSerializer):
+    user = UserMiniSerializer(read_only=True)
+
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), write_only=True, source="user"
+    )
+
+    post = PostSerializer(read_only=True)
+
+    post_id = serializers.PrimaryKeyRelatedField(
+        queryset=Post.objects.all(), write_only=True, source="post"
+    )
+
+    class Meta:
+        model = ReportedPost
+        fields = ["id", "user", "user_id", "post", "post_id", "created_at"]
+        read_only_fields = ["id", "created_at", "user", "post"]
