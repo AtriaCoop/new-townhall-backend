@@ -1,9 +1,15 @@
 import typing
 
 from django.forms import ValidationError
-
-from .models import Post, Comment
-from .types import CreatePostData, UpdatePostData, CreateCommentData, UpdateCommentData
+from django.db import IntegrityError
+from .models import Post, Comment, ReportedPost
+from .types import (
+    CreatePostData,
+    UpdatePostData,
+    CreateCommentData,
+    UpdateCommentData,
+    ReportedPostData,
+)
 
 
 class PostDao:
@@ -73,3 +79,21 @@ class CommentDao:
 
         comment.save()
         return comment
+
+
+class ReportedPostDao:
+    @staticmethod
+    def create_reported_post(
+        create_reported_post_data: ReportedPostData,
+    ) -> ReportedPost:
+
+        try:
+            reported_post = ReportedPost.objects.create(
+                user_id=create_reported_post_data.user_id,
+                post_id=create_reported_post_data.post_id,
+                created_at=create_reported_post_data.created_at,
+            )
+        except IntegrityError as e:
+            raise ValueError(f"Database constraint issues: {e}")
+
+        return reported_post

@@ -1,10 +1,16 @@
 from django.forms import ValidationError
 import typing
 
-from .models import Post, Comment
-from .types import CreatePostData, UpdatePostData, CreateCommentData, UpdateCommentData
-from .daos import PostDao, CommentDao
-
+from .models import Post, ReportedPost, Comment
+from .types import (
+    CreatePostData,
+    UpdatePostData,
+    CreateCommentData,
+    ReportedPostData,
+    UpdateCommentData,
+)
+from .daos import PostDao, CommentDao, ReportedPostDao
+from users.models import User
 from .profanity import censor_text
 
 
@@ -63,3 +69,42 @@ def _mask_content_instance(object) -> typing.Any:
 
 def _mask_content_list(objects: typing.Iterable) -> typing.List:
     return [_mask_content_instance(object) for object in objects]
+
+
+class ReportedPostServices:
+    @staticmethod
+    def create_reported_post(
+        create_reported_post_data: ReportedPostData,
+    ) -> ReportedPost:
+
+        # handle invlaid inputs
+        if (
+            not create_reported_post_data.user_id
+            or not create_reported_post_data.post_id
+        ):
+            raise ValidationError("Invalid user_id or post_id")
+
+        # Check if the user exists
+        if not User.objects.filter(id=create_reported_post_data.user_id).exists():
+            raise ValidationError(
+                f"User with id {create_reported_post_data.user_id} doesn't exist."
+            )
+
+        # Check if the post exists
+        if not Post.objects.filter(id=create_reported_post_data.post_id).exists():
+            raise ValidationError(
+                f"Post with id {create_reported_post_data.post_id} doesn't exist."
+            )
+
+        # A user should only be able to report a post once
+        if ReportedPost.objects.filter(
+            user_id=create_reported_post_data.user_id,
+            post_id=create_reported_post_data.post_id,
+        ).exists():
+            raise ValueError("You have already reported this post.")
+
+        reported_post = ReportedPostDao.create_reported_post(
+            create_reported_post_data=create_reported_post_data
+        )
+
+        return reported_post
