@@ -161,7 +161,7 @@ class PostViewSet(viewsets.ModelViewSet):
     # REPORT A POST
     @action(detail=True, methods=["post"], url_path="report")
     def report_post(self, request, pk=None):
-        serializer = ReportedPostSerializer(request.data)
+        serializer = ReportedPostSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -171,7 +171,7 @@ class PostViewSet(viewsets.ModelViewSet):
         create_reported_post_data = ReportedPostData(
             user_id=validated_data["user"].id,
             post_id=validated_data["post"].id,
-            created_at=validated_data["created_at"],
+            created_at=timezone.now(),
         )
 
         try:
