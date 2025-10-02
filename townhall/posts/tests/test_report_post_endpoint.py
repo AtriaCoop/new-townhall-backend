@@ -59,3 +59,12 @@ class ReportPostEndpointTests(TestCase):
         # Act and Assert
         response = self.client.post(test_url, test_data, format="json")
         self.assertEqual(response.status_code, 400)
+
+    def test_report_post_endpoint_nonsensical_post_id(self):
+
+        # Arrange
+        test_data = {"post_id": "lol", "user_id": self.test_user.pk}
+
+        # Act and Assert
+        response = self.client.post(self.url, test_data, format="json")
+        self.assertEqual(response.status_code, 400)
