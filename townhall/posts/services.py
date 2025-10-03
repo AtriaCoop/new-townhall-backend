@@ -101,7 +101,7 @@ class ReportedPostServices:
             user_id=create_reported_post_data.user_id,
             post_id=create_reported_post_data.post_id,
         ).exists():
-            raise ValueError("You have already reported this post.")
+            raise ValidationError("You have already reported this post.")
 
         reported_post = ReportedPostDao.create_reported_post(
             create_reported_post_data=create_reported_post_data
