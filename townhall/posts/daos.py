@@ -93,7 +93,7 @@ class ReportedPostDao:
                 post_id=create_reported_post_data.post_id,
                 created_at=create_reported_post_data.created_at,
             )
-        except IntegrityError as e:
-            raise ValueError(f"Database constraint issues: {e}")
+        except IntegrityError:
+            raise IntegrityError("User already reported this post")
 
         return reported_post

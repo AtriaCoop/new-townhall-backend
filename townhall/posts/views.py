@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework import status
@@ -187,7 +188,16 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            errorMessage = e.detail[0]
+            return Response(
+                {"message": errorMessage}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except IntegrityError as e:
+            print(e)
+            return Response(
+                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -227,10 +237,7 @@ class CommentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            errorMessage = e.detail[0]
-            return Response(
-                {"message": errorMessage}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     # DELETE COMMENT (only by author)
     def destroy(self, request, *args, **kwargs):
