@@ -194,7 +194,6 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
         except IntegrityError as e:
-            print(e)
             return Response(
                 {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
