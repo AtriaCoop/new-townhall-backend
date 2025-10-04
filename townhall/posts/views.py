@@ -227,7 +227,10 @@ class CommentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            errorMessage = e.detail[0]
+            return Response(
+                {"message": errorMessage}, status=status.HTTP_400_BAD_REQUEST
+            )
 
     # DELETE COMMENT (only by author)
     def destroy(self, request, *args, **kwargs):
