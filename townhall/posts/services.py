@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.forms import ValidationError
 import typing
 
@@ -105,7 +106,7 @@ class ReportedPostServices:
             user_id=create_reported_post_data.user_id,
             post_id=create_reported_post_data.post_id,
         ).exists():
-            raise ValidationError("You have already reported this post.")
+            raise IntegrityError("You have already reported this post.")
 
         reported_post = ReportedPostDao.create_reported_post(
             create_reported_post_data=create_reported_post_data
