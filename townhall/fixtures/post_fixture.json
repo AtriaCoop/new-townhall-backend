@@ -6,8 +6,197 @@
       "user": 1,
       "content": "Hello World",
       "created_at": "2025-09-03T12:00:00Z",
-      "image": null,
       "likes": 0
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 2,
+    "fields": {
+      "user": 2,
+      "content": "My first post here!",
+      "created_at": "2025-09-04T09:15:00Z",
+      "likes": 3
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 3,
+    "fields": {
+      "user": 3,
+      "content": "Just finished a great book 📚",
+      "created_at": "2025-09-05T14:30:00Z",
+      "likes": 5
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 4,
+    "fields": {
+      "user": 4,
+      "content": "Excited to join this network!",
+      "created_at": "2025-09-06T18:45:00Z",
+      "likes": 2
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 5,
+    "fields": {
+      "user": 1,
+      "content": "Another update from Bob 🚧",
+      "created_at": "2025-09-07T08:20:00Z",
+      "likes": 7
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 6,
+    "fields": {
+      "user": 2,
+      "content": "Coffee is life ☕",
+      "created_at": "2025-09-08T10:00:00Z",
+      "likes": 1
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 7,
+    "fields": {
+      "user": 3,
+      "content": "Looking forward to the weekend!",
+      "created_at": "2025-09-09T16:10:00Z",
+      "likes": 4
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 8,
+    "fields": {
+      "user": 4,
+      "content": "Throwback thoughts from last year",
+      "created_at": "2025-09-10T20:00:00Z",
+      "likes": 10
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 9,
+    "fields": {
+      "user": 1,
+      "content": "Bob’s morning thoughts",
+      "created_at": "2025-09-11T09:00:00Z",
+      "likes": 2
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 10,
+    "fields": {
+      "user": 2,
+      "content": "Jerome loves coding!",
+      "created_at": "2025-09-12T11:30:00Z",
+      "likes": 5
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 11,
+    "fields": {
+      "user": 3,
+      "content": "Kate’s weekend update",
+      "created_at": "2025-09-13T15:00:00Z",
+      "likes": 3
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 12,
+    "fields": {
+      "user": 4,
+      "content": "Bernard’s new project",
+      "created_at": "2025-09-14T18:00:00Z",
+      "likes": 8
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 13,
+    "fields": {
+      "user": 1,
+      "content": "Bob shares tips",
+      "created_at": "2025-09-15T08:30:00Z",
+      "likes": 6
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 14,
+    "fields": {
+      "user": 2,
+      "content": "Jerome’s second post",
+      "created_at": "2025-09-16T12:15:00Z",
+      "likes": 4
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 15,
+    "fields": {
+      "user": 3,
+      "content": "Kate’s favorite quote",
+      "created_at": "2025-09-17T16:45:00Z",
+      "likes": 7
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 16,
+    "fields": {
+      "user": 4,
+      "content": "Bernard shares an idea",
+      "created_at": "2025-09-18T20:30:00Z",
+      "likes": 9
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 17,
+    "fields": {
+      "user": 1,
+      "content": "Bob’s reflection",
+      "created_at": "2025-09-19T07:50:00Z",
+      "likes": 3
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 18,
+    "fields": {
+      "user": 2,
+      "content": "Jerome’s morning coffee",
+      "created_at": "2025-09-20T10:10:00Z",
+      "likes": 2
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 19,
+    "fields": {
+      "user": 3,
+      "content": "Kate shares thoughts",
+      "created_at": "2025-09-21T14:20:00Z",
+      "likes": 5
+    }
+  },
+  {
+    "model": "posts.post",
+    "pk": 20,
+    "fields": {
+      "user": 4,
+      "content": "Bernard’s weekend plan",
+      "created_at": "2025-09-22T18:40:00Z",
+      "likes": 6
     }
   }
 ]
