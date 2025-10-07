@@ -25,8 +25,13 @@ class PostServices:
             raise ValidationError(f"Post with the given id: {id}, does not exist.")
 
     @staticmethod
-    def get_all_posts() -> typing.List[Post]:
-        posts = PostDao.get_all_posts()
+    def get_all_posts(page: int = 1, limit: int = 10) -> typing.List[Post]:
+        """Return a paginated list of posts for a given page and limit."""
+        page = max(1, page)
+        limit = max(1, min(limit, 100))
+        offset = (page - 1) * limit
+
+        posts = PostDao.get_all_posts(offset, limit)
         return _mask_content_list(posts)
 
     @staticmethod
