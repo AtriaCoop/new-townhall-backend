@@ -1,9 +1,10 @@
 from django.db.models.query import QuerySet
 import typing
-
 from .models import User
 from .models import Tag
 from .types import CreateUserData
+from django.db.models import Q, Case, When, Value, IntegerField
+from django.db.models.functions import Lower
 
 
 class UserDao:
@@ -75,3 +76,25 @@ class UserDao:
             return list(user.tags.values_list("name", flat=True))
         except User.DoesNotExist:
             return []
+
+    @staticmethod
+    def search_users(query: str) -> QuerySet[User]:
+
+        return (
+            # Use annotate() to temporarily create a field we can use to
+            # compare and rank in the QuerySet
+            User.objects.annotate(
+                full_name_lowercase=Lower("full_name"),
+                # Give ranking scores based on if exact match, starts with, or contains
+                rank=Case(
+                    When(full_name_lowercase=query, then=Value(3)),
+                    When(full_name_lowercase__startswith=query, then=Value(2)),
+                    When(full_name_lowercase__icontains=query, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+                # Filter out results with no matches
+            )
+            .filter(Q(rank__gt=0))
+            .order_by("-rank", "full_name")
+        )
