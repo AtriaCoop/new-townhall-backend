@@ -94,7 +94,7 @@ class UserDao:
                     output_field=IntegerField(),
                 ),
                 # Filter out results with no matches
-            )
-            .filter(Q(rank__gt=0))
-            .order_by("-rank", "full_name")
+            ).filter(Q(rank__gt=0))
+            # Limit so we get maximum 15 results
+            .order_by("-rank", "full_name")[:15]
         )
