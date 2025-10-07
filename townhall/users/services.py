@@ -142,7 +142,8 @@ class UserServices:
             # Return empty QuerySet
             return User.objects.none()
 
-        query = query.lower()
+        # Normalize input to remove white spaces and convert to lowercase
+        query = query.strip().lower()
 
         try:
             search_results = UserDao.search_users(query)
