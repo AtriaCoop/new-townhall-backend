@@ -294,9 +294,13 @@ class UserViewSet(viewsets.ModelViewSet):
 
         try:
             results = UserServices.search_users_for_mention(query)
+            serialized_results = UserSerializer(results, many=True).data
 
             return Response(
-                {"message": "Here are your search results", "search_results": results},
+                {
+                    "message": "Here are your search results",
+                    "search_results": serialized_results,
+                },
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
