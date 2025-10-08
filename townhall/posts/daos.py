@@ -33,6 +33,7 @@ class PostDao:
             content=post_data.content,
             created_at=post_data.created_at,
             image=post_data.image,
+            pinned=post_data.pinned,
         )
 
         return post
@@ -47,6 +48,8 @@ class PostDao:
             post.content = post_data.content
         if post_data.image is not None:
             post.image = post_data.image
+        if post_data.pinned is not None:
+            post.pinned = post_data.pinned
 
         post.save()
 

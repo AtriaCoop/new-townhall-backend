@@ -9,11 +9,13 @@ class CreatePostData:
     content: str
     created_at: datetime
     image: Optional[str] = None
+    pinned: bool = False
 
 
 @dataclass
 class UpdatePostData:
     content: str
+    pinned: bool
     image: Optional[str] = None
 
 
