@@ -55,3 +55,17 @@ class TestSearchUserEndpoint(TestCase):
         results = response.data["search_results"]
 
         self.assertEqual(len(results), 0)
+
+    def test_no_input(self):
+
+        # Arrange
+        test_query = ""
+        url_encoded_query = quote(test_query)
+        url = f"{self.url}?query={url_encoded_query}"
+
+        # Act
+        response = self.client.get(url, format="json")
+        results = response.data["search_results"]
+
+        # Assert
+        self.assertEqual(len(results), 0)
