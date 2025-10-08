@@ -56,6 +56,7 @@ class PostSerializer(serializers.ModelSerializer):
             "likes",
             "liked_by",
             "comments",
+            "pinned",
         ]
         read_only_fields = ["id", "created_at", "likes", "liked_by", "comments"]
 

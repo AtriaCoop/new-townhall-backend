@@ -62,6 +62,7 @@ class PostViewSet(viewsets.ModelViewSet):
             content=validated_data["content"],
             created_at=timezone.now(),
             image=validated_data.get("image", None),
+            pinned=validated_data.get("pinned", False),
         )
 
         try:
@@ -95,6 +96,7 @@ class PostViewSet(viewsets.ModelViewSet):
         update_post_data = UpdatePostData(
             content=serializer.validated_data.get("content", ""),
             image=serializer.validated_data.get("image", None),
+            pinned=serializer.validated_data.get("pinned", None),
         )
 
         from .services import PostServices as PostServices
