@@ -135,3 +135,18 @@ class UserServices:
             UserDao.delete_user(user_id=id)
         except User.DoesNotExist:
             raise ValidationError(f"User with the given id: {id}, does not exist.")
+
+    def search_users_for_mention(query: str) -> QuerySet[User]:
+
+        if not query or not isinstance(query, str):
+            # Return empty QuerySet
+            return User.objects.none()
+
+        # Normalize input to remove white spaces and convert to lowercase
+        query = query.strip().lower()
+
+        try:
+            search_results = UserDao.search_users(query)
+            return search_results
+        except ValueError:
+            raise ValueError("Error searching users")
