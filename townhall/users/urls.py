@@ -40,6 +40,11 @@ urlpatterns = [
         ),
         name="complete_profile",
     ),
+    path(
+        "user/mention/",
+        UserViewSet.as_view({"get": "mention_user"}),
+        name="mention_user",
+    ),
 ] + debug_toolbar_urls()
 
 # Serve media files during development

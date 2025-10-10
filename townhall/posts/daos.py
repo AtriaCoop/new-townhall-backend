@@ -17,8 +17,12 @@ class PostDao:
     def get_post(id: int) -> typing.Optional[Post]:
         return Post.objects.get(id=id)
 
-    def get_all_posts() -> typing.List[Post]:
-        return Post.objects.all()
+    def get_all_posts(offset: int, limit: int) -> typing.List[Post]:
+        """Return a list of posts ordered by most recent,
+        paginated using offset and limit."""
+        qs = Post.objects.order_by("-created_at")
+        items = list(qs[offset : offset + limit])
+        return items
 
     def create_post(post_data: CreatePostData) -> Post:
         print("Image type:", type(post_data.image))
@@ -93,7 +97,7 @@ class ReportedPostDao:
                 post_id=create_reported_post_data.post_id,
                 created_at=create_reported_post_data.created_at,
             )
-        except IntegrityError as e:
-            raise ValueError(f"Database constraint issues: {e}")
+        except IntegrityError:
+            raise IntegrityError("User already reported this post")
 
         return reported_post

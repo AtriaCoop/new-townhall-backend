@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.forms import ValidationError
 import typing
 
@@ -24,8 +25,13 @@ class PostServices:
             raise ValidationError(f"Post with the given id: {id}, does not exist.")
 
     @staticmethod
-    def get_all_posts() -> typing.List[Post]:
-        posts = PostDao.get_all_posts()
+    def get_all_posts(page: int = 1, limit: int = 10) -> typing.List[Post]:
+        """Return a paginated list of posts for a given page and limit."""
+        page = max(1, page)
+        limit = max(1, min(limit, 100))
+        offset = (page - 1) * limit
+
+        posts = PostDao.get_all_posts(offset, limit)
         return _mask_content_list(posts)
 
     @staticmethod
@@ -101,7 +107,7 @@ class ReportedPostServices:
             user_id=create_reported_post_data.user_id,
             post_id=create_reported_post_data.post_id,
         ).exists():
-            raise ValidationError("You have already reported this post.")
+            raise IntegrityError("You have already reported this post.")
 
         reported_post = ReportedPostDao.create_reported_post(
             create_reported_post_data=create_reported_post_data
