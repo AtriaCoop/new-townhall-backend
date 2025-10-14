@@ -203,7 +203,6 @@ class PostViewSet(viewsets.ModelViewSet):
         try:
             post = Post.objects.get(pk=pk)
 
-            # Get user ID from session
             user_id = request.session.get("_auth_user_id")
             if not user_id:
                 return Response(
@@ -221,6 +220,17 @@ class PostViewSet(viewsets.ModelViewSet):
             if not reaction_type:
                 return Response(
                     {"error": "Reaction type is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Add validation for reaction type
+            valid_reactions = [choice[0] for choice in Reaction.Reaction_Choices]
+            if reaction_type not in valid_reactions:
+                return Response(
+                    {
+                        "error": f"Invalid reaction type. Must be one of: "
+                        f"{', '.join(valid_reactions)}"
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
