@@ -285,3 +285,23 @@ class UserViewSet(viewsets.ModelViewSet):
             # Print the error for debugging
             print(f"Unexpected error in update_user: {e}")
             print(f"Error type: {type(e).__name__}")
+
+    # SEARCH USERS TO MENTION
+    @action(detail=False, methods=["get"], url_path="mention")
+    def mention_user(self, request):
+
+        query = request.query_params.get("query", "")
+
+        try:
+            results = UserServices.search_users_for_mention(query)
+            serialized_results = UserSerializer(results, many=True).data
+
+            return Response(
+                {
+                    "message": "Here are your search results",
+                    "search_results": serialized_results,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
