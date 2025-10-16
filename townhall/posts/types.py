@@ -14,9 +14,10 @@ class CreatePostData:
 
 @dataclass
 class UpdatePostData:
-    content: str
-    pinned: bool
+    user_id: int
+    content: Optional[str] = None
     image: Optional[str] = None
+    pinned: Optional[bool] = None
 
 
 @dataclass

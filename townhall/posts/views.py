@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -77,6 +78,8 @@ class PostViewSet(viewsets.ModelViewSet):
             )
         except ValidationError as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except PermissionDenied as e:
+            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
     # UPDATE POST
     @action(detail=True, methods=["patch"], url_path="post")
@@ -97,15 +100,16 @@ class PostViewSet(viewsets.ModelViewSet):
             content=serializer.validated_data.get("content", ""),
             image=serializer.validated_data.get("image", None),
             pinned=serializer.validated_data.get("pinned", None),
+            user_id=serializer.validated_data.get("user", None).id,
         )
 
-        from .services import PostServices as PostServices
-
-        PostServices.update_post(pk, update_post_data)
-
-        return Response(
-            {"message": "Post Updated Successfully"}, status=status.HTTP_200_OK
-        )
+        try:
+            PostServices.update_post(pk, update_post_data)
+            return Response(
+                {"message": "Post Updated Successfully"}, status=status.HTTP_200_OK
+            )
+        except PermissionDenied as e:
+            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
     # DELETE A POST
     @action(detail=True, methods=["delete"], url_path="post")

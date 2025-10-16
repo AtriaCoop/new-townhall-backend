@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from django.forms import ValidationError
 import typing
@@ -36,11 +37,21 @@ class PostServices:
 
     @staticmethod
     def create_post(create_post_data: CreatePostData) -> Post:
+
+        user = User.objects.get(id=create_post_data.user_id)
+        if not user.is_staff and create_post_data.pinned:
+            raise PermissionDenied("You are not authorized to pin posts.")
+
         post = PostDao.create_post(post_data=create_post_data)
         return _mask_content_instance(post)
 
     @staticmethod
     def update_post(id: int, update_post_data: UpdatePostData) -> Post:
+
+        user = User.objects.get(id=update_post_data.user_id)
+        if not user.is_staff and update_post_data.pinned is not None:
+            raise PermissionDenied("You are not authorized to pin posts.")
+
         post = PostDao.update_post(id=id, post_data=update_post_data)
         return _mask_content_instance(post)
 
