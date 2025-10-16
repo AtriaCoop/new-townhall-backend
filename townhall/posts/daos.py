@@ -20,7 +20,7 @@ class PostDao:
     def get_all_posts(offset: int, limit: int) -> typing.List[Post]:
         """Return a list of posts ordered by most recent,
         paginated using offset and limit."""
-        qs = Post.objects.order_by("-created_at")
+        qs = Post.objects.order_by("-pinned", "-created_at")
         items = list(qs[offset : offset + limit])
         return items
 
