@@ -56,10 +56,15 @@ class PostViewSet(viewsets.ModelViewSet):
             print("Serializer errors:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        user = request.user
+        if not user:
+            return Response(
+                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
         validated_data = serializer.validated_data
 
         create_post_data = CreatePostData(
-            user_id=validated_data["user"].id,
+            user_id=user.id,
             content=validated_data["content"],
             created_at=timezone.now(),
             image=validated_data.get("image", None),
@@ -92,7 +97,15 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
         serializer = PostSerializer(post, data=request.data, partial=True)
-
+        user = request.user
+        if not user:
+            return Response(
+                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+        if not post.user_id == user.id:
+            return Response(
+                {"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+            )
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -100,7 +113,7 @@ class PostViewSet(viewsets.ModelViewSet):
             content=serializer.validated_data.get("content", ""),
             image=serializer.validated_data.get("image", None),
             pinned=serializer.validated_data.get("pinned", None),
-            user_id=serializer.validated_data.get("user", None).id,
+            user_id=user.id,
         )
 
         try:

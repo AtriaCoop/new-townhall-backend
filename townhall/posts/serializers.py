@@ -34,10 +34,6 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     user = UserMiniSerializer(read_only=True)
 
-    user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), write_only=True, source="user"
-    )
-
     image = serializers.ImageField(required=False, allow_null=True)
 
     comments = CommentSerializer(many=True, read_only=True, source="comment_set")
@@ -49,7 +45,6 @@ class PostSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "user",
-            "user_id",
             "content",
             "created_at",
             "image",
