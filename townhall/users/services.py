@@ -150,3 +150,7 @@ class UserServices:
             return search_results
         except ValueError:
             raise ValueError("Error searching users")
+
+    def get_all_tags() -> typing.List[str]:
+        tags = UserDao.get_all_tags()
+        return [tag.name for tag in tags]
