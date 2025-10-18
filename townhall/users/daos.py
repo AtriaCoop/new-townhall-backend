@@ -70,12 +70,9 @@ class UserDao:
     def get_all_tags() -> QuerySet[Tag]:
         return Tag.objects.all()
 
-    def get_tags_for_user(user_id: int) -> typing.List[str]:
-        try:
-            user = User.objects.get(id=user_id)
-            return list(user.tags.values_list("name", flat=True))
-        except User.DoesNotExist:
-            return []
+    def get_tags_for_user(user_id: int) -> QuerySet[Tag]:
+        user = User.objects.get(id=user_id)
+        return list(user.tags.values_list("name", flat=True))
 
     @staticmethod
     def search_users(query: str) -> QuerySet[User]:
