@@ -151,6 +151,10 @@ class UserServices:
         except ValueError:
             raise ValueError("Error searching users")
 
+    def get_tags_given_prefix(prefix: str) -> typing.List[str]:
+        tags = UserDao.get_tags_given_prefix(prefix=prefix)
+        return [tag.name for tag in tags]
+
     def get_tags_for_user(user_id: int) -> typing.List[str]:
         try:
             tags = UserDao.get_tags_for_user(user_id=user_id)
