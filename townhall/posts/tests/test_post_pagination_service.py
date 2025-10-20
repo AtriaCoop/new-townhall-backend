@@ -109,6 +109,5 @@ class TestPostPaginationService(TestCase):
         posts, total_pages = PostServices.get_all_posts(page=page, limit=limit)
 
         # Assert
-        print("PAGES, ", total_pages)
         self.assertEqual(total_pages, act_total_pages)
         self.assertEqual(len(posts), 10)
