@@ -6,7 +6,13 @@ from rest_framework.response import Response
 from django.forms import ValidationError
 from django.utils import timezone
 from .models import User, Post, Comment
-from .types import CreatePostData, UpdatePostData, CreateCommentData, ReportedPostData
+from .types import (
+    CreatePostData,
+    UpdatePostData,
+    CreateCommentData,
+    ReportedPostData,
+    UpdateCommentData,
+)
 from .serializers import (
     PostSerializer,
     CreateCommentSerializer,
@@ -237,6 +243,41 @@ class CommentViewSet(viewsets.ModelViewSet):
             )
         except ValidationError as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update_comment(self, request, pk=None):
+        try:
+            comment = Comment.objects.get(pk=pk)
+        except Comment.DoesNotExist:
+            return Response(
+                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        user = request.user
+        if not user or not user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+        if comment.user != user:
+            return Response(
+                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = CommentSerializer(comment, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        update_comment_data = UpdateCommentData(
+            content=serializer.validated_data.get("content", ""),
+        )
+
+        try:
+            CommentServices.update_comment(pk, update_comment_data)
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"message": "Comment Updated Successfully"}, status=status.HTTP_200_OK
+        )
 
     # DELETE COMMENT (only by author)
     def destroy(self, request, *args, **kwargs):
