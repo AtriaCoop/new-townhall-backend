@@ -16,7 +16,7 @@ class TestPostPaginationService(TestCase):
         limit = 10
 
         # Act
-        posts = PostServices.get_all_posts(page=page, limit=limit)
+        posts, total_pages = PostServices.get_all_posts(page=page, limit=limit)
 
         # Assert
         self.assertEqual(len(posts), 10)
@@ -24,7 +24,7 @@ class TestPostPaginationService(TestCase):
 
     def test_posts_with_pagination_defaults(self):
         # Act
-        posts = PostServices.get_all_posts()
+        posts, total_pages = PostServices.get_all_posts()
 
         # Assert
         self.assertEqual(len(posts), 10)
@@ -36,7 +36,7 @@ class TestPostPaginationService(TestCase):
         limit = 8
 
         # Act
-        posts = PostServices.get_all_posts(page=page, limit=limit)
+        posts, total_pages = PostServices.get_all_posts(page=page, limit=limit)
 
         # Assert
         self.assertEqual(len(posts), 8)
@@ -48,7 +48,7 @@ class TestPostPaginationService(TestCase):
         limit = 5
 
         # Act
-        posts = PostServices.get_all_posts(page=page, limit=limit)
+        posts, total_pages = PostServices.get_all_posts(page=page, limit=limit)
 
         # Assert
         self.assertEqual(len(posts), 5)
@@ -60,7 +60,7 @@ class TestPostPaginationService(TestCase):
         limit = 0
 
         # Act
-        posts = PostServices.get_all_posts(page=page, limit=limit)
+        posts, total_pages = PostServices.get_all_posts(page=page, limit=limit)
 
         # Assert
         self.assertEqual(len(posts), 1)
@@ -72,7 +72,7 @@ class TestPostPaginationService(TestCase):
         total_posts = Post.objects.count()
 
         # Act
-        posts = PostServices.get_all_posts(page=page, limit=limit)
+        posts, total_pages = PostServices.get_all_posts(page=page, limit=limit)
 
         # Assert
         self.assertEqual(len(posts), total_posts)
@@ -82,7 +82,7 @@ class TestPostPaginationService(TestCase):
         Post.objects.all().delete()
 
         # Act
-        posts = PostServices.get_all_posts(page=1, limit=10)
+        posts, total_pages = PostServices.get_all_posts(page=1, limit=10)
 
         # Assert
         self.assertEqual(len(posts), 0)
@@ -93,7 +93,22 @@ class TestPostPaginationService(TestCase):
         limit = 5
 
         # Act
-        posts = PostServices.get_all_posts(page=page, limit=limit)
+        posts, total_pages = PostServices.get_all_posts(page=page, limit=limit)
 
         # Assert
         self.assertEqual(len(posts), 0)
+
+    def test_posts_with_pagination_total_pages(self):
+        # Arrange
+        page = 1
+        limit = 10
+        total_posts = Post.objects.count()
+        act_total_pages = (total_posts + limit - 1) // limit
+
+        # Act
+        posts, total_pages = PostServices.get_all_posts(page=page, limit=limit)
+
+        # Assert
+        print("PAGES, ", total_pages)
+        self.assertEqual(total_pages, act_total_pages)
+        self.assertEqual(len(posts), 10)

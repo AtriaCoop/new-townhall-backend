@@ -35,7 +35,7 @@ class PostViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="post")
     def get_post_all(self, request):
         try:
-            posts = PostServices.get_all_posts()
+            posts, total_pages = PostServices.get_all_posts()
             serializer = PostSerializer(posts, many=True)
             return Response(
                 {"message": "Posts fetched successfully", "posts": serializer.data},

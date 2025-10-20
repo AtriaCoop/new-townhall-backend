@@ -8,9 +8,10 @@ from posts.services import PostServices
 class PostServicesMaskingTests(SimpleTestCase):
     @patch("posts.services.PostDao.get_all_posts")
     def test_get_all_posts_masks(self, mock_get_all):
-        mock_get_all.return_value = [SimpleNamespace(content="shit happens")]
-        posts = PostServices.get_all_posts()
+        mock_get_all.return_value = ([SimpleNamespace(content="shit happens")], 1)
+        posts, total_pages = PostServices.get_all_posts()
         self.assertEqual(posts[0].content, "**** happens")
+        self.assertEqual(total_pages, 1)
 
     @patch("posts.services.PostDao.get_post")
     def test_get_post_masks(self, mock_get):
