@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-+ie=h%z6ww45m-6&_o@56_6%@u*n8t$n*)bo*!3=b&4+zcx)7)")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
@@ -108,7 +108,7 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-SECURE_SSL_REDIRECT = not DEBUG  # Redirect to HTTPS in production
+SECURE_SSL_REDIRECT = False  # Let Render handle SSL redirects
 
 # Additional Security Settings
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
