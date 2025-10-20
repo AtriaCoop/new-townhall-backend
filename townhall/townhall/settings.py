@@ -27,10 +27,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-+ie=h%z6ww45m-6&_o@56_6%@u*n8t$n*)bo*!3=b&4+zcx)7)"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -101,6 +101,30 @@ CSRF_TRUSTED_ORIGINS = [
 # ALLOW credentials (cookies, sessions, etc.)
 CORS_ALLOW_CREDENTIALS = True
 
+# Security Headers
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = not DEBUG  # Redirect to HTTPS in production
+
+# Additional Security Settings
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# Session Security
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Password Reset and Email Security
+PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
+
+# File Upload Security
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+
 AUTH_USER_MODEL = "users.User"
 
 ROOT_URLCONF = "townhall.urls"
@@ -128,9 +152,14 @@ ASGI_APPLICATION = "townhall.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# fallback to SQLite (for local dev)
+# Database configuration
 if os.environ.get("DATABASE_URL"):
-    DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
+    DATABASES = {
+        "default": dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
 else:
     DATABASES = {
         "default": {
@@ -233,8 +262,8 @@ CHANNEL_LAYERS = {
 }
 
 
-print("DEBUG:", DEBUG)
-print("DEFAULT_FILE_STORAGE:", DEFAULT_FILE_STORAGE)
-print("CLOUD_NAME:", os.getenv("CLOUDINARY_CLOUD_NAME"))
-print("API_KEY:", os.getenv("CLOUDINARY_API_KEY"))
-print("API_SECRET:", os.getenv("CLOUDINARY_API_SECRET"))
+# Debug information (only in development)
+if DEBUG:
+    print("DEBUG:", DEBUG)
+    print("DEFAULT_FILE_STORAGE:", DEFAULT_FILE_STORAGE)
+    # Don't print sensitive information even in debug mode
