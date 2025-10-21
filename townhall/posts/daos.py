@@ -62,6 +62,9 @@ class PostDao:
 
 class CommentDao:
 
+    def get_comment(id: int) -> typing.Optional[Comment]:
+        return Comment.objects.get(id=id)
+
     def create_comment(create_comment_data: CreateCommentData) -> None:
         comment = Comment.objects.create(
             user_id=create_comment_data.user_id,

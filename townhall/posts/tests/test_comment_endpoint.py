@@ -4,6 +4,11 @@ from django.core.management import call_command
 from posts.models import Comment
 from users.models import User
 
+# Running all tests: python3 manage.py test
+# Running only post tests: python3 manage.py test posts.tests
+# Running only this specific test file:
+# python3 manage.py test posts.tests.test_comment_endpoint
+
 
 class CommentEndpointTests(TestCase):
     def setUp(self):

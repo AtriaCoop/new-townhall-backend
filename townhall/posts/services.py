@@ -54,6 +54,10 @@ class PostServices:
 
 class CommentServices:
     @staticmethod
+    def get_comment(id: int) -> typing.Optional[Comment]:
+        return CommentDao.get_comment(id=id)
+
+    @staticmethod
     def create_comment(create_comment_data: CreateCommentData) -> None:
         comment = CommentDao.create_comment(create_comment_data=create_comment_data)
         if hasattr(comment, "content"):

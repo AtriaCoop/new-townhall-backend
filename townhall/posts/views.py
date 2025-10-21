@@ -245,18 +245,19 @@ class CommentViewSet(viewsets.ModelViewSet):
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def update_comment(self, request, pk=None):
-        try:
-            comment = Comment.objects.get(pk=pk)
-        except Comment.DoesNotExist:
-            return Response(
-                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
         user = request.user
         if not user or not user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
+
+        try:
+            comment = CommentServices.get_comment(pk)
+        except Comment.DoesNotExist:
+            return Response(
+                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
         if comment.user != user:
             return Response(
                 {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
@@ -266,8 +267,13 @@ class CommentViewSet(viewsets.ModelViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        if "content" not in serializer.validated_data:
+            return Response(
+                {"error": "No updatable fields provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         update_comment_data = UpdateCommentData(
-            content=serializer.validated_data.get("content", ""),
+            content=serializer.validated_data["content"],
         )
 
         try:
