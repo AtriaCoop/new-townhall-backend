@@ -28,4 +28,6 @@ jobs:
           pip install -r townhall/requirements.txt
 
       - name: Run Tests
-        run: python3 townhall/manage.py test
+        run: |
+          cd townhall
+          python3 townhall/manage.py test
