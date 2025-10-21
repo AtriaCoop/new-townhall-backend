@@ -1,6 +1,7 @@
 name: Automatic Testing
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: "*"
 
