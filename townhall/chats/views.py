@@ -1,6 +1,7 @@
 from django.forms import ValidationError
 from rest_framework import viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from rest_framework.response import Response
 from .serializers import (
@@ -24,6 +25,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # GET One Chat
     @action(detail=True, methods=["get"], url_path="chats")
+    @permission_classes([IsAuthenticated])
     def get_chat_request(self, request, id):
         chat_id = id
 
@@ -50,6 +52,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # GET all chats for a user
     @action(detail=False, methods=["get"], url_path="chats")
+    @permission_classes([IsAuthenticated])
     def get_user_chats(self, request):
         user_id = request.query_params.get("user_id")
 
@@ -78,6 +81,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # DELETE Chat
     @action(detail=True, methods=["delete"], url_path="chats")
+    @permission_classes([IsAuthenticated])
     def delete_chat_request(self, request, id):
         chat_id = id
 
@@ -103,6 +107,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # POST (Create) Chat
     @action(detail=False, methods=["post"], url_path="chats")
+    @permission_classes([IsAuthenticated])
     def create_chat_request(self, request):
         serializer = CreateChatSerializer(data=request.data)
 
@@ -148,6 +153,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # PATCH (Update) Chat
     @action(detail=True, methods=["patch"], url_path="chats")
+    @permission_classes([IsAuthenticated])
     def update_chat_participants(self, request, id):
         participant_ids = request.data.get("participant_ids", [])
 
@@ -178,6 +184,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # GET Message
     @action(detail=True, methods=["get"], url_path="messages")
+    @permission_classes([IsAuthenticated])
     def get_chat_messages(self, request, id):
         messages = Message.objects.filter(chat_id=id).order_by("sent_at")
         serializer = MessageSerializer(messages, many=True)
@@ -185,6 +192,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # POST Message
     @action(detail=False, methods=["post"], url_path="direct-message")
+    @permission_classes([IsAuthenticated])
     def create_direct_message(self, request):
         try:
             user = request.user
@@ -228,6 +236,7 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(
         detail=False, methods=["get"], url_path="group-messages/(?P<group_name>[^/.]+)"
     )
+    @permission_classes([IsAuthenticated])
     def get_group_messages(self, request, group_name=None):
         msgs = GroupMessage.objects.filter(group_name=group_name).order_by("sent_at")
 
@@ -252,6 +261,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # POST Group Message
     @action(detail=False, methods=["post"], url_path="group-messages")
+    @permission_classes([IsAuthenticated])
     def create_group_message(self, request):
         try:
             user = request.user  # You must be using authentication
@@ -289,6 +299,20 @@ class MessageViewSet(viewsets.ModelViewSet):
     # POST (Create) message
     @action(detail=False, methods=["post"], url_path="messages")
     def create_message_request(self, request):
+        # Check if user is authenticated
+        user_id = request.session.get("_auth_user_id")
+        if not user_id:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = MessageSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -302,7 +326,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         validated_data = serializer.validated_data
         created_message_data = CreateMessageData(
-            user_id=validated_data["user"].id,
+            user_id=user.id,
             chat_id=validated_data["chat"].id,
             content=validated_data["content"],
             image_content=validated_data.get("image_content", None),
@@ -332,6 +356,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     # DELETE message
     @action(detail=True, methods=["delete"], url_path="messages")
+    @permission_classes([IsAuthenticated])
     def delete_message_request(self, request, id):
         message_id = id
 
@@ -357,6 +382,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     # PATCH (uppdate) message
     @action(detail=True, methods=["patch"], url_path="messages")
+    @permission_classes([IsAuthenticated])
     def update_message_request(self, request, id):
         message_id = id
 
