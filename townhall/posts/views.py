@@ -57,7 +57,7 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         user = request.user
-        if not user:
+        if not user.is_authenticated:
             return Response(
                 {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
@@ -114,7 +114,7 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
         update_post_data = UpdatePostData(
-            content=serializer.validated_data.get("content", ""),
+            content=serializer.validated_data.get("content", None),
             image=serializer.validated_data.get("image", None),
             pinned=serializer.validated_data.get("pinned", None),
             user_id=user.id,
