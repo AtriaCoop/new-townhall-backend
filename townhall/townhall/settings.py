@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "cloudinary_storage",
     "channels",
     "simple_history",
+    "activities",
 ]
 
 MIDDLEWARE = [
