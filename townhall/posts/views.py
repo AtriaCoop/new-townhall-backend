@@ -98,16 +98,20 @@ class PostViewSet(viewsets.ModelViewSet):
 
         serializer = PostSerializer(post, data=request.data, partial=True)
         user = request.user
-        if not user:
+        if not user.is_authenticated:
             return Response(
                 {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
-        if not post.user_id == user.id:
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if (
+            not post.user_id == user.id
+            and serializer.validated_data.get("content")
+            or serializer.validated_data.get("image")
+        ):
             return Response(
                 {"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
             )
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         update_post_data = UpdatePostData(
             content=serializer.validated_data.get("content", ""),
