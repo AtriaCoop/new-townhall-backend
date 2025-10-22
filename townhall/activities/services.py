@@ -2,6 +2,7 @@ from typing import List
 from django.forms import ValidationError
 from .daos import ActivityDao
 from .types import ActivityWithDescription
+from users.models import User
 
 
 metadata = {"+": "created", "~": "updated", "-": "deleted"}
@@ -62,6 +63,10 @@ class ActivityServices:
     def get_user_activities(user_id: int) -> List[ActivityWithDescription]:
         if not user_id:
             raise ValidationError("Invalid user_id")
+
+        if not User.objects.filter(id=user_id).exists():
+            raise ValidationError(f"User with id {user_id} does not exist")
+
         all_activities = ActivityDao.get_user_activities(user_id)
 
         # Add a property 'description' using list comprehension so we can display
