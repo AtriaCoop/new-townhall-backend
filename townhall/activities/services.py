@@ -1,5 +1,5 @@
 from typing import List
-from django.forms import ValidationError
+from django.core.exceptions import ValidationError
 from .daos import ActivityDao
 from .types import ActivityWithDescription
 from users.models import User
@@ -13,7 +13,7 @@ def format_field_name(field_name: str) -> str:
     return field_name.replace("_", " ")
 
 
-# Helper function to create a formatted description for each activity
+# Helper function to create a readable description for each activity
 def get_activity_description(activity) -> str:
     model_name = activity.__class__.__name__.replace("Historical", "").lower()
 
@@ -42,16 +42,25 @@ def get_activity_description(activity) -> str:
         previous = previous_qs[1]  # the version before this one
 
         changed_fields = []
+        ignored_fields = ["history_id", "history_date", "history_type", "history_user"]
+
         for field in activity._meta.fields:
             name = field.name
+            if name in ignored_fields:
+                continue
             old = getattr(previous, name)
             new = getattr(activity, name)
             if old != new:
                 field_label = format_field_name(name)
-                changed_fields.append(f"{field_label} to '{new}'")
+                if model_name == "comment":
+                    changed_fields.append(f"{field_label} for your comment to '{new}'")
+                elif model_name == "post":
+                    changed_fields.append(f"{field_label} for your post to '{new}'")
+                else:
+                    changed_fields.append(f"{field_label} for {model_name} to '{new}'")
 
         if changed_fields:
-            return f"updated {', '.join(changed_fields)} for {model_name}"
+            return f"updated {', '.join(changed_fields)}"
         else:
             return f"updated {model_name}"
 
@@ -74,9 +83,18 @@ class ActivityServices:
         # Use the type we created
         activities_with_desc = [
             ActivityWithDescription(
-                activity=activity, description=get_activity_description(activity)
+                description=get_activity_description(a),
+                model=a.__class__.__name__.replace("Historical", "").lower(),
+                activity={
+                    f.name: (
+                        getattr(a, f.name).id
+                        if hasattr(getattr(a, f.name), "id")
+                        else getattr(a, f.name)
+                    )
+                    for f in a._meta.fields
+                },
             )
-            for activity in all_activities
+            for a in all_activities
         ]
 
         return activities_with_desc
