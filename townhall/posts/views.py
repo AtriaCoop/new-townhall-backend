@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
 from django.utils import timezone
-from .models import User, Post, Comment
+from .models import User, Post, Comment, Reaction
 from .types import CreatePostData, UpdatePostData, CreateCommentData, ReportedPostData
 from .serializers import (
     PostSerializer,
@@ -196,6 +196,70 @@ class PostViewSet(viewsets.ModelViewSet):
         except IntegrityError as e:
             return Response(
                 {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=["patch"], url_path="reaction")
+    def toggle_reaction(self, request, pk=None):
+        try:
+            post = Post.objects.get(pk=pk)
+
+            user_id = request.session.get("_auth_user_id")
+            if not user_id:
+                return Response(
+                    {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                )
+
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            reaction_type = request.data.get("reaction_type")
+            if not reaction_type:
+                return Response(
+                    {"error": "Reaction type is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Add validation for reaction type
+            valid_reactions = [choice[0] for choice in Reaction.Reaction_Choices]
+            if reaction_type not in valid_reactions:
+                return Response(
+                    {
+                        "error": f"Invalid reaction type. Must be one of: "
+                        f"{', '.join(valid_reactions)}"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Check if user already has this reaction on this post
+            existing_reaction = Reaction.objects.filter(
+                post=post, user=user, reaction_type=reaction_type
+            ).first()
+
+            if existing_reaction:
+                # Remove the reaction
+                existing_reaction.delete()
+                message = f"Removed {reaction_type} reaction"
+            else:
+                # Add the reaction
+                Reaction.objects.create(
+                    post=post, user=user, reaction_type=reaction_type
+                )
+                message = f"Added {reaction_type} reaction"
+
+            # Get updated reactions for the post
+            serializer = PostSerializer(post)
+            return Response(
+                {"message": message, "reactions": serializer.data["reactions"]},
+                status=status.HTTP_200_OK,
+            )
+
+        except Post.DoesNotExist:
+            return Response(
+                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
 
