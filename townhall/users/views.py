@@ -228,17 +228,17 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["delete"], url_path="user")
     def delete_user(self, request, user_id):
         uid = user_id
-        
+
         # Check if user is trying to delete their own profile
         user_id = request.session.get("_auth_user_id")
         if not user_id:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
-        
+
         if int(user_id) != uid:
             return Response(
-                {"error": "You can only delete your own profile"}, 
+                {"error": "You can only delete your own profile"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -256,20 +256,20 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["patch"], url_path="user")
     def update_user(self, request, user_id):
         uid = user_id
-        
+
         # Check if user is trying to update their own profile
         user_id = request.session.get("_auth_user_id")
         if not user_id:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
-        
+
         if int(user_id) != uid:
             return Response(
-                {"error": "You can only update your own profile"}, 
+                {"error": "You can only update your own profile"},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         serializer = UpdateUserSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

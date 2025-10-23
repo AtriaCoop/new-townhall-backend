@@ -1,7 +1,7 @@
 from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.decorators import action, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
@@ -110,11 +110,11 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # Check if user is trying to update their own post
         if int(user_id) != post.user.id:
             return Response(
-                {"error": "You can only update your own posts"}, 
+                {"error": "You can only update your own posts"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -156,7 +156,7 @@ class PostViewSet(viewsets.ModelViewSet):
         # Check if user is trying to delete their own post
         if int(user_id) != post.user.id:
             return Response(
-                {"error": "You can only delete your own posts"}, 
+                {"error": "You can only delete your own posts"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -239,8 +239,6 @@ class PostViewSet(viewsets.ModelViewSet):
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        validated_data = serializer.validated_data
 
         create_reported_post_data = ReportedPostData(
             user_id=user.id,

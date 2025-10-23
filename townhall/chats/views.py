@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from rest_framework import viewsets
 from rest_framework.decorators import action, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
 from .serializers import (
@@ -16,6 +16,7 @@ from django.utils import timezone
 from .models import Chat
 from .models import Message
 from .models import GroupMessage
+from .models import User
 
 
 class ChatViewSet(viewsets.ModelViewSet):
