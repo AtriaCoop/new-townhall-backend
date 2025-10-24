@@ -20,7 +20,7 @@ class PostDao:
     def get_all_posts(offset: int, limit: int) -> typing.List[Post]:
         """Return a list of posts ordered by most recent,
         paginated using offset and limit."""
-        qs = Post.objects.order_by("-created_at")
+        qs = Post.objects.order_by("-pinned", "-created_at")
         items = list(qs[offset : offset + limit])
         return items
 
@@ -33,6 +33,7 @@ class PostDao:
             content=post_data.content,
             created_at=post_data.created_at,
             image=post_data.image,
+            pinned=post_data.pinned,
         )
 
         return post
@@ -47,6 +48,8 @@ class PostDao:
             post.content = post_data.content
         if post_data.image is not None:
             post.image = post_data.image
+        if post_data.pinned is not None:
+            post.pinned = post_data.pinned
 
         post.save()
 

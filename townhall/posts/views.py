@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.decorators import action, permission_classes
@@ -72,6 +73,11 @@ class PostViewSet(viewsets.ModelViewSet):
             print("Serializer errors:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
         validated_data = serializer.validated_data
 
         create_post_data = CreatePostData(
@@ -79,6 +85,7 @@ class PostViewSet(viewsets.ModelViewSet):
             content=validated_data["content"],
             created_at=timezone.now(),
             image=validated_data.get("image", None),
+            pinned=validated_data.get("pinned", False),
         )
 
         try:
@@ -93,6 +100,8 @@ class PostViewSet(viewsets.ModelViewSet):
             )
         except ValidationError as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except PermissionDenied as e:
+            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
     # UPDATE POST
     @action(detail=True, methods=["patch"], url_path="post")
@@ -119,22 +128,36 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
         serializer = PostSerializer(post, data=request.data, partial=True)
-
+        user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if (
+            not post.user_id == user.id
+            and serializer.validated_data.get("content")
+            or serializer.validated_data.get("image")
+        ):
+            return Response(
+                {"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+            )
 
         update_post_data = UpdatePostData(
-            content=serializer.validated_data.get("content", ""),
+            content=serializer.validated_data.get("content", None),
             image=serializer.validated_data.get("image", None),
+            pinned=serializer.validated_data.get("pinned", None),
+            user_id=user.id,
         )
 
-        from .services import PostServices as PostServices
-
-        PostServices.update_post(pk, update_post_data)
-
-        return Response(
-            {"message": "Post Updated Successfully"}, status=status.HTTP_200_OK
-        )
+        try:
+            PostServices.update_post(pk, update_post_data)
+            return Response(
+                {"message": "Post Updated Successfully"}, status=status.HTTP_200_OK
+            )
+        except PermissionDenied as e:
+            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
     # DELETE A POST
     @action(detail=True, methods=["delete"], url_path="post")
