@@ -77,10 +77,10 @@ MIDDLEWARE = [
 ]
 
 # SECURITY: Use secure cookies + proper cross-origin settings for production
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = not DEBUG  # Only secure in production
+SESSION_COOKIE_SECURE = not DEBUG  # Only secure in production
+CSRF_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"
+SESSION_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_DOMAIN = None
 SESSION_COOKIE_DOMAIN = None
@@ -114,6 +114,19 @@ SECURE_SSL_REDIRECT = False  # Let Render handle SSL redirects
 
 # Additional Security Settings
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+}
 
 # Session Security
 SESSION_COOKIE_AGE = 86400  # 24 hours
