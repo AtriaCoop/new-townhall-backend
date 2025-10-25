@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 from django.core.management import call_command
 from chats.models import Chat, Message
 from users.models import User
+from django.contrib.auth.hashers import make_password
 
 
 class TestMessageEndpoint(TestCase):
@@ -20,6 +21,13 @@ class TestMessageEndpoint(TestCase):
         message.chat = chat
         message.user = bob
         message.save()
+
+        # Set the password properly (it might be stored as plain text in fixture)
+        bob.password = make_password("987password")
+        bob.save()
+
+        # Login the user to create a session
+        self.client.login(username=bob.email, password="987password")
 
     def test_create_message_success(self):
         # Arrange
