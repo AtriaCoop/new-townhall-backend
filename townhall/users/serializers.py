@@ -22,6 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_image",
             "date_joined",
             "receive_emails",
+            "is_staff",
         ]
 
     def get_profile_image(self, obj):
