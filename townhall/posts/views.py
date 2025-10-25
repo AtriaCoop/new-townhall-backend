@@ -39,7 +39,7 @@ class PostViewSet(viewsets.ModelViewSet):
     @permission_classes([AllowAny])
     def get_post_all(self, request):
         try:
-            posts = PostServices.get_all_posts()
+            posts, total_pages = PostServices.get_all_posts()
             serializer = PostSerializer(posts, many=True)
             return Response(
                 {"message": "Posts fetched successfully", "posts": serializer.data},
