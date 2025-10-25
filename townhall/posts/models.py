@@ -12,6 +12,7 @@ class Post(models.Model):
     image = CloudinaryField("image", blank=True, null=True)
     likes = models.IntegerField(default=0)
     liked_by = models.ManyToManyField(User, blank=True, related_name="liked_posts")
+    pinned = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.id)
