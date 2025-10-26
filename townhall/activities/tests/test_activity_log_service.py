@@ -39,8 +39,7 @@ class TestActivityLogService(TestCase):
             (
                 a
                 for a in activities
-                if isinstance(a.activity.instance, Post)
-                and a.activity.history_type == "+"
+                if a.model == "post" and a.activity["history_type"] == "+"
             ),
             None,
         )
@@ -49,8 +48,7 @@ class TestActivityLogService(TestCase):
             (
                 a
                 for a in activities
-                if isinstance(a.activity.instance, Post)
-                and a.activity.history_type == "~"
+                if a.model == "post" and a.activity["history_type"] == "~"
             ),
             None,
         )
@@ -59,8 +57,7 @@ class TestActivityLogService(TestCase):
             (
                 a
                 for a in activities
-                if isinstance(a.activity.instance, Comment)
-                and a.activity.history_type == "+"
+                if a.model == "comment" and a.activity["history_type"] == "+"
             ),
             None,
         )
@@ -69,8 +66,7 @@ class TestActivityLogService(TestCase):
             (
                 a
                 for a in activities
-                if isinstance(a.activity.instance, Comment)
-                and a.activity.history_type == "~"
+                if a.model == "comment" and a.activity["history_type"] == "~"
             ),
             None,
         )
@@ -79,8 +75,7 @@ class TestActivityLogService(TestCase):
             (
                 a
                 for a in activities
-                if isinstance(a.activity.instance, User)
-                and a.activity.history_type == "+"
+                if a.model == "user" and a.activity["history_type"] == "+"
             ),
             None,
         )
@@ -89,8 +84,7 @@ class TestActivityLogService(TestCase):
             (
                 a
                 for a in activities
-                if isinstance(a.activity.instance, User)
-                and a.activity.history_type == "~"
+                if a.model == "user" and a.activity["history_type"] == "~"
             ),
             None,
         )
