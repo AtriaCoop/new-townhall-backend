@@ -4,5 +4,6 @@ from dataclasses import dataclass
 
 @dataclass
 class ActivityWithDescription:
-    activity: Any
     description: str
+    model: str
+    activity: dict[str, Any]
