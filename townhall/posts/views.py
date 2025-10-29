@@ -39,10 +39,19 @@ class PostViewSet(viewsets.ModelViewSet):
     @permission_classes([AllowAny])
     def get_post_all(self, request):
         try:
-            posts, total_pages = PostServices.get_all_posts()
+            page = int(request.query_params.get("page", 1))
+            limit = int(request.query_params.get("limit", 10))
+
+            posts, total_pages = PostServices.get_all_posts(page, limit)
             serializer = PostSerializer(posts, many=True)
             return Response(
-                {"message": "Posts fetched successfully", "posts": serializer.data},
+                {
+                    "message": "Posts fetched successfully",
+                    "posts": serializer.data,
+                    "page": page,
+                    "limit": limit,
+                    "total_pages": total_pages,
+                },
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
@@ -124,7 +133,7 @@ class PostViewSet(viewsets.ModelViewSet):
         if int(user_id) != post.user.id:
             return Response(
                 {"error": "You can only update your own posts"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         serializer = PostSerializer(post, data=request.data, partial=True)
@@ -180,7 +189,7 @@ class PostViewSet(viewsets.ModelViewSet):
         if int(user_id) != post.user.id:
             return Response(
                 {"error": "You can only delete your own posts"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
