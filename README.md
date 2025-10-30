@@ -23,13 +23,28 @@ Next, on your local device you'll want to clone this repo, in your terminal cd i
 
 - `git clone https://github.com/AtriaCoop/new-townhall-backend.git`
 
-### Step 3: Install the Project's Dependencies
+### Step 3: Create and Activate a Virtual Environment
+
+Create a virtual environment at the project root and activate it:
+
+- macOS/Linux:
+  - `python3 -m venv .venv`
+  - `source .venv/bin/activate`
+  - `python -m pip install --upgrade pip`
+
+- Windows (PowerShell):
+  - `python -m venv .venv`
+  - `.\.venv\Scripts\Activate.ps1`
+  - `python -m pip install --upgrade pip`
+
+### Step 4: Install the Project's Dependencies
 
 Next, you'll want to download all the dependencies of the backend, for the command to run correctly, you'll want to be sure that your at the root of the project. The command:
 
+- With your virtual environment active, install dependencies:
 - `pip install -r townhall/requirements.txt` or `pip3 install -r townhall/requirements.txt`
 
-### Step 4: Setup your Environment
+### Step 5: Setup your Environment
 
 Finally, you'll want to setup your local envirnment, this includes applying the current database migrations and setting up the pre-commit hooks.
 
