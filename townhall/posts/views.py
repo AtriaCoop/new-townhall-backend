@@ -116,10 +116,10 @@ class PostViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["patch"], url_path="post")
     def update_post(self, request, pk=None):
         # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        user = request.user
+        if not user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
         try:
@@ -129,19 +129,7 @@ class PostViewSet(viewsets.ModelViewSet):
                 {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # Check if user is trying to update their own post
-        if int(user_id) != post.user.id:
-            return Response(
-                {"error": "You can only update your own posts"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         serializer = PostSerializer(post, data=request.data, partial=True)
-        user = request.user
-        if not user.is_authenticated:
-            return Response(
-                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         if (
