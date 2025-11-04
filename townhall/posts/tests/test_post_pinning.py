@@ -51,8 +51,21 @@ class PostPinnedTests(TestCase):
         post = PostServices.update_post(1, update_data)
         self.assertTrue(post.pinned)
 
+    @patch("posts.services.PostDao.update_post")
     @patch("posts.services.User.objects.get")
-    def test_non_admin_cannot_pin(self, mock_user_get):
+    def test_update_post_to_unpinned_by_admin(self, mock_user_get, mock_update):
+        mock_user_get.return_value = SimpleNamespace(is_staff=True)
+        mock_update.return_value = SimpleNamespace(content="Update", pinned=False)
+
+        update_data = UpdatePostData(
+            content="Update", user_id=self.admin.id, pinned=False
+        )
+
+        post = PostServices.update_post(1, update_data)
+        self.assertFalse(post.pinned)
+
+    @patch("posts.services.User.objects.get")
+    def test_non_admin_cannot_create_pinned(self, mock_user_get):
         mock_user_get.return_value = SimpleNamespace(is_staff=False)
         post_data = CreatePostData(
             content="Test",
@@ -67,11 +80,22 @@ class PostPinnedTests(TestCase):
             PostServices.create_post(post_data)
 
     @patch("posts.services.User.objects.get")
-    @patch("posts.services.PostDao.update_post")
-    def test_non_admin_cannot_update_pin(self, mock_update, mock_user_get):
+    def test_non_admin_cannot_pin(self, mock_user_get):
         mock_user_get.return_value = SimpleNamespace(is_staff=False)
         update_data = UpdatePostData(
             content="Update", user_id=self.regular.id, pinned=True
+        )
+
+        from django.core.exceptions import PermissionDenied
+
+        with self.assertRaises(PermissionDenied):
+            PostServices.update_post(1, update_data)
+
+    @patch("posts.services.User.objects.get")
+    def test_non_admin_cannot_unpin(self, mock_user_get):
+        mock_user_get.return_value = SimpleNamespace(is_staff=False)
+        update_data = UpdatePostData(
+            content="Update", user_id=self.regular.id, pinned=False
         )
 
         from django.core.exceptions import PermissionDenied
@@ -105,6 +129,5 @@ class PostPinnedTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-
         self.other_post.refresh_from_db()
         self.assertEqual(self.other_post.content, "Other user's post")
