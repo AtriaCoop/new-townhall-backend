@@ -2,13 +2,14 @@ import typing
 
 from django.forms import ValidationError
 from django.db import IntegrityError
-from .models import Post, Comment, ReportedPost
+from .models import Post, Comment, ReportedPost, Reaction
 from .types import (
     CreatePostData,
     UpdatePostData,
     CreateCommentData,
     UpdateCommentData,
     ReportedPostData,
+    ToggleReactionData,
 )
 
 
@@ -101,3 +102,31 @@ class ReportedPostDao:
             raise IntegrityError("User already reported this post")
 
         return reported_post
+
+
+class ReactionDao:
+    @staticmethod
+    def get_reaction(
+        post_id: int, user_id: int, reaction_type: str
+    ) -> typing.Optional[Reaction]:
+        """Get an existing reaction if it exists."""
+        try:
+            return Reaction.objects.get(
+                post_id=post_id, user_id=user_id, reaction_type=reaction_type
+            )
+        except Reaction.DoesNotExist:
+            return None
+
+    @staticmethod
+    def create_reaction(reaction_data: ToggleReactionData) -> Reaction:
+        """Create a new reaction."""
+        return Reaction.objects.create(
+            post_id=reaction_data.post_id,
+            user_id=reaction_data.user_id,
+            reaction_type=reaction_data.reaction_type,
+        )
+
+    @staticmethod
+    def delete_reaction(reaction: Reaction) -> None:
+        """Delete a reaction."""
+        reaction.delete()
