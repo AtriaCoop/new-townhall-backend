@@ -51,6 +51,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_header = CloudinaryField("image", null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
     receive_emails = models.BooleanField(default=True)
+    linkedin_url = models.URLField(max_length=255, null=True, blank=True)
+    facebook_url = models.URLField(max_length=255, null=True, blank=True)
+    x_url = models.URLField(max_length=255, null=True, blank=True)
+    instagram_url = models.URLField(max_length=255, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Required for admin panel access
