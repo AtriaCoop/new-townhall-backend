@@ -1,12 +1,16 @@
 name: Automatic Testing
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: "*"
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DEBUG: "False"
 
     steps:
       - name: Checkout Code
@@ -23,4 +27,5 @@ jobs:
           pip install -r townhall/requirements.txt
 
       - name: Run Tests
-        run: python3 townhall/manage.py test
+        working-directory: townhall
+        run: python3 manage.py test

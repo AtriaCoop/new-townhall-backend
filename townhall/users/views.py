@@ -1,5 +1,6 @@
 from rest_framework import viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
@@ -84,6 +85,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     # CREATE USER
     @action(detail=False, methods=["post"], url_path="user")
+    @permission_classes([AllowAny])
     def create_user(self, request):
         print("➡️ Received request to create user")
         print("📨 Request data:", request.data)
@@ -135,6 +137,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     # COMPLETE USER INFORMATION (SETUP)
     @action(detail=True, methods=["post"], url_path="complete_profile")
+    @permission_classes([IsAuthenticated])
     def complete_profile(self, request, pk=None):
         try:
             user = User.objects.get(id=pk)
@@ -158,6 +161,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     # GET a User
     @action(detail=True, methods=["get"], url_path="user")
+    @permission_classes([IsAuthenticated])
     def get_user(self, request, user_id):
         uid = user_id
 
@@ -183,6 +187,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     # GET ALL USERS
     @action(detail=False, methods=["get"], url_path="user")
+    @permission_classes([IsAuthenticated])
     def get_user_all(self, request):
 
         serializer = UpdateUserSerializer(data=request.query_params)
@@ -222,8 +227,20 @@ class UserViewSet(viewsets.ModelViewSet):
     # DELETE A USER
     @action(detail=True, methods=["delete"], url_path="user")
     def delete_user(self, request, user_id):
-
         uid = user_id
+
+        # Check if user is trying to delete their own profile
+        user_id = request.session.get("_auth_user_id")
+        if not user_id:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if int(user_id) != uid:
+            return Response(
+                {"error": "You can only delete your own profile"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         try:
             UserServices.delete_user(uid)
@@ -239,6 +256,20 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["patch"], url_path="user")
     def update_user(self, request, user_id):
         uid = user_id
+
+        # Check if user is trying to update their own profile
+        user_id = request.session.get("_auth_user_id")
+        if not user_id:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if int(user_id) != uid:
+            return Response(
+                {"error": "You can only update your own profile"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = UpdateUserSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -288,6 +319,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     # SEARCH USERS TO MENTION
     @action(detail=False, methods=["get"], url_path="mention")
+    @permission_classes([IsAuthenticated])
     def mention_user(self, request):
 
         query = request.query_params.get("query", "")
