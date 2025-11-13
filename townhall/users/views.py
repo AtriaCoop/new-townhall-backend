@@ -11,13 +11,14 @@ from django.contrib.auth.hashers import check_password
 from django.middleware.csrf import get_token
 import json
 
-from .models import User
+from .models import User, Tag
 from .types import CreateUserData, UpdateUserData, FilterUserData
 from .serializers import (
     UserSerializer,
     CreateUserSerializer,
     UserProfileSerializer,
     UpdateUserSerializer,
+    TagSerializer,
 )
 from .services import UserServices
 
@@ -239,7 +240,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if int(user_id) != uid:
             return Response(
                 {"error": "You can only delete your own profile"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
@@ -267,7 +268,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if int(user_id) != uid:
             return Response(
                 {"error": "You can only update your own profile"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         serializer = UpdateUserSerializer(data=request.data)
@@ -337,3 +338,16 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    permission_classes = [AllowAny]
+
+    @action(detail=False, methods=["get"])
+    def get_all_tags(self, request):
+        """Get all available tags"""
+        tags = Tag.objects.all()
+        serializer = self.get_serializer(tags, many=True)
+        return Response(serializer.data)
