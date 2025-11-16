@@ -112,6 +112,9 @@ class UserServices:
         if update_user_data.profile_image is not None:
             user.profile_image = update_user_data.profile_image
 
+        if update_user_data.profile_header is not None:
+            user.profile_header = update_user_data.profile_header
+
         user.save()
 
         if update_user_data.receive_emails is not None:
