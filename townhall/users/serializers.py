@@ -5,6 +5,7 @@ from .models import User
 
 class UserSerializer(serializers.ModelSerializer):
     profile_image = serializers.SerializerMethodField()
+    profile_header = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -20,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
             "about_me",
             "skills_interests",
             "profile_image",
+            "profile_header",
             "date_joined",
             "receive_emails",
             "is_staff",
@@ -28,6 +30,11 @@ class UserSerializer(serializers.ModelSerializer):
     def get_profile_image(self, obj):
         if obj.profile_image:
             return obj.profile_image.url
+        return None
+
+    def get_profile_header(self, obj):
+        if obj.profile_header:
+            return obj.profile_header.url
         return None
 
 
@@ -66,6 +73,7 @@ class UpdateUserSerializer(serializers.Serializer):
     skills_interests = serializers.CharField(required=False, allow_blank=True)
     receive_emails = serializers.BooleanField(required=False)
     profile_image = serializers.ImageField(required=False, allow_null=True)
+    profile_header = serializers.ImageField(required=False, allow_null=True)
     tags = serializers.ListField(
         child=serializers.CharField(), required=False, allow_empty=True
     )
@@ -90,6 +98,7 @@ class UpdateUserSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     profile_image = serializers.ImageField(required=False, allow_null=True)
+    profile_header = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -104,4 +113,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "about_me",
             "skills_interests",
             "profile_image",
+            "profile_header",
         ]
