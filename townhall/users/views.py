@@ -348,6 +348,6 @@ class TagViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def get_all_tags(self, request):
         """Get all available tags"""
-        tags = Tag.objects.all()
+        tags = UserServices.get_all_tags()
         serializer = self.get_serializer(tags, many=True)
         return Response(serializer.data)
