@@ -15,10 +15,9 @@ class GetTagsForUserServiceTest(TestCase):
         self.user.tags.add(self.tag1, self.tag2, self.tag3, self.tag4)
 
     def test_valid_user(self):
-
-        tags = UserServices.get_tags_for_user(self.user.id)
-        self.user.refresh_from_db()
-        self.assertSetEqual(set(tags), {"tag1", "tag2", "tag3", "tag4"})
+        tags_qs = UserServices.get_tags_for_user(self.user.id)
+        tag_names = set(tags_qs.values_list("name", flat=True))
+        self.assertSetEqual(tag_names, {"tag1", "tag2", "tag3", "tag4"})
 
     def test_invalid_user(self):
         fake_user_id = 9999  # Assuming this ID does not exist
@@ -30,8 +29,8 @@ class GetTagsForUserServiceTest(TestCase):
         user_without_tags = User.objects.create(
             email="empty@example.com", password="password"
         )
-        tags = UserServices.get_tags_for_user(user_without_tags.id)
-        self.assertEqual(tags, [])
+        tags_qs = UserServices.get_tags_for_user(user_without_tags.id)
+        self.assertEqual(list(tags_qs), [])  # or assertEqual(tags_qs.count(), 0)
 
     def test_non_integer_user_id(self):
         with self.assertRaises((ValueError)):
