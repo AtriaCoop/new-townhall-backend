@@ -239,7 +239,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if int(user_id) != uid:
             return Response(
                 {"error": "You can only delete your own profile"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
@@ -267,7 +267,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if int(user_id) != uid:
             return Response(
                 {"error": "You can only update your own profile"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         serializer = UpdateUserSerializer(data=request.data)
