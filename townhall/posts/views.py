@@ -45,10 +45,19 @@ class PostViewSet(viewsets.ModelViewSet):
     @permission_classes([AllowAny])
     def get_post_all(self, request):
         try:
-            posts, total_pages = PostServices.get_all_posts()
+            page = int(request.query_params.get("page", 1))
+            limit = int(request.query_params.get("limit", 10))
+
+            posts, total_pages = PostServices.get_all_posts(page, limit)
             serializer = PostSerializer(posts, many=True)
             return Response(
-                {"message": "Posts fetched successfully", "posts": serializer.data},
+                {
+                    "message": "Posts fetched successfully",
+                    "posts": serializer.data,
+                    "page": page,
+                    "limit": limit,
+                    "total_pages": total_pages,
+                },
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
@@ -113,10 +122,10 @@ class PostViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["patch"], url_path="post")
     def update_post(self, request, pk=None):
         # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        user = request.user
+        if not user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
         try:
@@ -126,19 +135,7 @@ class PostViewSet(viewsets.ModelViewSet):
                 {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # Check if user is trying to update their own post
-        if int(user_id) != post.user.id:
-            return Response(
-                {"error": "You can only update your own posts"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         serializer = PostSerializer(post, data=request.data, partial=True)
-        user = request.user
-        if not user.is_authenticated:
-            return Response(
-                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         if (
@@ -186,7 +183,7 @@ class PostViewSet(viewsets.ModelViewSet):
         if int(user_id) != post.user.id:
             return Response(
                 {"error": "You can only delete your own posts"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
