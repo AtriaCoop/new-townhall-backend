@@ -6,9 +6,9 @@ from django.contrib.auth.hashers import make_password
 from django.db.models.query import QuerySet
 import typing
 
-from .models import User
-from .types import CreateUserData, UpdateUserData, FilterUserData
-from .daos import UserDao
+from .models import User, Report
+from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
+from .daos import UserDao, ReportDao
 
 logger = logging.getLogger(__name__)
 
@@ -165,3 +165,10 @@ class UserServices:
             return tags
         except User.DoesNotExist:
             raise ValidationError(f"User with the given id: {user_id}, does not exist.")
+
+
+class ReportServices:
+    @staticmethod
+    def create_report(create_report_data: CreateReportData) -> Report:
+        report = ReportDao.create_report(report_data=create_report_data)
+        return report
