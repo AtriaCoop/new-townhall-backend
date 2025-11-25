@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from users.models import User
+from users.models import User, Tag
 from cloudinary.models import CloudinaryField
 
 
@@ -13,6 +13,7 @@ class Post(models.Model):
     likes = models.IntegerField(default=0)
     liked_by = models.ManyToManyField(User, blank=True, related_name="liked_posts")
     pinned = models.BooleanField(default=False)
+    tags = models.ManyToManyField(Tag, blank=True, related_name="posts")
 
     def __str__(self):
         return str(self.id)
