@@ -23,6 +23,10 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "receive_emails",
             "is_staff",
+            "linkedin_url",
+            "facebook_url",
+            "x_url",
+            "instagram_url",
         ]
 
     def get_profile_image(self, obj):
@@ -69,6 +73,10 @@ class UpdateUserSerializer(serializers.Serializer):
     tags = serializers.ListField(
         child=serializers.CharField(), required=False, allow_empty=True
     )
+    linkedin_url = serializers.URLField(required=False, allow_blank=True)
+    facebook_url = serializers.URLField(required=False, allow_blank=True)
+    x_url = serializers.URLField(required=False, allow_blank=True)
+    instagram_url = serializers.URLField(required=False, allow_blank=True)
 
     def validate_tags(self, value):
         """Custom validation for tags to ensure all items are strings"""
@@ -104,4 +112,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "about_me",
             "skills_interests",
             "profile_image",
+            "linkedin_url",
+            "facebook_url",
+            "x_url",
+            "instagram_url",
         ]
