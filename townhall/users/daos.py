@@ -1,8 +1,8 @@
 from django.db.models.query import QuerySet
 import typing
 from .models import User
-from .models import Tag
-from .types import CreateUserData
+from .models import Tag, Report
+from .types import CreateUserData, CreateReportData
 from django.db.models import Q, Case, When, Value, IntegerField
 from django.db.models.functions import Lower
 
@@ -95,3 +95,16 @@ class UserDao:
             # Limit so we get maximum 15 results
             .order_by("-rank", "full_name")[:15]
         )
+
+
+class ReportDao:
+
+    @staticmethod
+    def create_report(report_data: CreateReportData) -> Report:
+        report = Report.objects.create(
+            user_id=report_data.user_id,
+            content=report_data.content,
+            created_at=report_data.created_at,
+        )
+
+        return report
