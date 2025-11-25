@@ -3,7 +3,7 @@ from django.db import IntegrityError
 from django.forms import ValidationError
 import typing
 
-from .models import Post, ReportedPost, Comment, Reaction
+from .models import Post, ReportedPost, Comment, Reaction, Tag
 from .types import (
     CreatePostData,
     UpdatePostData,
@@ -14,10 +14,12 @@ from .types import (
 )
 from .daos import PostDao, CommentDao, ReportedPostDao, ReactionDao
 from users.models import User
-from .profanity import censor_text
+from .profanity import censor_text, _CENSOR_RE
 
 
 class PostServices:
+    MAX_TAG_LENGTH = 50
+
     @staticmethod
     def get_post(id: int) -> typing.Optional[Post]:
         try:
@@ -45,7 +47,14 @@ class PostServices:
         if not user.is_staff and create_post_data.pinned:
             raise PermissionDenied("You are not authorized to pin posts.")
 
+        # Create the post
         post = PostDao.create_post(post_data=create_post_data)
+
+        # Assign tags after creating the post
+        tag_objects = PostServices._validate_and_get_tags(create_post_data.tags)
+        if tag_objects:
+            post.tags.set(tag_objects)
+
         return _mask_content_instance(post)
 
     @staticmethod
@@ -55,7 +64,16 @@ class PostServices:
         if not user.is_staff and update_post_data.pinned is not None:
             raise PermissionDenied("You are not authorized to pin posts.")
 
+        # Update the post
         post = PostDao.update_post(id=id, post_data=update_post_data)
+
+        # Validate and Set tags if provided
+        tag_objects = PostServices._validate_and_get_tags(update_post_data.tags)
+        if tag_objects:
+            post.tags.set(tag_objects)
+        elif update_post_data.tags == []:
+            post.tags.clear()
+
         return _mask_content_instance(post)
 
     @staticmethod
@@ -64,6 +82,38 @@ class PostServices:
             PostDao.delete_post(post_id)
         except ValueError as e:
             raise ValidationError(str(e))
+
+    # Tag validator helper
+    @staticmethod
+    def _validate_and_get_tags(tags: list[str] | None) -> list[Tag]:
+        """
+        Validate tag lengths and get or create Tag objects.
+        Returns a list of Tag objects. If tags is None, returns an empty list.
+        """
+        tag_objects = []
+
+        if tags is not None:  # None = leave unchanged
+            for tag_name in tags:
+                # 1. Check max length
+                if len(tag_name) > PostServices.MAX_TAG_LENGTH:
+                    raise ValidationError(
+                        (
+                            f"Tag '{tag_name}' exceeds the maximum length of "
+                            f"{PostServices.MAX_TAG_LENGTH} characters."
+                        )
+                    )
+
+                # 2. Check for profanity
+                if _CENSOR_RE.search(tag_name):
+                    raise ValidationError(
+                        f"Tag '{tag_name}' contains inappropriate language."
+                    )
+
+                # 3. Get or Create tag object
+                tag_obj, _ = Tag.objects.get_or_create(name=tag_name)
+                tag_objects.append(tag_obj)
+
+        return tag_objects
 
 
 class CommentServices:
