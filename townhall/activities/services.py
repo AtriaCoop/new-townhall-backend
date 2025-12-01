@@ -3,9 +3,10 @@ from django.core.exceptions import ValidationError
 from .daos import ActivityDao
 from .types import ActivityWithDescription
 from users.models import User
+import datetime
 
 
-metadata = {"+": "created", "~": "updated", "-": "deleted"}
+HISTORY_TYPE = {"+": "Created", "~": "Updated", "-": "Deleted"}
 
 
 # Helper function to format field name
@@ -20,14 +21,19 @@ def get_activity_description(activity) -> str:
     # Created or deleted → no previous record
     if activity.history_type in ("+", "-"):
         if model_name == "post":
-            return f"{metadata.get(activity.history_type)} a post: '{activity.content}'"
+            return (
+                f"{HISTORY_TYPE.get(activity.history_type)} a post: "
+                f"'{activity.content}'"
+            )
         elif model_name == "comment":
             return (
-                f"{metadata.get(activity.history_type)} a comment on a post by "
-                f"{activity.post.user.full_name}"
+                f"{HISTORY_TYPE.get(activity.history_type)} a comment: "
+                f"'{activity.content}'"
             )
+        elif model_name == "user":
+            return "Welcome to Atria, you've just created an account!"
         else:
-            return f"{metadata.get(activity.history_type)} {model_name}"
+            return f"{HISTORY_TYPE.get(activity.history_type)} {model_name}"
 
     # Updated → compare fields with previous version
     if activity.history_type == "~":
@@ -39,10 +45,20 @@ def get_activity_description(activity) -> str:
         # Edge case, if updated there should be at least 2 records
         if previous_qs.count() < 2:
             return f"updated {model_name}"
+
         previous = previous_qs[1]  # the version before this one
 
         changed_fields = []
-        ignored_fields = ["history_id", "history_date", "history_type", "history_user"]
+        ignored_fields = [
+            "history_id",
+            "history_date",
+            "history_type",
+            "history_user",
+            "date_joined",
+            "created_at",
+            "last_login",
+            "likes",
+        ]
 
         for field in activity._meta.fields:
             name = field.name
@@ -50,21 +66,45 @@ def get_activity_description(activity) -> str:
                 continue
             old = getattr(previous, name)
             new = getattr(activity, name)
+
+            if isinstance(new, datetime.datetime):
+                new = new.strftime("%b %-d, %Y at %-I:%M%p")
+
             if old != new:
                 field_label = format_field_name(name)
                 if model_name == "comment":
-                    changed_fields.append(f"{field_label} for your comment to '{new}'")
-                elif model_name == "post":
-                    changed_fields.append(f"{field_label} for your post to '{new}'")
+                    changed_fields.append(f"{field_label} to '{new}'")
+                # elif model_name == "post":
+                #     changed_fields.append(f"{field_label} for your post to '{new}'")
+                elif field_label == "last login":
+                    # changed_fields.append(f"Last logged in: {new}")
+                    changed_fields.append("You've logged in and started a session")
+
+                elif model_name == "user":
+                    changed_fields.append(f"{field_label}")
                 else:
                     changed_fields.append(f"{field_label} for {model_name} to '{new}'")
 
         if changed_fields:
-            return f"updated {', '.join(changed_fields)}"
+            # If more than 2 fields changed, show first 2 and "+ x more"
+            if len(changed_fields) > 2:
+                displayed_fields = changed_fields[:2]
+                remaining_count = len(changed_fields) - 2
+                return (
+                    f"Updated {model_name}: {', '.join(displayed_fields)} "
+                    f"+ {remaining_count} more..."
+                )
+            else:
+                return f"Updated {model_name}: {', '.join(changed_fields)}"
         else:
-            return f"updated {model_name}"
 
-    return f"{metadata.get(activity.history_type, 'changed')} {model_name}"
+            if model_name == "post":
+
+                return "Someone interacted with your post!"
+            else:
+                return f"Updated {model_name}"
+
+    return f"{HISTORY_TYPE.get(activity.history_type, 'changed')} {model_name}"
 
 
 class ActivityServices:

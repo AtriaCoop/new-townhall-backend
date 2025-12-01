@@ -7,13 +7,15 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('chats', '0005_groupmessage_image'),
+        ("chats", "0005_groupmessage_image"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='groupmessage',
-            name='image',
-            field=cloudinary.models.CloudinaryField(blank=True, max_length=255, null=True, verbose_name='image'),
+            model_name="groupmessage",
+            name="image",
+            field=cloudinary.models.CloudinaryField(
+                blank=True, max_length=255, null=True, verbose_name="image"
+            ),
         ),
     ]

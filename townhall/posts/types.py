@@ -9,12 +9,15 @@ class CreatePostData:
     content: str
     created_at: datetime
     image: Optional[str] = None
+    pinned: bool = False
 
 
 @dataclass
 class UpdatePostData:
-    content: str
+    user_id: int
+    content: Optional[str] = None
     image: Optional[str] = None
+    pinned: Optional[bool] = None
 
 
 @dataclass
@@ -35,3 +38,10 @@ class ReportedPostData:
     user_id: int
     post_id: int
     created_at: datetime
+
+
+@dataclass
+class ToggleReactionData:
+    user_id: int
+    post_id: int
+    reaction_type: str

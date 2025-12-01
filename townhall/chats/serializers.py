@@ -35,9 +35,6 @@ class ChatMiniSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     user = UserMiniSerializer(read_only=True)
-    user_id = serializers.PrimaryKeyRelatedField(
-        many=False, queryset=User.objects.all(), source="user"
-    )
 
     chat = ChatMiniSerializer(read_only=True)
     chat_id = serializers.PrimaryKeyRelatedField(

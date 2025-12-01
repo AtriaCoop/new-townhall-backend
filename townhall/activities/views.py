@@ -1,4 +1,4 @@
-from django.forms import ValidationError
+from django.core.exceptions import ValidationError
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework import status
@@ -11,7 +11,7 @@ class ActivityViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="")
     def get_user_activities(self, request):
-        user_id = request.query_params.get("user_id")
+        user_id = request.session.get("_auth_user_id")
 
         if not user_id:
             return Response(
@@ -33,7 +33,7 @@ class ActivityViewSet(viewsets.ViewSet):
             )
 
         except ValidationError as e:
-            return Response({"error": e.messages}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

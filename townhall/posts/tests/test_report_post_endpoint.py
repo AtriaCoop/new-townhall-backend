@@ -3,6 +3,7 @@ from rest_framework.test import APIClient
 from django.core.management import call_command
 from posts.models import Post
 from users.models import User
+from django.contrib.auth.hashers import make_password
 
 
 class ReportPostEndpointTests(TestCase):
@@ -15,6 +16,13 @@ class ReportPostEndpointTests(TestCase):
         self.test_user = User.objects.get(pk=1)
         self.test_post = Post.objects.get(pk=1)
         self.url = f"/post/{self.test_post.pk}/report"
+
+        # Set the password properly (it might be stored as plain text in fixture)
+        self.test_user.password = make_password("987password")
+        self.test_user.save()
+
+        # Authenticate the user for all requests
+        self.client.login(username=self.test_user.email, password="987password")
 
     def test_report_post_endpoint_success(self):
 
@@ -44,7 +52,8 @@ class ReportPostEndpointTests(TestCase):
 
         # Act and Assert
         response = self.client.post(self.url, test_data, format="json")
-        self.assertEqual(response.status_code, 400)
+
+        self.assertEqual(response.status_code, 201)
 
     def test_report_post_endpoint_invalid_post(self):
 
@@ -58,7 +67,8 @@ class ReportPostEndpointTests(TestCase):
 
         # Act and Assert
         response = self.client.post(test_url, test_data, format="json")
-        self.assertEqual(response.status_code, 400)
+
+        self.assertEqual(response.status_code, 404)
 
     def test_report_post_endpoint_nonsensical_post_id(self):
 

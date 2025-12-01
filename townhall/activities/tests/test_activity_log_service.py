@@ -91,23 +91,38 @@ class TestActivityLogService(TestCase):
 
         # Assert
         self.assertIsNotNone(post_created)
-        self.assertIn("created a post", post_created.description.lower())
+        self.assertIn(
+            "created a post: 'original post'", post_created.description.lower()
+        )
 
         self.assertIsNotNone(post_updated)
-        self.assertIn("updated content", post_updated.description.lower())
+        self.assertIn(
+            "updated post: content for post to 'updated and changed the post!'",
+            post_updated.description.lower(),
+        )
 
         self.assertIsNotNone(comment_created)
-        self.assertIn("created a comment", comment_created.description.lower())
+        self.assertIn(
+            "created a comment: 'nice post!'", comment_created.description.lower()
+        )
 
         self.assertIsNotNone(comment_updated)
-        self.assertIn("updated content", comment_updated.description.lower())
+        self.assertIn(
+            "updated comment: content to 'updated and changed the comment!'",
+            comment_updated.description.lower(),
+        )
 
         self.assertIsNotNone(user_created)
-        self.assertIn("created user", user_created.description.lower())
+        self.assertIn(
+            "welcome to atria, you've just created an account!",
+            user_created.description.lower(),
+        )
 
         self.assertIsNotNone(user_updated)
-        self.assertIn("updated email", user_updated.description.lower())
-        self.assertIn("to 'updatedemail@example.com'", user_updated.description.lower())
+        self.assertIn(
+            "updated user: email",
+            user_updated.description.lower(),
+        )
 
     def test_activity_log_invalid_user_id(self):
 

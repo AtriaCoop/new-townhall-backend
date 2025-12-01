@@ -31,7 +31,10 @@ class TestActivityLogEndpoint(TestCase):
 
     def test_activity_log_success(self):
         # Arrange & Act
-        url = f"/activities/?user_id={self.user.id}"
+        session = self.client.session
+        session["_auth_user_id"] = self.user.id
+        session.save()
+        url = "/activities/"
         response = self.client.get(url, format="json")
 
         # Assert
@@ -48,27 +51,8 @@ class TestActivityLogEndpoint(TestCase):
     def test_activity_log_nonexistent_user(self):
 
         # Arrange & Act
-        url = "/activities/?user_id=9999"
-        response = self.client.get(url, format="json")
 
-        # Assert
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert not response.data.get("success", False)
-
-    def test_activity_log_nonsensical_user_id(self):
-
-        # Arrange & Act
-        url = "/activities/?user_id=ABC"
-        response = self.client.get(url, format="json")
-
-        # Assert
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert not response.data.get("success", False)
-
-    def test_activity_log_no_user_id(self):
-
-        # Arrange & Act
-        url = "/activities/?user_id="
+        url = "/activities/"
         response = self.client.get(url, format="json")
 
         # Assert
