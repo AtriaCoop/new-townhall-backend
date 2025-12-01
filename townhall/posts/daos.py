@@ -2,13 +2,14 @@ import typing
 
 from django.forms import ValidationError
 from django.db import IntegrityError
-from .models import Post, Comment, ReportedPost
+from .models import Post, Comment, ReportedPost, Reaction
 from .types import (
     CreatePostData,
     UpdatePostData,
     CreateCommentData,
     UpdateCommentData,
     ReportedPostData,
+    ToggleReactionData,
 )
 
 
@@ -17,12 +18,13 @@ class PostDao:
     def get_post(id: int) -> typing.Optional[Post]:
         return Post.objects.get(id=id)
 
-    def get_all_posts(offset: int, limit: int) -> typing.List[Post]:
+    def get_all_posts(offset: int, limit: int) -> tuple[typing.List[Post], int]:
         """Return a list of posts ordered by most recent,
-        paginated using offset and limit."""
-        qs = Post.objects.order_by("-created_at")
+        paginated using offset and limit. Also returns total number of posts."""
+        qs = Post.objects.order_by("-pinned", "-created_at")
+        total_count = qs.count()
         items = list(qs[offset : offset + limit])
-        return items
+        return items, total_count
 
     def create_post(post_data: CreatePostData) -> Post:
         print("Image type:", type(post_data.image))
@@ -33,6 +35,7 @@ class PostDao:
             content=post_data.content,
             created_at=post_data.created_at,
             image=post_data.image,
+            pinned=post_data.pinned,
         )
 
         return post
@@ -47,6 +50,8 @@ class PostDao:
             post.content = post_data.content
         if post_data.image is not None:
             post.image = post_data.image
+        if post_data.pinned is not None:
+            post.pinned = post_data.pinned
 
         post.save()
 
@@ -101,3 +106,31 @@ class ReportedPostDao:
             raise IntegrityError("User already reported this post")
 
         return reported_post
+
+
+class ReactionDao:
+    @staticmethod
+    def get_reaction(
+        post_id: int, user_id: int, reaction_type: str
+    ) -> typing.Optional[Reaction]:
+        """Get an existing reaction if it exists."""
+        try:
+            return Reaction.objects.get(
+                post_id=post_id, user_id=user_id, reaction_type=reaction_type
+            )
+        except Reaction.DoesNotExist:
+            return None
+
+    @staticmethod
+    def create_reaction(reaction_data: ToggleReactionData) -> Reaction:
+        """Create a new reaction."""
+        return Reaction.objects.create(
+            post_id=reaction_data.post_id,
+            user_id=reaction_data.user_id,
+            reaction_type=reaction_data.reaction_type,
+        )
+
+    @staticmethod
+    def delete_reaction(reaction: Reaction) -> None:
+        """Delete a reaction."""
+        reaction.delete()

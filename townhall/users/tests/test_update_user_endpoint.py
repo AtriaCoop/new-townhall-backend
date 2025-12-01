@@ -3,6 +3,9 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from unittest.mock import patch
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
+from users.models import User
+from django.contrib.auth.hashers import make_password
 
 
 class UpdateUserEndpointTagsTests(TestCase):
@@ -10,6 +13,16 @@ class UpdateUserEndpointTagsTests(TestCase):
         self.client = APIClient()
         self.user_id = 1
         self.url = f"/user/{self.user_id}/"
+
+        # Load user fixture and authenticate
+        call_command("loaddata", "fixtures/user_fixture.json", verbosity=0)
+        self.test_user = User.objects.get(pk=self.user_id)
+
+        # Set the password properly (it might be stored as plain text in fixture)
+        self.test_user.password = make_password("987password")
+        self.test_user.save()
+
+        self.client.login(username=self.test_user.email, password="987password")
 
     @patch("users.views.UserServices.update_user")
     def test_update_user_with_receive_emails_success(self, mock_update_user):
