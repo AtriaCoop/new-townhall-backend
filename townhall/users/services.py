@@ -5,8 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
 from django.db.models.query import QuerySet
 import typing
-
-from .models import User
+from .models import User, Tag
 from .types import CreateUserData, UpdateUserData, FilterUserData
 from .daos import UserDao
 
@@ -112,22 +111,15 @@ class UserServices:
         if update_user_data.profile_image is not None:
             user.profile_image = update_user_data.profile_image
 
-        user.save()
-
         if update_user_data.receive_emails is not None:
-            if not (
-                UserDao.update_receive_emails(
-                    user_id=user.id, receive_emails=update_user_data.receive_emails
-                )
-            ):
-                raise ValidationError("Failed to update receive emails")
+
+            user.receive_emails = update_user_data.receive_emails
 
         if update_user_data.tags is not None:
-            if not UserDao.update_user_tags(
-                user_id=user.id, tag_names=update_user_data.tags
-            ):
-                raise ValidationError("Failed to update user tags.")
+            tags = Tag.objects.filter(name__in=update_user_data.tags)
+            user.tags.set(tags)
 
+        user.save()
         return user
 
     def delete_user(id: int) -> None:
