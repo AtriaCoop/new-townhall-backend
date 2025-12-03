@@ -50,10 +50,8 @@ class PostServices:
         # Create the post
         post = PostDao.create_post(post_data=create_post_data)
 
-        # Assign tags after creating the post
-        tag_objects = PostServices._validate_and_get_tags(create_post_data.tags)
-        if tag_objects:
-            post.tags.set(tag_objects)
+        # Validate and assign tags to the post
+        PostServices.assign_tags(post, create_post_data.tags)
 
         return _mask_content_instance(post)
 
@@ -67,12 +65,8 @@ class PostServices:
         # Update the post
         post = PostDao.update_post(id=id, post_data=update_post_data)
 
-        # Validate and Set tags if provided
-        tag_objects = PostServices._validate_and_get_tags(update_post_data.tags)
-        if tag_objects:
-            post.tags.set(tag_objects)
-        elif update_post_data.tags == []:
-            post.tags.clear()
+        # Validate and assign tags to the post
+        PostServices.assign_tags(post, update_post_data.tags)
 
         return _mask_content_instance(post)
 
@@ -82,6 +76,18 @@ class PostServices:
             PostDao.delete_post(post_id)
         except ValueError as e:
             raise ValidationError(str(e))
+
+    # Validate and assign tags to the post
+    @staticmethod
+    def assign_tags(post: Post, tags: list[str] | None):
+        if tags is None:
+            return  # Do nothing
+
+        tag_objects = PostServices._validate_and_get_tags(tags)
+        if tag_objects:
+            post.tags.set(tag_objects)
+        else:
+            post.tags.clear()
 
     # Tag validator helper
     @staticmethod
