@@ -38,3 +38,10 @@ class ReportedPostData:
     user_id: int
     post_id: int
     created_at: datetime
+
+
+@dataclass
+class ToggleReactionData:
+    user_id: int
+    post_id: int
+    reaction_type: str
