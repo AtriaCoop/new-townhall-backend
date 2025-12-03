@@ -11,13 +11,14 @@ from django.contrib.auth.hashers import check_password
 from django.middleware.csrf import get_token
 import json
 
-from .models import User
+from .models import User, Tag
 from .types import CreateUserData, UpdateUserData, FilterUserData
 from .serializers import (
     UserSerializer,
     CreateUserSerializer,
     UserProfileSerializer,
     UpdateUserSerializer,
+    TagSerializer,
 )
 from .services import UserServices
 
@@ -337,3 +338,17 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+
+    @action(detail=False, methods=["get"], url_path="given-prefix")
+    def get_tags_given_prefix(self, request):
+        prefix = request.query_params.get("prefix", "")
+
+        tags = Tag.objects.filter(name__istartswith=prefix).order_by("name")
+        serialized = self.get_serializer(tags, many=True).data
+
+        return Response(serialized, status=status.HTTP_200_OK)
