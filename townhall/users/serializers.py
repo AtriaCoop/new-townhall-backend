@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User
+from .models import User, Tag
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -29,6 +29,12 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.profile_image:
             return obj.profile_image.url
         return None
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["id", "name"]
 
 
 class UserMiniSerializer(serializers.ModelSerializer):
