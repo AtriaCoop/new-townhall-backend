@@ -42,6 +42,8 @@ class PostSerializer(serializers.ModelSerializer):
 
     reactions = serializers.SerializerMethodField()
 
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = Post
         fields = [
@@ -54,6 +56,7 @@ class PostSerializer(serializers.ModelSerializer):
             "liked_by",
             "comments",
             "pinned",
+            "tags",
             "reactions",
         ]
         read_only_fields = [
@@ -64,6 +67,7 @@ class PostSerializer(serializers.ModelSerializer):
             "comments",
             "user",
             "reactions",
+            "tags",
         ]
 
     def get_reactions(self, obj):
@@ -74,6 +78,10 @@ class PostSerializer(serializers.ModelSerializer):
             reactions_by_type[reaction.reaction_type].append(reaction.user.id)
 
         return reactions_by_type
+
+    def get_tags(self, obj):
+        """Return a list of tag names instead of tag IDs"""
+        return [tag.name for tag in obj.tags.all()]
 
 
 class ReportedPostSerializer(serializers.ModelSerializer):
