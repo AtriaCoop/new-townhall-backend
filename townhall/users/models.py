@@ -6,6 +6,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
 )
 from cloudinary.models import CloudinaryField
+from simple_history.models import HistoricalRecords
 
 
 class UserManager(BaseUserManager):
@@ -32,6 +33,7 @@ class UserManager(BaseUserManager):
 
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.name
@@ -60,6 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)  # Required for admin panel access
 
     tags = models.ManyToManyField(Tag, blank=True, related_name="users")
+    history = HistoricalRecords()
 
     objects = UserManager()
 
