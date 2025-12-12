@@ -15,7 +15,13 @@ from .serializers import (
     CommentSerializer,
     ReportedPostSerializer,
 )
-from .services import PostServices, CommentServices, ReportedPostServices
+from .services import (
+    PostServices,
+    CommentServices,
+    ReportedPostServices,
+    ReactionServices,
+)
+from .types import ToggleReactionData
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -287,6 +293,66 @@ class PostViewSet(viewsets.ModelViewSet):
         except IntegrityError as e:
             return Response(
                 {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=["patch"], url_path="reaction")
+    def toggle_reaction(self, request, pk=None):
+        # Get user from session
+        user_id = request.session.get("_auth_user_id")
+        if not user_id:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Get reaction type from request
+        reaction_type = request.data.get("reaction_type")
+        if not reaction_type:
+            return Response(
+                {"error": "Reaction type is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Create data object for service layer
+            reaction_data = ToggleReactionData(
+                user_id=int(user_id), post_id=int(pk), reaction_type=reaction_type
+            )
+
+            # Delegate business logic to service layer
+            was_added, message = ReactionServices.toggle_reaction(reaction_data)
+
+            # Get updated post with reactions
+            post = Post.objects.get(pk=pk)
+            serializer = PostSerializer(post)
+
+            return Response(
+                {"message": message, "reactions": serializer.data["reactions"]},
+                status=status.HTTP_200_OK,
+            )
+
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Post.DoesNotExist:
+            return Response(
+                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except IntegrityError:
+            return Response(
+                {"error": "Database constraint violation. Please try again."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except ValueError as e:
+            # Handle invalid integer conversion
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Log the actual error for debugging
+            import traceback
+
+            print(f"Error in toggle_reaction: {str(e)}")
+            print(traceback.format_exc())
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
