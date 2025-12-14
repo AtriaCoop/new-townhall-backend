@@ -112,6 +112,18 @@ class UserServices:
         if update_user_data.profile_image is not None:
             user.profile_image = update_user_data.profile_image
 
+        if update_user_data.linkedin_url is not None:
+            user.linkedin_url = update_user_data.linkedin_url
+
+        if update_user_data.facebook_url is not None:
+            user.facebook_url = update_user_data.facebook_url
+
+        if update_user_data.x_url is not None:
+            user.x_url = update_user_data.x_url
+
+        if update_user_data.instagram_url is not None:
+            user.instagram_url = update_user_data.instagram_url
+
         if update_user_data.receive_emails is not None:
 
             user.receive_emails = update_user_data.receive_emails

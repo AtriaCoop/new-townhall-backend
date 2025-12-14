@@ -24,6 +24,10 @@ class UpdateUserData:
     profile_image: Optional[str] = None
     receive_emails: bool = None
     tags: Optional[List[str]] = None
+    linkedin_url: Optional[str] = None
+    facebook_url: Optional[str] = None
+    x_url: Optional[str] = None
+    instagram_url: Optional[str] = None
 
 
 @dataclass
