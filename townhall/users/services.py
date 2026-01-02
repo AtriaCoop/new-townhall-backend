@@ -5,9 +5,10 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
 from django.db.models.query import QuerySet
 import typing
-from .models import User, Tag
-from .types import CreateUserData, UpdateUserData, FilterUserData
-from .daos import UserDao
+from .models import User, Report, Tag
+from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
+from .daos import UserDao, ReportDao
+
 
 logger = logging.getLogger(__name__)
 
@@ -172,3 +173,10 @@ class UserServices:
 
     def get_users_by_tags(tag_names: typing.List[str]) -> QuerySet[User]:
         return UserDao.get_users_by_tags(tag_names=tag_names)
+
+
+class ReportServices:
+    @staticmethod
+    def create_report(create_report_data: CreateReportData) -> Report:
+        report = ReportDao.create_report(report_data=create_report_data)
+        return report
