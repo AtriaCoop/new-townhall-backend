@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User
+from .models import User, Tag
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -124,3 +124,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "x_url",
             "instagram_url",
         ]
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["id", "name"]
