@@ -7,18 +7,22 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0006_alter_user_groups_alter_user_is_superuser'),
+        ("users", "0006_alter_user_groups_alter_user_is_superuser"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='profile_header',
-            field=cloudinary.models.CloudinaryField(blank=True, max_length=255, null=True, verbose_name='image'),
+            model_name="user",
+            name="profile_header",
+            field=cloudinary.models.CloudinaryField(
+                blank=True, max_length=255, null=True, verbose_name="image"
+            ),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='profile_image',
-            field=cloudinary.models.CloudinaryField(blank=True, max_length=255, null=True, verbose_name='image'),
+            model_name="user",
+            name="profile_image",
+            field=cloudinary.models.CloudinaryField(
+                blank=True, max_length=255, null=True, verbose_name="image"
+            ),
         ),
     ]

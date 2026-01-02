@@ -6,6 +6,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
 )
 from cloudinary.models import CloudinaryField
+from simple_history.models import HistoricalRecords
 
 
 class UserManager(BaseUserManager):
@@ -32,6 +33,7 @@ class UserManager(BaseUserManager):
 
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.name
@@ -51,11 +53,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_header = CloudinaryField("image", null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
     receive_emails = models.BooleanField(default=True)
+    linkedin_url = models.URLField(max_length=255, null=True, blank=True)
+    facebook_url = models.URLField(max_length=255, null=True, blank=True)
+    x_url = models.URLField(max_length=255, null=True, blank=True)
+    instagram_url = models.URLField(max_length=255, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Required for admin panel access
 
     tags = models.ManyToManyField(Tag, blank=True, related_name="users")
+    history = HistoricalRecords()
 
     objects = UserManager()
 

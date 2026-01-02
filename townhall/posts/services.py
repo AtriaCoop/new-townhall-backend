@@ -3,15 +3,16 @@ from django.db import IntegrityError
 from django.forms import ValidationError
 import typing
 
-from .models import Post, ReportedPost, Comment
+from .models import Post, ReportedPost, Comment, Reaction
 from .types import (
     CreatePostData,
     UpdatePostData,
     CreateCommentData,
     ReportedPostData,
     UpdateCommentData,
+    ToggleReactionData,
 )
-from .daos import PostDao, CommentDao, ReportedPostDao
+from .daos import PostDao, CommentDao, ReportedPostDao, ReactionDao
 from users.models import User
 from .profanity import censor_text
 
@@ -131,3 +132,65 @@ class ReportedPostServices:
         )
 
         return reported_post
+
+
+class ReactionServices:
+    @staticmethod
+    def toggle_reaction(reaction_data: ToggleReactionData) -> typing.Tuple[bool, str]:
+        # Validate that the post exists
+        try:
+            PostDao.get_post(id=reaction_data.post_id)
+        except Post.DoesNotExist:
+            raise ValidationError(
+                f"Post with id {reaction_data.post_id} does not exist."
+            )
+
+        # Validate that the user exists
+        if not User.objects.filter(id=reaction_data.user_id).exists():
+            raise ValidationError(
+                f"User with id {reaction_data.user_id} does not exist."
+            )
+
+        # Validate reaction type
+        valid_reactions = [choice[0] for choice in Reaction.Reaction_Choices]
+        if reaction_data.reaction_type not in valid_reactions:
+            raise ValidationError(
+                f"Invalid reaction type. Must be one of: {', '.join(valid_reactions)}"
+            )
+
+        # Check if reaction already exists
+        existing_reaction = ReactionDao.get_reaction(
+            post_id=reaction_data.post_id,
+            user_id=reaction_data.user_id,
+            reaction_type=reaction_data.reaction_type,
+        )
+
+        if existing_reaction:
+            # Remove the reaction
+            ReactionDao.delete_reaction(existing_reaction)
+            return (False, f"Removed {reaction_data.reaction_type} reaction")
+        else:
+            # Add the reaction
+            try:
+                ReactionDao.create_reaction(reaction_data)
+                return (True, f"Added {reaction_data.reaction_type} reaction")
+            except IntegrityError:
+                # Handle race condition where reaction was added between
+                # check and create. Try to get it again - if it exists now,
+                # treat as if it was already there
+                existing_reaction = ReactionDao.get_reaction(
+                    post_id=reaction_data.post_id,
+                    user_id=reaction_data.user_id,
+                    reaction_type=reaction_data.reaction_type,
+                )
+                if existing_reaction:
+                    # Reaction was added by another request, remove it
+                    ReactionDao.delete_reaction(existing_reaction)
+                    return (
+                        False,
+                        f"Removed {reaction_data.reaction_type} reaction",
+                    )
+                else:
+                    raise ValidationError(
+                        "Failed to create reaction due to database constraint"
+                    )
