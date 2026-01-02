@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('chats', '0004_groupmessage'),
+        ("chats", "0004_groupmessage"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='groupmessage',
-            name='image',
-            field=models.ImageField(blank=True, null=True, upload_to='group_images'),
+            model_name="groupmessage",
+            name="image",
+            field=models.ImageField(blank=True, null=True, upload_to="group_images"),
         ),
     ]
