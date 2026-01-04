@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User, Tag
+from .models import User, Tag, Report
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -130,3 +130,13 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ["id", "name"]
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = [
+            "user_id",
+            "content",
+            "created_at",
+        ]

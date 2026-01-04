@@ -4,7 +4,14 @@ from django.conf.urls.static import static
 from debug_toolbar.toolbar import debug_toolbar_urls
 
 from rest_framework.routers import DefaultRouter
-from .views import UserViewSet, TagViewSet, login_user, logout_user, get_csrf_token
+from .views import (
+    UserViewSet,
+    TagViewSet,
+    ReportViewSet,
+    login_user,
+    logout_user,
+    get_csrf_token,
+)
 
 router = DefaultRouter()
 router.register(r"tags", TagViewSet, basename="tag")
@@ -47,6 +54,11 @@ urlpatterns = [
         "user/mention/",
         UserViewSet.as_view({"get": "mention_user"}),
         name="mention_user",
+    ),
+    path(
+        "user/report/",
+        ReportViewSet.as_view({"post": "create_report_request"}),
+        name="report",
     ),
     path("", include(router.urls)),  # <-- Make sure this is here
 ] + debug_toolbar_urls()
