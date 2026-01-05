@@ -7,6 +7,8 @@ from rest_framework.routers import DefaultRouter
 
 from users.views import UserViewSet, TagViewSet, login_user, logout_user, get_csrf_token
 
+from .views import UserViewSet, TagViewSet, login_user, logout_user, get_csrf_token
+
 router = DefaultRouter()
 router.register(r"tags", TagViewSet, basename="tag")
 
@@ -50,6 +52,7 @@ urlpatterns = [
         name="mention_user",
     ),
     path("", include(router.urls)),
+    path("", include(router.urls)),  # <-- Make sure this is here
 ] + debug_toolbar_urls()
 
 # Serve media files during development
