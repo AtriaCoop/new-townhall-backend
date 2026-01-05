@@ -5,9 +5,10 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
 from django.db.models.query import QuerySet
 import typing
-from .models import User, Tag
-from .types import CreateUserData, UpdateUserData, FilterUserData
-from .daos import UserDao
+from .models import User, Report, Tag
+from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
+from .daos import UserDao, ReportDao
+
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,18 @@ class UserServices:
         if update_user_data.profile_image is not None:
             user.profile_image = update_user_data.profile_image
 
+        if update_user_data.linkedin_url is not None:
+            user.linkedin_url = update_user_data.linkedin_url
+
+        if update_user_data.facebook_url is not None:
+            user.facebook_url = update_user_data.facebook_url
+
+        if update_user_data.x_url is not None:
+            user.x_url = update_user_data.x_url
+
+        if update_user_data.instagram_url is not None:
+            user.instagram_url = update_user_data.instagram_url
+
         if update_user_data.receive_emails is not None:
 
             user.receive_emails = update_user_data.receive_emails
@@ -160,3 +173,10 @@ class UserServices:
 
     def get_users_by_tags(tag_names: typing.List[str]) -> QuerySet[User]:
         return UserDao.get_users_by_tags(tag_names=tag_names)
+
+
+class ReportServices:
+    @staticmethod
+    def create_report(create_report_data: CreateReportData) -> Report:
+        report = ReportDao.create_report(report_data=create_report_data)
+        return report

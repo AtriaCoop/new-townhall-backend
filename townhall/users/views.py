@@ -290,6 +290,10 @@ class UserViewSet(viewsets.ModelViewSet):
             profile_image=request.FILES.get("profile_image"),
             receive_emails=validated_data.get("receive_emails"),
             tags=validated_data.get("tags", []),
+            linkedin_url=validated_data.get("linkedin_url"),
+            facebook_url=validated_data.get("facebook_url"),
+            x_url=validated_data.get("x_url"),
+            instagram_url=validated_data.get("instagram_url"),
         )
         try:
             UserServices.update_user(update_user_data)
@@ -352,3 +356,11 @@ class TagViewSet(viewsets.ModelViewSet):
         serialized = self.get_serializer(tags, many=True).data
 
         return Response(serialized, status=status.HTTP_200_OK)
+    permission_classes = [AllowAny]
+
+    @action(detail=False, methods=["get"])
+    def get_all_tags(self, request):
+        """Get all available tags"""
+        tags = UserServices.get_all_tags()
+        serializer = self.get_serializer(tags, many=True)
+        return Response(serializer.data)
