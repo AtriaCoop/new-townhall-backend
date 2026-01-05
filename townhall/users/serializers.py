@@ -130,4 +130,3 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "x_url",
             "instagram_url",
         ]
-
