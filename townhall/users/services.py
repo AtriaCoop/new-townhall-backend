@@ -164,7 +164,7 @@ class UserServices:
         tags = UserDao.get_tags_given_prefix(prefix=prefix)
         return [tag.name for tag in tags]
 
-    def get_tags_for_user(user_id: int) -> typing.List[str]:
+    def get_tags_for_user(user_id: int) -> QuerySet[Tag]:
         try:
             tags = UserDao.get_tags_for_user(user_id=user_id)
             return tags
