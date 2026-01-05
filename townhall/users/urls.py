@@ -50,7 +50,6 @@ urlpatterns = [
         name="mention_user",
     ),
     path("", include(router.urls)),
-    path("", include(router.urls)),  # <-- Make sure this is here
 ] + debug_toolbar_urls()
 
 # Serve media files during development

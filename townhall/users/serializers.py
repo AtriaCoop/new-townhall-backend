@@ -130,9 +130,3 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "x_url",
             "instagram_url",
         ]
-
-
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = ["id", "name"]
