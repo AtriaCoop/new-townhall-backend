@@ -9,9 +9,6 @@ from .models import User, Report, Tag
 from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
 from .daos import UserDao, ReportDao
 
-from .models import User, Tag
-from .types import CreateUserData, UpdateUserData, FilterUserData
-from .daos import UserDao
 
 logger = logging.getLogger(__name__)
 
