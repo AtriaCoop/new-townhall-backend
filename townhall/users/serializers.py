@@ -132,12 +132,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
 
 
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = ["id", "name"]
-
-
 class ReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
