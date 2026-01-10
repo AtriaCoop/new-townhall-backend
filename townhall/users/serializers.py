@@ -35,6 +35,12 @@ class UserSerializer(serializers.ModelSerializer):
         return None
 
 
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["id", "name"]
+
+
 class UserMiniSerializer(serializers.ModelSerializer):
     profile_image = serializers.SerializerMethodField()
 

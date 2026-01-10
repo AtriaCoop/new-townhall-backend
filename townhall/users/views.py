@@ -349,6 +349,15 @@ class UserViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+    @action(detail=False, methods=["get"], url_path="given-prefix")
+    def get_tags_given_prefix(self, request):
+        prefix = request.query_params.get("prefix", "")
+
+        tags = Tag.objects.filter(name__istartswith=prefix).order_by("name")
+        serialized = self.get_serializer(tags, many=True).data
+
+        return Response(serialized, status=status.HTTP_200_OK)
     permission_classes = [AllowAny]
 
     @action(detail=False, methods=["get"])
