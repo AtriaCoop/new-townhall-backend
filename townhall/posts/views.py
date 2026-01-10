@@ -93,7 +93,11 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(
                 {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
+
         validated_data = serializer.validated_data
+
+        # Extract tags from request data
+        tag_names = request.data.getlist("tags")
 
         create_post_data = CreatePostData(
             user_id=user.id,
@@ -101,6 +105,7 @@ class PostViewSet(viewsets.ModelViewSet):
             created_at=timezone.now(),
             image=validated_data.get("image", None),
             pinned=validated_data.get("pinned", False),
+            tags=tag_names if tag_names else None,
         )
 
         try:
@@ -151,6 +156,7 @@ class PostViewSet(viewsets.ModelViewSet):
             content=serializer.validated_data.get("content", None),
             image=serializer.validated_data.get("image", None),
             pinned=serializer.validated_data.get("pinned", None),
+            tags=serializer.validated_data.get("tags", None),
             user_id=user.id,
         )
 
