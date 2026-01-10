@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User, Tag
+from .models import User, Tag, Report
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -129,4 +129,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "facebook_url",
             "x_url",
             "instagram_url",
+        ]
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = [
+            "user_id",
+            "content",
+            "created_at",
         ]

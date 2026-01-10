@@ -4,23 +4,25 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login, logout
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password
 from django.middleware.csrf import get_token
+from django.utils import timezone
 import json
-
 from .models import User, Tag
-from .types import CreateUserData, UpdateUserData, FilterUserData
+from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
 from .serializers import (
     UserSerializer,
     CreateUserSerializer,
     UserProfileSerializer,
     UpdateUserSerializer,
     TagSerializer,
+    ReportSerializer,
 )
-from .services import UserServices
+from .services import UserServices, ReportServices
 
 
 @ensure_csrf_cookie
@@ -364,3 +366,49 @@ class TagViewSet(viewsets.ModelViewSet):
         tags = UserServices.get_all_tags()
         serializer = self.get_serializer(tags, many=True)
         return Response(serializer.data)
+
+
+class ReportViewSet(viewsets.ModelViewSet):
+    @action(detail=False, methods=["post"], url_path="report")
+    def create_report_request(self, request):
+        user_id = request.session.get("_auth_user_id")
+        if not user_id:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = ReportSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        validated_data = serializer.validated_data
+
+        create_report_data = CreateReportData(
+            user_id=user.id,
+            content=validated_data["content"],
+            created_at=timezone.now(),
+        )
+
+        try:
+            report = ReportServices.create_report(create_report_data)
+            response_serializer = ReportSerializer(report)
+            return Response(
+                {
+                    "message": "Report Created Successfully",
+                    "success": True,
+                    "data": response_serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except ValidationError as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except PermissionDenied as e:
+            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
