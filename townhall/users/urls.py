@@ -60,6 +60,11 @@ urlpatterns = [
         ReportViewSet.as_view({"post": "create_report_request"}),
         name="report",
     ),
+    path(
+        "user/report/<int:report_id>/",
+        ReportViewSet.as_view({"get": "get_report"}),
+        name="report_id",
+    ),
     path("", include(router.urls)),  # <-- Make sure this is here
 ] + debug_toolbar_urls()
 

@@ -108,3 +108,7 @@ class ReportDao:
         )
 
         return report
+
+    @staticmethod
+    def get_report(id: int) -> typing.Optional[Report]:
+        return Report.objects.get(id=id)
