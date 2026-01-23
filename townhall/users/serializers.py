@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User
+from .models import User, Tag, Report
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -25,6 +25,10 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "receive_emails",
             "is_staff",
+            "linkedin_url",
+            "facebook_url",
+            "x_url",
+            "instagram_url",
         ]
 
     def get_profile_image(self, obj):
@@ -36,6 +40,12 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.profile_header:
             return obj.profile_header.url
         return None
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["id", "name"]
 
 
 class UserMiniSerializer(serializers.ModelSerializer):
@@ -61,6 +71,13 @@ class CreateUserSerializer(serializers.ModelSerializer):
         fields = ["email", "password"]
 
 
+class OptionalURLField(serializers.URLField):
+    def to_internal_value(self, data):
+        if data == "":
+            return None
+        return super().to_internal_value(data)
+
+
 class UpdateUserSerializer(serializers.Serializer):
     full_name = serializers.CharField(required=False)
     email = serializers.EmailField(required=False)
@@ -77,6 +94,10 @@ class UpdateUserSerializer(serializers.Serializer):
     tags = serializers.ListField(
         child=serializers.CharField(), required=False, allow_empty=True
     )
+    linkedin_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
+    facebook_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
+    x_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
+    instagram_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
 
     def validate_tags(self, value):
         """Custom validation for tags to ensure all items are strings"""
@@ -114,4 +135,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "skills_interests",
             "profile_image",
             "profile_header",
+            "linkedin_url",
+            "facebook_url",
+            "x_url",
+            "instagram_url",
         ]
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = ["user_id", "content", "created_at"]

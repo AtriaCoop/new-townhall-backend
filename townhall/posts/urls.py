@@ -36,11 +36,11 @@ urlpatterns = [
     ),
     path(
         "comment/<int:pk>/",
-        CommentViewSet.as_view(
-            {
-                "delete": "destroy",
-            }
-        ),
+        CommentViewSet.as_view({"delete": "destroy", "patch": "update_comment"}),
     ),
     path("post/<int:pk>/report", PostViewSet.as_view({"post": "report_post"})),
+    path(
+        "post/<int:pk>/reaction/",
+        PostViewSet.as_view({"patch": "toggle_reaction"}),
+    ),
 ]

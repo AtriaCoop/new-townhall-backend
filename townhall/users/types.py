@@ -1,5 +1,6 @@
 from typing import Optional, List
 from dataclasses import dataclass
+import datetime
 
 
 @dataclass
@@ -24,9 +25,20 @@ class UpdateUserData:
     profile_header: Optional[str] = None
     receive_emails: bool = None
     tags: Optional[List[str]] = None
+    linkedin_url: Optional[str] = None
+    facebook_url: Optional[str] = None
+    x_url: Optional[str] = None
+    instagram_url: Optional[str] = None
 
 
 @dataclass
 class FilterUserData:
     full_name: Optional[str] = None
     email: Optional[str] = None
+
+
+@dataclass
+class CreateReportData:
+    user_id: int
+    content: str
+    created_at: datetime
