@@ -358,6 +358,7 @@ class TagViewSet(viewsets.ModelViewSet):
         serialized = self.get_serializer(tags, many=True).data
 
         return Response(serialized, status=status.HTTP_200_OK)
+
     permission_classes = [AllowAny]
 
     @action(
@@ -447,3 +448,31 @@ class ReportViewSet(viewsets.ModelViewSet):
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except PermissionDenied as e:
             return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
+
+    # get a report
+    @action(detail=True, methods=["get"], url_path="report_id")
+    @permission_classes([IsAuthenticated])
+    def get_report(self, request, report_id):
+        rid = report_id
+
+        try:
+            report = ReportServices.get_report(rid)
+
+            response_serializer = ReportSerializer(report)
+
+            return Response(
+                {
+                    "message": "Report Retrieved Successfully",
+                    "success": True,
+                    "report": response_serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except ValidationError as e:
+            return Response(
+                {
+                    "message": str(e),
+                    "success": False,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )

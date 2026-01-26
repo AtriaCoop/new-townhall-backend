@@ -180,3 +180,11 @@ class ReportServices:
     def create_report(create_report_data: CreateReportData) -> Report:
         report = ReportDao.create_report(report_data=create_report_data)
         return report
+
+    @staticmethod
+    def get_report(id: int) -> typing.Optional[Report]:
+        try:
+            report = ReportDao.get_report(id=id)
+            return report
+        except Report.DoesNotExist:
+            raise ValidationError(f"Report with the given id: {id}, does not exist.")
