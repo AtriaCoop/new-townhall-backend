@@ -361,6 +361,41 @@ class TagViewSet(viewsets.ModelViewSet):
 
     permission_classes = [AllowAny]
 
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAuthenticated],
+        url_path="user/tags",
+    )
+    def get_all_tags_for_a_user(self, request):
+        """Return Tag objects for the current user or for the user_id query param."""
+        # Prefer request.GET for explicitness in tests; handle empty string too.
+        user_id_param = request.GET.get("user_id", None)
+
+        if user_id_param is not None:
+            # treat empty string as invalid
+            if user_id_param == "":
+                return Response(
+                    {"detail": "Invalid user_id"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            try:
+                user_id = int(user_id_param)
+            except (TypeError, ValueError):
+                return Response(
+                    {"detail": "Invalid user_id"}, status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            if not getattr(request, "user", None) or not request.user.is_authenticated:
+                return Response(
+                    {"detail": "Authentication credentials were not provided."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            user_id = request.user.id
+
+        tags_qs = UserServices.get_tags_for_user(user_id)
+        serializer = self.get_serializer(tags_qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=["get"])
     def get_all_tags(self, request):
         """Get all available tags"""

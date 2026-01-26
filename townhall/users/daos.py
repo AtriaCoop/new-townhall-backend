@@ -72,7 +72,7 @@ class UserDao:
 
     def get_tags_for_user(user_id: int) -> QuerySet[Tag]:
         user = User.objects.get(id=user_id)
-        return list(user.tags.values_list("name", flat=True))
+        return user.tags.all()
 
     @staticmethod
     def search_users(query: str) -> QuerySet[User]:
