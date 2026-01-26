@@ -86,12 +86,15 @@ class PostViewSet(viewsets.ModelViewSet):
 
         validated_data = serializer.validated_data
 
+        tag_names = request.data.getlist("tags")
+
         create_post_data = CreatePostData(
             user_id=request.user.id,
             content=validated_data["content"],
             created_at=timezone.now(),
             image=validated_data.get("image", None),
             pinned=validated_data.get("pinned", False),
+            tags=tag_names if tag_names else None,
         )
 
         try:
@@ -138,10 +141,13 @@ class PostViewSet(viewsets.ModelViewSet):
                 {"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
             )
 
+        tag_names = request.data.getlist("tags")
+
         update_post_data = UpdatePostData(
             content=serializer.validated_data.get("content", None),
             image=serializer.validated_data.get("image", None),
             pinned=serializer.validated_data.get("pinned", None),
+            tags=tag_names if tag_names else None,
             user_id=user.id,
         )
 
