@@ -3,7 +3,7 @@ from django.db import IntegrityError
 from django.forms import ValidationError
 import typing
 
-from .models import Post, ReportedPost, Comment, Reaction
+from .models import Post, ReportedPost, Comment, Reaction, Tag
 from .types import (
     CreatePostData,
     UpdatePostData,
@@ -53,6 +53,9 @@ class PostServices:
 
         post = PostDao.create_post(post_data=create_post_data)
 
+        # Validate and assign tags to the post
+        PostServices._assign_tags(post, create_post_data.tags)
+
         return _mask_content_instance(post)
 
     @staticmethod
@@ -67,6 +70,9 @@ class PostServices:
 
         post = PostDao.update_post(id=id, post_data=update_post_data)
 
+        # Validate and assign tags to the post
+        PostServices._assign_tags(post, update_post_data.tags)
+
         return _mask_content_instance(post)
 
     @staticmethod
@@ -77,15 +83,27 @@ class PostServices:
             raise ValidationError(str(e))
 
     @staticmethod
-    def _validate_tags(tags: list[str] | None):
+    def _assign_tags(post: Post, tags: list[str] | None):
+        if tags is None:
+            return  # Do nothing
+
+        tag_objects = PostServices._validate_and_get_tags(tags)
+        if tag_objects:
+            post.tags.set(tag_objects)
+        else:
+            post.tags.clear()
+
+    @staticmethod
+    def _validate_and_get_tags(tags: list[str] | None) -> list[Tag]:
         """
         Validate tag lengths and get or create Tag objects.
 
         - Enforces maximum tag length
         - Rejects profanity
+        - Returns a list of Tag objects
+        - If tags is None, returns an empty list
         """
-        if tags is None:
-            return
+        tag_objects = []
 
         # Check max tag amount
         if len(tags) > PostServices.MAX_TAG_AMOUNT:
@@ -94,21 +112,28 @@ class PostServices:
                 f"{PostServices.MAX_TAG_AMOUNT} for a post."
             )
 
-        for tag_name in tags:
-            # 1. Check max length
-            if len(tag_name) > PostServices.MAX_TAG_LENGTH:
-                raise ValidationError(
-                    (
-                        f"Tag '{tag_name}' exceeds the maximum length of "
-                        f"{PostServices.MAX_TAG_LENGTH} characters."
+        if tags is not None:  # None = leave unchanged
+            for tag_name in tags:
+                # 1. Check max length
+                if len(tag_name) > PostServices.MAX_TAG_LENGTH:
+                    raise ValidationError(
+                        (
+                            f"Tag '{tag_name}' exceeds the maximum length of "
+                            f"{PostServices.MAX_TAG_LENGTH} characters."
+                        )
                     )
-                )
 
-            # 2. Check for profanity
-            if _CENSOR_RE.search(tag_name):
-                raise ValidationError(
-                    f"Tag '{tag_name}' contains inappropriate language."
-                )
+                # 2. Check for profanity
+                if _CENSOR_RE.search(tag_name):
+                    raise ValidationError(
+                        f"Tag '{tag_name}' contains inappropriate language."
+                    )
+
+                # 3. Get or Create tag object
+                tag_obj, _ = Tag.objects.get_or_create(name=tag_name)
+                tag_objects.append(tag_obj)
+
+        return tag_objects
 
 
 class CommentServices:
