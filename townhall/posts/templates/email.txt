@@ -1,0 +1,6 @@
+Hey {{posted_by_name}}
+
+{{commented_by_name}} has commented on your post! Come check it out: https://atriacoop.netlify.app
+
+Thanks for being part of our community,
+The Atria Team

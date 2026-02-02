@@ -16,6 +16,11 @@ from .daos import PostDao, CommentDao, ReportedPostDao, ReactionDao
 from users.models import User
 from .profanity import censor_text
 
+import jinja2
+from django_rq import get_queue
+from django.core.mail import send_mail
+from django.conf import settings
+
 
 class PostServices:
     @staticmethod
@@ -66,6 +71,25 @@ class PostServices:
             raise ValidationError(str(e))
 
 
+# Setting up jinja templates
+template_dir = settings.BASE_DIR / "posts" / "templates"
+jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
+
+
+def send_email(email_content, posted_by):
+    try:
+        send_mail(
+            subject="New Comment on Your Post!",
+            message=email_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[posted_by.email],
+            fail_silently=False,
+        )
+        print(f"Email sent successully to {posted_by.email}")
+    except Exception as e:
+        print(f"Failed to send email: {str(e)}")
+
+
 class CommentServices:
     @staticmethod
     def get_comment(id: int) -> typing.Optional[Comment]:
@@ -76,6 +100,27 @@ class CommentServices:
         comment = CommentDao.create_comment(create_comment_data=create_comment_data)
         if hasattr(comment, "content"):
             comment.content = censor_text(comment.content)
+
+        # Get user who posted
+        post = comment.post
+        posted_by = post.user
+        commented_by = comment.user
+
+        if posted_by.receive_emails and posted_by.email is not None:
+            template = jinja_env.get_template("email.txt")
+            email_content = template.render(
+                posted_by_name=(
+                    posted_by.full_name if posted_by.full_name != "" else "unknown user"
+                ),
+                commented_by_name=(
+                    commented_by.full_name
+                    if commented_by.full_name != ""
+                    else "unknown user"
+                ),
+            )
+            # Try to send email
+            redis_Q = get_queue("default")
+            redis_Q.enqueue(send_email, email_content, posted_by)
         return comment
 
     @staticmethod

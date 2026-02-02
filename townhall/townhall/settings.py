@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     "channels",
     "simple_history",
     "activities",
+    "django_rq",
 ]
 
 MIDDLEWARE = [
@@ -288,3 +289,25 @@ if DEBUG:
     print("DEBUG:", DEBUG)
     print("DEFAULT_FILE_STORAGE:", DEFAULT_FILE_STORAGE)
     # Don't print sensitive information even in debug mode
+
+
+# EMAIL CONFIG
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = "Atria Townhall <noreplay@atria.townhall.com>"
+
+
+# MAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# For testing - prints email in terminal instead
+
+RQ_QUEUES = {
+    "default": {
+        "HOST": "localhost",
+        "PORT": 6379,
+        "DB": 0,
+    }
+}
