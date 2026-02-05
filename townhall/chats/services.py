@@ -9,6 +9,7 @@ import typing
 
 
 class ChatServices:
+    @staticmethod
     def get_chat(id: int) -> Optional[Chat]:
         try:
             chat = ChatDao.get_chat(id=id)
@@ -16,12 +17,14 @@ class ChatServices:
         except Chat.DoesNotExist:
             raise ValidationError(f"Chat with the given id: {id}, does not exist.")
 
+    @staticmethod
     def get_chat_all() -> QuerySet[Chat]:
         chats = ChatDao.get_chat_all()
-        if not chats.exists():
+        if chats is None or not chats.exists():
             raise ValidationError("No chats were found.")
         return chats
 
+    @staticmethod
     def delete_chat(id: int) -> None:
         try:
             ChatDao.delete_chat(id=id)
@@ -55,6 +58,7 @@ class ChatServices:
         except ValidationError:
             raise
 
+    @staticmethod
     def add_user(chat_id: int, user_id: int):
         try:
             ChatDao.add_user(chat_id=chat_id, user_id=user_id)
@@ -81,6 +85,7 @@ class ChatServices:
 
 
 class MessageServices:
+    @staticmethod
     def create_message(create_message_data: CreateMessageData) -> Optional[Message]:
         try:
             message = MessageDao.create_message(create_message_data=create_message_data)
@@ -89,6 +94,7 @@ class MessageServices:
         except ValidationError:
             raise
 
+    @staticmethod
     def get_message(id: int) -> typing.Optional[Message]:
         try:
             message = MessageDao.get_message(id=id)
@@ -96,12 +102,14 @@ class MessageServices:
         except Message.DoesNotExist:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
 
+    @staticmethod
     def delete_message(id: int) -> None:
         try:
             MessageDao.delete_message(id=id)
         except Message.DoesNotExist:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
 
+    @staticmethod
     def update_message(id: int, update_message_data: UpdateMessageData) -> None:
         try:
             MessageDao.update_message(id=id, update_message_data=update_message_data)

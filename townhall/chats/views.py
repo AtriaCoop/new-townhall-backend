@@ -16,7 +16,7 @@ from django.utils import timezone
 from .models import Chat
 from .models import Message
 from .models import GroupMessage
-from .models import User
+from users.models import User
 
 
 class ChatViewSet(viewsets.ModelViewSet):

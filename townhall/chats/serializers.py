@@ -63,7 +63,7 @@ class OptionalMessageSerializer(serializers.ModelSerializer):
     user = UserMiniSerializer(required=False)
     chat = ChatMiniSerializer(required=False)
     content = serializers.CharField(required=False)
-    image_content = serializers.CharField(required=False)
+    image_content = serializers.ImageField(required=False, allow_null=True)
     sent_at = serializers.DateTimeField(required=False)
 
     class Meta:
