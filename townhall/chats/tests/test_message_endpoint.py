@@ -105,7 +105,6 @@ class TestMessageEndpoint(TestCase):
         url = "/chats/messages/3/"
         updated_data = {
             "content": "New updated message",
-            "image_content": "New image",
         }
 
         # Act
@@ -121,7 +120,6 @@ class TestMessageEndpoint(TestCase):
         url = "/chats/messages/999999999/"  # assume this message does not exist
         updated_data = {
             "content": "New updated message",
-            "image_content": "New image",
         }
 
         # Act
