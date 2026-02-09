@@ -74,7 +74,9 @@ class TestPostTags(TestCase):
         # Arrange
         post = PostServices.create_post(self.post_data)
         update_data = UpdatePostData(
-            content="New Hello World!", user_id=self.regular.id
+            content="New Hello World!",
+            user_id=self.regular.id,
+            tags=["Greeting", "Coding"],
         )
 
         # Act
