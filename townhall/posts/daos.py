@@ -2,7 +2,7 @@ import typing
 
 from django.forms import ValidationError
 from django.db import IntegrityError
-from .models import Post, Comment, ReportedPost, Reaction
+from .models import Post, Comment, ReportedPost, Reaction, Tag
 from .types import (
     CreatePostData,
     UpdatePostData,
@@ -35,6 +35,9 @@ class PostDao:
             pinned=post_data.pinned,
         )
 
+        tag_objects = PostDao._create_tag_objects(post_data.tags)
+        post.tags.set(tag_objects)
+
         return post
 
     def update_post(id: int, post_data: UpdatePostData) -> Post:
@@ -50,6 +53,9 @@ class PostDao:
         if post_data.pinned is not None:
             post.pinned = post_data.pinned
 
+        tag_objects = PostDao._create_tag_objects(post_data.tags)
+        post.tags.set(tag_objects)
+
         post.save()
 
         return post
@@ -60,6 +66,18 @@ class PostDao:
             post.delete()
         except Post.DoesNotExist:
             raise ValueError(f"Post with ID {post_id} does not exist.")
+
+    def _create_tag_objects(tags: list[str]) -> list[Tag]:
+        """
+        Convert a list of tag strings into Tag objects
+        """
+        tag_objects = []
+        if tags is not None:
+            for tag_name in tags:
+                # Create tag object
+                tag_obj, _ = Tag.objects.get_or_create(name=tag_name)
+                tag_objects.append(tag_obj)
+        return tag_objects
 
 
 class CommentDao:
