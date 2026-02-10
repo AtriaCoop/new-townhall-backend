@@ -11,13 +11,13 @@ class ActivityViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="")
     def get_user_activities(self, request):
-        user_id = request.session.get("_auth_user_id")
-
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
-                {"message": "Missing user_id"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
+
+        user_id = request.user.id
 
         try:
             activities = ActivityServices.get_user_activities(user_id)

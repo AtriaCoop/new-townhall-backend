@@ -61,6 +61,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Required for admin panel access
 
+    failed_login_attempts = models.IntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+
     tags = models.ManyToManyField(Tag, blank=True, related_name="users")
     history = HistoricalRecords()
 

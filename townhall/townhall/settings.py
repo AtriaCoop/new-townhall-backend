@@ -85,7 +85,7 @@ CSRF_COOKIE_SECURE = not DEBUG  # Only secure in production
 SESSION_COOKIE_SECURE = not DEBUG  # Only secure in production
 CSRF_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"
 SESSION_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"
-CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_DOMAIN = None
 SESSION_COOKIE_DOMAIN = None
 
@@ -130,6 +130,9 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "signup": "3/min",
+    },
 }
 
 # Session Security

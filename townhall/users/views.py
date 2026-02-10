@@ -6,11 +6,16 @@ from rest_framework.response import Response
 from django.forms import ValidationError
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login, logout
-from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password
 from django.middleware.csrf import get_token
 from django.utils import timezone
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django_ratelimit.decorators import ratelimit
+from rest_framework.throttling import AnonRateThrottle
+from datetime import timedelta
 import json
 from .models import User, Tag
 from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
@@ -25,6 +30,10 @@ from .serializers import (
 from .services import UserServices, ReportServices
 
 
+class SignupThrottle(AnonRateThrottle):
+    rate = "3/min"
+
+
 @ensure_csrf_cookie
 def get_csrf_token(request):
     token = get_token(request)
@@ -32,8 +41,15 @@ def get_csrf_token(request):
 
 
 # USER LOGIN
+@ratelimit(key="ip", rate="5/m", method="POST", block=False)
 def login_user(request):
     if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many login attempts. Please try again later."},
+                status=429,
+            )
+
         try:
             data = json.loads(request.body)
             email = data.get("email")
@@ -43,10 +59,25 @@ def login_user(request):
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                return JsonResponse({"error": "User not found"}, status=404)
+                return JsonResponse({"error": "Invalid email or password"}, status=401)
+
+            # Check account lockout
+            if user.locked_until and timezone.now() < user.locked_until:
+                return JsonResponse(
+                    {"error": "Account temporarily locked. Please try again later."},
+                    status=429,
+                )
 
             # Validate Password
             if check_password(password, user.password):
+                # Reset failed attempts on successful login
+                if user.failed_login_attempts > 0:
+                    user.failed_login_attempts = 0
+                    user.locked_until = None
+                    user.save(
+                        update_fields=["failed_login_attempts", "locked_until"]
+                    )
+
                 login(
                     request, user, backend="django.contrib.auth.backends.ModelBackend"
                 )
@@ -63,7 +94,14 @@ def login_user(request):
                     status=200,
                 )
             else:
-                return JsonResponse({"error": "Invalid password"}, status=400)
+                # Increment failed attempts and lock after 5 failures
+                user.failed_login_attempts += 1
+                if user.failed_login_attempts >= 5:
+                    user.locked_until = timezone.now() + timedelta(minutes=15)
+                user.save(
+                    update_fields=["failed_login_attempts", "locked_until"]
+                )
+                return JsonResponse({"error": "Invalid email or password"}, status=401)
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
@@ -72,7 +110,6 @@ def login_user(request):
 
 
 # USER LOGOUT
-@csrf_exempt
 def logout_user(request):
     if request.method == "POST":
         logout(request)
@@ -84,35 +121,77 @@ def logout_user(request):
     return JsonResponse({"error": "Invalid request method."}, status=405)
 
 
+# CHANGE PASSWORD
+def change_password(request):
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Not authenticated"}, status=401)
+
+        try:
+            data = json.loads(request.body)
+            current_password = data.get("current_password")
+            new_password = data.get("new_password")
+
+            if not current_password or not new_password:
+                return JsonResponse(
+                    {"error": "Both current_password and new_password are required"},
+                    status=400,
+                )
+
+            if not check_password(current_password, request.user.password):
+                return JsonResponse(
+                    {"error": "Current password is incorrect"}, status=400
+                )
+
+            try:
+                validate_password(new_password, request.user)
+            except DjangoValidationError as e:
+                return JsonResponse({"error": e.messages[0]}, status=400)
+
+            request.user.set_password(new_password)
+            request.user.save()
+
+            # Re-authenticate to refresh session hash after password change
+            login(
+                request,
+                request.user,
+                backend="django.contrib.auth.backends.ModelBackend",
+            )
+
+            return JsonResponse({"message": "Password changed successfully"})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
 class UserViewSet(viewsets.ModelViewSet):
 
     # CREATE USER
-    @action(detail=False, methods=["post"], url_path="user")
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="user",
+        throttle_classes=[SignupThrottle],
+    )
     @permission_classes([AllowAny])
     def create_user(self, request):
-        print("➡️ Received request to create user")
-        print("📨 Request data:", request.data)
-
         serializer = CreateUserSerializer(data=request.data)
 
         if not serializer.is_valid():
-            print("❌ Serializer invalid:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated_data = serializer.validated_data
-        print("✅ Serializer validated data:", validated_data)
 
         create_user_data = CreateUserData(
             email=validated_data.get("email"), password=validated_data["password"]
         )
 
         try:
-            print("🔧 Calling UserServices.create_user")
             user = UserServices.create_user(create_user_data)
-            print("✅ User created successfully:", user)
 
             response_serializer = UserSerializer(user)
-            print("📦 Serialized user:", response_serializer.data)
 
             return Response(
                 {
@@ -122,7 +201,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            print("❌ ValidationError while creating user:", str(e))
             return Response(
                 {
                     "message": str(e),
@@ -130,7 +208,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            print("🔥 Unexpected error while creating user:", str(e))
             return Response(
                 {
                     "message": "Internal server error",
@@ -232,14 +309,12 @@ class UserViewSet(viewsets.ModelViewSet):
     def delete_user(self, request, user_id):
         uid = user_id
 
-        # Check if user is trying to delete their own profile
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if int(user_id) != uid:
+        if request.user.id != uid:
             return Response(
                 {"error": "You can only delete your own profile"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -260,14 +335,12 @@ class UserViewSet(viewsets.ModelViewSet):
     def update_user(self, request, user_id):
         uid = user_id
 
-        # Check if user is trying to update their own profile
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if int(user_id) != uid:
+        if request.user.id != uid:
             return Response(
                 {"error": "You can only update your own profile"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -320,9 +393,10 @@ class UserViewSet(viewsets.ModelViewSet):
                 {"message": error_message}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            # Print the error for debugging
-            print(f"Unexpected error in update_user: {e}")
-            print(f"Error type: {type(e).__name__}")
+            return Response(
+                {"message": "Internal server error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # SEARCH USERS TO MENTION
     @action(detail=False, methods=["get"], url_path="mention")
@@ -407,17 +481,9 @@ class TagViewSet(viewsets.ModelViewSet):
 class ReportViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="report")
     def create_report_request(self, request):
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = ReportSerializer(data=request.data)
@@ -428,7 +494,7 @@ class ReportViewSet(viewsets.ModelViewSet):
         validated_data = serializer.validated_data
 
         create_report_data = CreateReportData(
-            user_id=user.id,
+            user_id=request.user.id,
             content=validated_data["content"],
             created_at=timezone.now(),
         )

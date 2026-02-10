@@ -74,35 +74,20 @@ class PostViewSet(viewsets.ModelViewSet):
     # CREATE POST
     @action(detail=False, methods=["post"], url_path="post")
     def create_post(self, request):
-        # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = PostSerializer(data=request.data)
 
         if not serializer.is_valid():
-            print("Serializer errors:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user = request.user
-        if not user.is_authenticated:
-            return Response(
-                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
         validated_data = serializer.validated_data
 
         create_post_data = CreatePostData(
-            user_id=user.id,
+            user_id=request.user.id,
             content=validated_data["content"],
             created_at=timezone.now(),
             image=validated_data.get("image", None),
@@ -171,9 +156,7 @@ class PostViewSet(viewsets.ModelViewSet):
     # DELETE A POST
     @action(detail=True, methods=["delete"], url_path="post")
     def delete_post(self, request, pk=None):
-        # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
@@ -185,8 +168,7 @@ class PostViewSet(viewsets.ModelViewSet):
                 {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # Check if user is trying to delete their own post
-        if int(user_id) != post.user.id:
+        if request.user.id != post.user.id:
             return Response(
                 {"error": "You can only delete your own posts"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -204,25 +186,16 @@ class PostViewSet(viewsets.ModelViewSet):
     # LIKE A POST
     @action(detail=True, methods=["patch"], url_path="like")
     def like_post(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
         try:
             post = Post.objects.get(pk=pk)
 
-            # Here: fetch user ID from session
-            user_id = request.session.get("_auth_user_id")
-            if not user_id:
-                return Response(
-                    {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-                )
-
-            try:
-                user = User.objects.get(id=user_id)
-            except User.DoesNotExist:
-                return Response(
-                    {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
-                )
-
-            if user in post.liked_by.all():
-                post.liked_by.remove(user)
+            if request.user in post.liked_by.all():
+                post.liked_by.remove(request.user)
                 post.likes -= 1
                 post.save()
                 return Response(
@@ -230,7 +203,7 @@ class PostViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_200_OK,
                 )
             else:
-                post.liked_by.add(user)
+                post.liked_by.add(request.user)
                 post.likes += 1
                 post.save()
                 return Response(
@@ -246,18 +219,9 @@ class PostViewSet(viewsets.ModelViewSet):
     # REPORT A POST
     @action(detail=True, methods=["post"], url_path="report")
     def report_post(self, request, pk=None):
-        # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -273,7 +237,7 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         create_reported_post_data = ReportedPostData(
-            user_id=user.id,
+            user_id=request.user.id,
             post_id=post.id,
             created_at=timezone.now(),
         )
@@ -303,14 +267,11 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["patch"], url_path="reaction")
     def toggle_reaction(self, request, pk=None):
-        # Get user from session
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Get reaction type from request
         reaction_type = request.data.get("reaction_type")
         if not reaction_type:
             return Response(
@@ -319,9 +280,8 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            # Create data object for service layer
             reaction_data = ToggleReactionData(
-                user_id=int(user_id), post_id=int(pk), reaction_type=reaction_type
+                user_id=request.user.id, post_id=int(pk), reaction_type=reaction_type
             )
 
             # Delegate business logic to service layer
@@ -351,13 +311,8 @@ class PostViewSet(viewsets.ModelViewSet):
             # Handle invalid integer conversion
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            # Log the actual error for debugging
-            import traceback
-
-            print(f"Error in toggle_reaction: {str(e)}")
-            print(traceback.format_exc())
             return Response(
-                {"error": f"An unexpected error occurred: {str(e)}"},
+                {"error": "An unexpected error occurred"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -370,21 +325,11 @@ class CommentViewSet(viewsets.ModelViewSet):
     # CREATE A COMMENT
     @action(detail=False, methods=["post"], url_path="comment")
     def create_comment(self, request):
-        # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Transforms requests JSON data into a python dictionary
         serializer = CreateCommentSerializer(data=request.data)
 
         # If the data is NOT valid return with a message serializers errors
@@ -394,7 +339,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         validated_data = serializer.validated_data
 
         create_comment_data = CreateCommentData(
-            user_id=user.id,
+            user_id=request.user.id,
             post_id=validated_data["post"].id,
             content=validated_data["content"],
             created_at=validated_data["created_at"],
@@ -458,9 +403,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     # DELETE COMMENT (only by author)
     def destroy(self, request, *args, **kwargs):
-        # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
@@ -472,8 +415,7 @@ class CommentViewSet(viewsets.ModelViewSet):
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # Allow only the author to delete
-        if comment.user.id != int(user_id):
+        if comment.user.id != request.user.id:
             return Response(
                 {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
             )

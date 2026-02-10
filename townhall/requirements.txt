@@ -42,3 +42,4 @@ whitenoise==6.9.0
 python-dateutil==2.9.0.post0
 daphne==4.1.2
 django-simple-history==3.10.1
+django-ratelimit==4.1.0

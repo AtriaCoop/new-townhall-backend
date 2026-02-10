@@ -300,18 +300,9 @@ class MessageViewSet(viewsets.ModelViewSet):
     # POST (Create) message
     @action(detail=False, methods=["post"], url_path="messages")
     def create_message_request(self, request):
-        # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = MessageSerializer(data=request.data)
@@ -327,7 +318,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         validated_data = serializer.validated_data
         created_message_data = CreateMessageData(
-            user_id=user.id,
+            user_id=request.user.id,
             chat_id=validated_data["chat"].id,
             content=validated_data["content"],
             image_content=validated_data.get("image_content", None),
