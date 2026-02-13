@@ -12,6 +12,8 @@ from .views import (
     logout_user,
     get_csrf_token,
     change_password,
+    forgot_password,
+    reset_password,
 )
 
 router = DefaultRouter()
@@ -22,6 +24,8 @@ urlpatterns = [
     path("auth/logout/", logout_user),
     path("auth/csrf/", get_csrf_token),
     path("auth/change-password/", change_password, name="change_password"),
+    path("auth/forgot-password/", forgot_password, name="forgot_password"),
+    path("auth/reset-password/", reset_password, name="reset_password"),
     path(
         "user/",
         UserViewSet.as_view(

@@ -22,7 +22,8 @@ class UpdateUserData:
     about_me: Optional[str] = None
     skills_interests: Optional[str] = None
     profile_image: Optional[str] = None
-    receive_emails: bool = None
+    profile_header: Optional[str] = None
+    receive_emails: Optional[bool] = None
     tags: Optional[List[str]] = None
     linkedin_url: Optional[str] = None
     facebook_url: Optional[str] = None

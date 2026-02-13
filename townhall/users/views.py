@@ -13,6 +13,11 @@ from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
 from django_ratelimit.decorators import ratelimit
 from rest_framework.throttling import AnonRateThrottle
 from datetime import timedelta
@@ -159,6 +164,115 @@ def change_password(request):
             )
 
             return JsonResponse({"message": "Password changed successfully"})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# FORGOT PASSWORD - Send Reset Email
+@ratelimit(key="ip", rate="3/m", method="POST", block=False)
+def forgot_password(request):
+    if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many requests. Please try again later."},
+                status=429,
+            )
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+
+            if not email:
+                return JsonResponse({"error": "Email is required"}, status=400)
+
+            # Always return success to prevent email enumeration
+            try:
+                user = User.objects.get(email=email)
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+                reset_url = (
+                    f"{settings.FRONTEND_URL}/ResetPasswordPage"
+                    f"?uid={uid}&token={token}"
+                )
+
+                send_mail(
+                    subject="Townhall - Reset Your Password",
+                    message=(
+                        f"Hi {user.full_name or 'there'},\n\n"
+                        f"Click the link below to reset your password:\n"
+                        f"{reset_url}\n\n"
+                        f"This link expires in 1 hour.\n\n"
+                        f"If you didn't request this, ignore this email."
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+            except User.DoesNotExist:
+                pass  # Don't reveal whether email exists
+
+            return JsonResponse(
+                {
+                    "message": "If an account exists with that email, a reset link has been sent."
+                }
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# RESET PASSWORD - Validate Token and Set New Password
+@ratelimit(key="ip", rate="5/m", method="POST", block=False)
+def reset_password(request):
+    if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many requests. Please try again later."},
+                status=429,
+            )
+
+        try:
+            data = json.loads(request.body)
+            uid = data.get("uid")
+            token = data.get("token")
+            new_password = data.get("new_password")
+
+            if not uid or not token or not new_password:
+                return JsonResponse(
+                    {"error": "uid, token, and new_password are required"},
+                    status=400,
+                )
+
+            try:
+                user_id = force_str(urlsafe_base64_decode(uid))
+                user = User.objects.get(pk=user_id)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                return JsonResponse(
+                    {"error": "Invalid reset link"}, status=400
+                )
+
+            if not default_token_generator.check_token(user, token):
+                return JsonResponse(
+                    {"error": "Reset link has expired or is invalid"},
+                    status=400,
+                )
+
+            try:
+                validate_password(new_password, user)
+            except DjangoValidationError as e:
+                return JsonResponse({"error": e.messages[0]}, status=400)
+
+            user.set_password(new_password)
+            user.save()
+
+            return JsonResponse(
+                {"message": "Password has been reset successfully"}
+            )
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
@@ -363,6 +477,7 @@ class UserViewSet(viewsets.ModelViewSet):
             about_me=validated_data.get("about_me"),
             skills_interests=validated_data.get("skills_interests"),
             profile_image=request.FILES.get("profile_image"),
+            profile_header=request.FILES.get("profile_header"),
             receive_emails=validated_data.get("receive_emails"),
             tags=validated_data.get("tags", []),
             linkedin_url=validated_data.get("linkedin_url"),

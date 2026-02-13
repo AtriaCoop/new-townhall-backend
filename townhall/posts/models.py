@@ -52,6 +52,12 @@ class Reaction(models.Model):
         ("support", "Support"),
         ("inspired", "Inspired"),
         ("helpful", "Helpful"),
+        ("celebrate", "Celebrate"),
+        ("laugh", "Laugh"),
+        ("fire", "Fire"),
+        ("clap", "Clap"),
+        ("grateful", "Grateful"),
+        ("mindblown", "Mind Blown"),
     ]
 
     id = models.AutoField(primary_key=True)

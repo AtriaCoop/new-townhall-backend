@@ -38,6 +38,7 @@ urlpatterns = [
     path("", include("posts.urls")),
     path("", include("chats.urls")),
     path("", include("activities.urls")),
+    path("", include("events.urls")),
     path("", root),
 ]
 
