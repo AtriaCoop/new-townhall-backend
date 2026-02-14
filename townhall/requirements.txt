@@ -44,3 +44,4 @@ daphne==4.1.2
 django-simple-history==3.10.1
 django-ratelimit==4.1.0
 django-jazzmin==3.0.1
+sendgrid==6.12.5

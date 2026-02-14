@@ -208,12 +208,7 @@ SESSION_SAVE_EVERY_REQUEST = True
 PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
 
 # Email Configuration (SendGrid)
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.sendgrid.net"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "apikey"
-EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@townhall.app")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")

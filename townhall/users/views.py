@@ -16,7 +16,6 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from django.core.mail import send_mail
 from django.conf import settings
 from django_ratelimit.decorators import ratelimit
 from rest_framework.throttling import AnonRateThrottle
@@ -33,6 +32,8 @@ from .serializers import (
     ReportSerializer,
 )
 from .services import UserServices, ReportServices
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 
 class SignupThrottle(AnonRateThrottle):
@@ -198,19 +199,23 @@ def forgot_password(request):
                     f"?uid={uid}&token={token}"
                 )
 
-                send_mail(
+                # ✅ Send email using SendGrid API
+                message = Mail(
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to_emails=user.email,
                     subject="Townhall - Reset Your Password",
-                    message=(
+                    plain_text_content=(
                         f"Hi {user.full_name or 'there'},\n\n"
                         f"Click the link below to reset your password:\n"
                         f"{reset_url}\n\n"
                         f"This link expires in 1 hour.\n\n"
                         f"If you didn't request this, ignore this email."
                     ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=False,
                 )
+
+                sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+                sg.send(message)
+
             except User.DoesNotExist:
                 pass  # Don't reveal whether email exists
 
