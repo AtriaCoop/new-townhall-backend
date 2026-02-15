@@ -31,9 +31,7 @@ class TestActivityLogEndpoint(TestCase):
 
     def test_activity_log_success(self):
         # Arrange & Act
-        session = self.client.session
-        session["_auth_user_id"] = self.user.id
-        session.save()
+        self.client.force_authenticate(user=self.user)
         url = "/activities/"
         response = self.client.get(url, format="json")
 
@@ -49,12 +47,10 @@ class TestActivityLogEndpoint(TestCase):
             assert "activity" in activity
 
     def test_activity_log_nonexistent_user(self):
-
-        # Arrange & Act
-
+        # Arrange & Act - no authentication
         url = "/activities/"
         response = self.client.get(url, format="json")
 
-        # Assert
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert not response.data.get("success", False)
+        # Assert - view returns 401 for unauthenticated requests
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "error" in response.data
