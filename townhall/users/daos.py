@@ -82,11 +82,14 @@ class UserDao:
             # compare and rank in the QuerySet
             User.objects.annotate(
                 full_name_lowercase=Lower("full_name"),
-                # Give ranking scores based on if exact match, starts with, or contains
+                # Rank: exact match, starts with, or contains
                 rank=Case(
                     When(full_name_lowercase=query, then=Value(3)),
                     When(full_name_lowercase__startswith=query, then=Value(2)),
-                    When(full_name_lowercase__icontains=query, then=Value(1)),
+                    When(
+                        full_name_lowercase__icontains=query,
+                        then=Value(1),
+                    ),
                     default=Value(0),
                     output_field=IntegerField(),
                 ),

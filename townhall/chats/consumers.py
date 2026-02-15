@@ -52,14 +52,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "sender_id": sender,
                 "full_name": user.full_name,
                 "organization": user.primary_organization,
-                "profile_image": user.profile_image.url if user.profile_image else None,
+                "profile_image": (
+                    user.profile_image.url if user.profile_image else None
+                ),
             },
         )
 
         # Broadcast to user listeners
         chat = await sync_to_async(Chat.objects.get)(id=self.chat_id)
         participant_ids = await sync_to_async(list)(
-            chat.participants.values_list("id", flat=True)
+            chat.participants.values_list("id", flat=True),
         )
 
         for user_id in participant_ids:
@@ -137,7 +139,9 @@ class GroupConsumer(AsyncWebsocketConsumer):
                 "sender_id": sender,
                 "full_name": user.full_name,
                 "organization": user.primary_organization,
-                "profile_image": user.profile_image.url if user.profile_image else None,
+                "profile_image": (
+                    user.profile_image.url if user.profile_image else None
+                ),
             },
         )
 

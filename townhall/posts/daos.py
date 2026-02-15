@@ -19,8 +19,7 @@ class PostDao:
         return Post.objects.get(id=id)
 
     def get_all_posts(offset: int, limit: int) -> tuple[typing.List[Post], int]:
-        """Return a list of posts ordered by most recent,
-        paginated using offset and limit. Also returns total number of posts."""
+        """Return recent posts paginated with total count."""
         qs = Post.objects.order_by("-pinned", "-created_at")
         total_count = qs.count()
         items = list(qs[offset : offset + limit])
@@ -99,7 +98,8 @@ class CommentDao:
         try:
             comment = Comment.objects.get(id=id)
         except Comment.DoesNotExist:
-            raise ValidationError(f"Comment with ID {id} does not exist.")
+            msg = f"Comment with ID {id} does not exist."
+            raise ValidationError(msg)
 
         if update_content_data.content is not None:
             comment.content = update_content_data.content

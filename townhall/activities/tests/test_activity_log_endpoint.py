@@ -12,14 +12,18 @@ class TestActivityLogEndpoint(TestCase):
 
         # Create a user, post and comment
         self.user = User.objects.create_user(
-            email="test@example.com", password="password", full_name="John Doe"
+            email="test@example.com",
+            password="password",
+            full_name="John Doe",
         )
         self.post = Post.objects.create(user=self.user, content="Original post")
         self.comment = Comment.objects.create(
-            user=self.user, post=self.post, content="Nice post!"
+            user=self.user,
+            post=self.post,
+            content="Nice post!",
         )
 
-        # Update post, comment, and user to create additional historical records
+        # Update post, comment, user to create additional historical records
         self.post.content = "Updated and changed the post!"
         self.post.save()
 

@@ -154,16 +154,14 @@ class ReportedPostServices:
             raise ValidationError("Invalid user_id or post_id")
 
         # Check if the user exists
-        if not User.objects.filter(id=create_reported_post_data.user_id).exists():
-            raise ValidationError(
-                f"User with id {create_reported_post_data.user_id} doesn't exist."
-            )
+        uid = create_reported_post_data.user_id
+        if not User.objects.filter(id=uid).exists():
+            raise ValidationError(f"User with id {uid} doesn't exist.")
 
         # Check if the post exists
-        if not Post.objects.filter(id=create_reported_post_data.post_id).exists():
-            raise ValidationError(
-                f"Post with id {create_reported_post_data.post_id} doesn't exist."
-            )
+        pid = create_reported_post_data.post_id
+        if not Post.objects.filter(id=pid).exists():
+            raise ValidationError(f"Post with id {pid} doesn't exist.")
 
         # A user should only be able to report a post once
         if ReportedPost.objects.filter(
@@ -199,9 +197,8 @@ class ReactionServices:
         # Validate reaction type
         valid_reactions = [choice[0] for choice in Reaction.Reaction_Choices]
         if reaction_data.reaction_type not in valid_reactions:
-            raise ValidationError(
-                f"Invalid reaction type. Must be one of: {', '.join(valid_reactions)}"
-            )
+            valid_str = ", ".join(valid_reactions)
+            raise ValidationError(f"Invalid reaction type. Must be one of: {valid_str}")
 
         # Check if reaction already exists
         existing_reaction = ReactionDao.get_reaction(
