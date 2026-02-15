@@ -33,10 +33,16 @@ class ActivityViewSet(viewsets.ViewSet):
             )
 
         except ValidationError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # fallback for unexpected errors
         except Exception as e:

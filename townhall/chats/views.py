@@ -16,7 +16,6 @@ from django.utils import timezone
 from .models import Chat
 from .models import Message
 from .models import GroupMessage
-from users.models import User
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -141,7 +140,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                     "success": True,
                     "data": response_serializer.data,
                 },
-                status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+                status=(status.HTTP_201_CREATED if created else status.HTTP_200_OK),
             )
         except ValidationError as e:
             return Response(
@@ -180,7 +179,8 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response(
-                {"message": f"Unexpected error: {str(e)}", "success": False}, status=500
+                {"message": f"Unexpected error: {str(e)}", "success": False},
+                status=500,
             )
 
     # GET Message
@@ -203,7 +203,8 @@ class ChatViewSet(viewsets.ModelViewSet):
 
             if not chat_id:
                 return Response(
-                    {"success": False, "error": "chat_id is required"}, status=400
+                    {"success": False, "error": "chat_id is required"},
+                    status=400,
                 )
 
             message = Message.objects.create(
@@ -235,7 +236,9 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     # GET Group Message
     @action(
-        detail=False, methods=["get"], url_path="group-messages/(?P<group_name>[^/.]+)"
+        detail=False,
+        methods=["get"],
+        url_path="group-messages/(?P<group_name>[^/.]+)",
     )
     @permission_classes([IsAuthenticated])
     def get_group_messages(self, request, group_name=None):
@@ -251,7 +254,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                         "timestamp": m.sent_at,
                         "organization": m.user.primary_organization,
                         "profile_image": (
-                            m.user.profile_image.url if m.user.profile_image else None
+                            (m.user.profile_image.url if m.user.profile_image else None)
                         ),
                         "image": m.image.url if m.image else None,
                     }
@@ -302,7 +305,8 @@ class MessageViewSet(viewsets.ModelViewSet):
     def create_message_request(self, request):
         if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         serializer = MessageSerializer(data=request.data)
@@ -383,7 +387,10 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # If the data is NOT valid return with message serializers errors
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # If here, the data was validated
         validated_data = serializer.validated_data

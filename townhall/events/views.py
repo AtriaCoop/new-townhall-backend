@@ -75,11 +75,12 @@ class EventViewSet(viewsets.GenericViewSet):
 
         try:
             event = EventServices.create_event(create_data)
-            response_serializer = EventSerializer(
-                event, context={"request": request}
-            )
+            response_serializer = EventSerializer(event, context={"request": request})
             return Response(
-                {"message": "Event created successfully", "event": response_serializer.data},
+                {
+                    "message": "Event created successfully",
+                    "event": response_serializer.data,
+                },
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:

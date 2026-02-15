@@ -59,7 +59,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     instagram_url = models.URLField(max_length=255, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)  # Required for admin panel access
+    is_staff = models.BooleanField(default=False)  # For admin panel
 
     failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)

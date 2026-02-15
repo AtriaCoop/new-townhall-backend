@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
 from django.utils import timezone
-from .models import User, Post, Comment
+from .models import Post, Comment
 from .types import (
     CreatePostData,
     UpdatePostData,
@@ -40,11 +40,17 @@ class PostViewSet(viewsets.ModelViewSet):
             post = PostServices.get_post(id=pk)
             serializer = PostSerializer(post)
             return Response(
-                {"message": "Post fetched successfully", "post": serializer.data},
+                {
+                    "message": "Post fetched successfully",
+                    "post": serializer.data,
+                },
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     # GET ALL POSTS
     @action(detail=False, methods=["get"], url_path="post")
@@ -68,7 +74,8 @@ class PostViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     # CREATE POST
@@ -76,15 +83,21 @@ class PostViewSet(viewsets.ModelViewSet):
     def create_post(self, request):
         if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         serializer = PostSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         validated_data = serializer.validated_data
+
+        tag_names = request.data.getlist("tags")
 
         create_post_data = CreatePostData(
             user_id=request.user.id,
@@ -92,6 +105,7 @@ class PostViewSet(viewsets.ModelViewSet):
             created_at=timezone.now(),
             image=validated_data.get("image", None),
             pinned=validated_data.get("pinned", False),
+            tags=tag_names if tag_names else None,
         )
 
         try:
@@ -105,9 +119,15 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except PermissionDenied as e:
-            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
     # UPDATE POST
     @action(detail=True, methods=["patch"], url_path="post")
@@ -116,56 +136,71 @@ class PostViewSet(viewsets.ModelViewSet):
         user = request.user
         if not user.is_authenticated:
             return Response(
-                {"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"message": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         try:
             post = Post.objects.get(pk=pk)
         except Post.DoesNotExist:
             return Response(
-                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Post not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         serializer = PostSerializer(post, data=request.data, partial=True)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if (
             not post.user_id == user.id
             and serializer.validated_data.get("content")
             or serializer.validated_data.get("image")
         ):
             return Response(
-                {"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+                {"message": "Permission denied"},
+                status=status.HTTP_403_FORBIDDEN,
             )
+
+        tag_names = request.data.getlist("tags")
 
         update_post_data = UpdatePostData(
             content=serializer.validated_data.get("content", None),
             image=serializer.validated_data.get("image", None),
             pinned=serializer.validated_data.get("pinned", None),
+            tags=tag_names if tag_names else None,
             user_id=user.id,
         )
 
         try:
             PostServices.update_post(pk, update_post_data)
             return Response(
-                {"message": "Post Updated Successfully"}, status=status.HTTP_200_OK
+                {"message": "Post Updated Successfully"},
+                status=status.HTTP_200_OK,
             )
         except PermissionDenied as e:
-            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
     # DELETE A POST
     @action(detail=True, methods=["delete"], url_path="post")
     def delete_post(self, request, pk=None):
         if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         try:
             post = Post.objects.get(pk=pk)
         except Post.DoesNotExist:
             return Response(
-                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Post not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         if request.user.id != post.user.id:
@@ -181,14 +216,18 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_204_NO_CONTENT,
             )
         except ValidationError as e:
-            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     # LIKE A POST
     @action(detail=True, methods=["patch"], url_path="like")
     def like_post(self, request, pk=None):
         if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         try:
@@ -213,7 +252,8 @@ class PostViewSet(viewsets.ModelViewSet):
 
         except Post.DoesNotExist:
             return Response(
-                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Post not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
     # REPORT A POST
@@ -221,20 +261,25 @@ class PostViewSet(viewsets.ModelViewSet):
     def report_post(self, request, pk=None):
         if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         try:
             post = Post.objects.get(pk=pk)
         except Post.DoesNotExist:
             return Response(
-                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Post not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         serializer = ReportedPostSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         create_reported_post_data = ReportedPostData(
             user_id=request.user.id,
@@ -257,19 +302,22 @@ class PostViewSet(viewsets.ModelViewSet):
         except ValidationError as e:
             errorMessage = e.detail[0]
             return Response(
-                {"message": errorMessage}, status=status.HTTP_400_BAD_REQUEST
+                {"message": errorMessage},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         except IntegrityError as e:
             return Response(
-                {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @action(detail=True, methods=["patch"], url_path="reaction")
     def toggle_reaction(self, request, pk=None):
         if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         reaction_type = request.data.get("reaction_type")
@@ -281,7 +329,9 @@ class PostViewSet(viewsets.ModelViewSet):
 
         try:
             reaction_data = ToggleReactionData(
-                user_id=request.user.id, post_id=int(pk), reaction_type=reaction_type
+                user_id=request.user.id,
+                post_id=int(pk),
+                reaction_type=reaction_type,
             )
 
             # Delegate business logic to service layer
@@ -292,25 +342,34 @@ class PostViewSet(viewsets.ModelViewSet):
             serializer = PostSerializer(post)
 
             return Response(
-                {"message": message, "reactions": serializer.data["reactions"]},
+                {
+                    "message": message,
+                    "reactions": serializer.data["reactions"],
+                },
                 status=status.HTTP_200_OK,
             )
 
         except ValidationError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except Post.DoesNotExist:
             return Response(
-                {"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Post not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         except IntegrityError:
             return Response(
-                {"error": "Database constraint violation. Please try again."},
+                {"error": "Database constraint violation. " "Please try again."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except ValueError as e:
-            # Handle invalid integer conversion
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception:
             return Response(
                 {"error": "An unexpected error occurred"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -327,14 +386,18 @@ class CommentViewSet(viewsets.ModelViewSet):
     def create_comment(self, request):
         if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         serializer = CreateCommentSerializer(data=request.data)
 
         # If the data is NOT valid return with a message serializers errors
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         validated_data = serializer.validated_data
 
@@ -358,30 +421,39 @@ class CommentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     def update_comment(self, request, pk=None):
         user = request.user
         if not user or not user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         try:
             comment = CommentServices.get_comment(pk)
         except Comment.DoesNotExist:
             return Response(
-                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Comment not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         if comment.user != user:
             return Response(
-                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+                {"error": "Permission denied"},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         serializer = CommentSerializer(comment, data=request.data, partial=True)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if "content" not in serializer.validated_data:
             return Response(
@@ -395,33 +467,41 @@ class CommentViewSet(viewsets.ModelViewSet):
         try:
             CommentServices.update_comment(pk, update_comment_data)
         except ValidationError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response(
-            {"message": "Comment Updated Successfully"}, status=status.HTTP_200_OK
+            {"message": "Comment Updated Successfully"},
+            status=status.HTTP_200_OK,
         )
 
     # DELETE COMMENT (only by author)
     def destroy(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         try:
             comment = self.get_object()
         except Comment.DoesNotExist:
             return Response(
-                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Comment not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         if comment.user.id != request.user.id:
             return Response(
-                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+                {"error": "Permission denied"},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Authorized – delete it
         comment.delete()
         return Response(
-            {"message": "Comment deleted"}, status=status.HTTP_204_NO_CONTENT
+            {"message": "Comment deleted"},
+            status=status.HTTP_204_NO_CONTENT,
         )

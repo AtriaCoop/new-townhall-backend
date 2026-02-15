@@ -9,7 +9,13 @@ urlpatterns = [
     ),
     path(
         "event/<int:pk>/",
-        EventViewSet.as_view({"get": "get_event", "delete": "delete_event", "patch": "update_event"}),
+        EventViewSet.as_view(
+            {
+                "get": "get_event",
+                "delete": "delete_event",
+                "patch": "update_event",
+            }
+        ),
         name="event_detail",
     ),
     path(

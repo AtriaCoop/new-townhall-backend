@@ -6,7 +6,12 @@ from django.contrib.auth.hashers import make_password
 from django.db.models.query import QuerySet
 import typing
 from .models import User, Report, Tag
-from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
+from .types import (
+    CreateUserData,
+    UpdateUserData,
+    FilterUserData,
+    CreateReportData,
+)
 from .daos import UserDao, ReportDao
 
 
@@ -35,7 +40,9 @@ class UserServices:
             raise ValidationError(e.messages[0])
 
         # Prevent emails that are too similar to the password
-        if email.lower() in password.lower() or password.lower() in email.lower():
+        email_lower = email.lower()
+        pwd_lower = password.lower()
+        if email_lower in pwd_lower or pwd_lower in email_lower:
             logger.error(f"Password is too similar to the email: {email}")
             raise ValidationError("Password is too similar to the email.")
 
@@ -46,7 +53,8 @@ class UserServices:
             if User.objects.filter(email=create_user_data.email).exists():
                 raise ValidationError("A User with this email already exists.")
             UserServices.validate_user(
-                create_user_data.email, create_user_data.password
+                create_user_data.email,
+                create_user_data.password,
             )
             create_user_data.password = make_password(create_user_data.password)
             user = UserDao.create_user(create_user_data=create_user_data)

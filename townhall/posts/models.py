@@ -70,4 +70,6 @@ class Reaction(models.Model):
         unique_together = ["post", "user", "reaction_type"]
 
     def __str__(self):
-        return f"{self.user.full_name} - {self.reaction_type} on Post {self.post.id}"
+        return (
+            f"{self.user.full_name} - {self.reaction_type} on Post " f"{self.post.id}"
+        )

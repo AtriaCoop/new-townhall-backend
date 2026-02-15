@@ -14,10 +14,13 @@ from .types import (
 )
 from .daos import PostDao, CommentDao, ReportedPostDao, ReactionDao
 from users.models import User
-from .profanity import censor_text
+from .profanity import censor_text, _CENSOR_RE
 
 
 class PostServices:
+    MAX_TAG_LENGTH = 20
+    MAX_TAG_AMOUNT = 5
+
     @staticmethod
     def get_post(id: int) -> typing.Optional[Post]:
         try:
@@ -45,7 +48,11 @@ class PostServices:
         if not user.is_staff and create_post_data.pinned:
             raise PermissionDenied("You are not authorized to pin posts.")
 
+        # Validate tags for the post
+        PostServices._validate_tags(create_post_data.tags)
+
         post = PostDao.create_post(post_data=create_post_data)
+
         return _mask_content_instance(post)
 
     @staticmethod
@@ -55,7 +62,11 @@ class PostServices:
         if not user.is_staff and update_post_data.pinned is not None:
             raise PermissionDenied("You are not authorized to pin posts.")
 
+        # Validate tags for the post
+        PostServices._validate_tags(update_post_data.tags)
+
         post = PostDao.update_post(id=id, post_data=update_post_data)
+
         return _mask_content_instance(post)
 
     @staticmethod
@@ -64,6 +75,40 @@ class PostServices:
             PostDao.delete_post(post_id)
         except ValueError as e:
             raise ValidationError(str(e))
+
+    @staticmethod
+    def _validate_tags(tags: list[str] | None):
+        """
+        Validate tag lengths and get or create Tag objects.
+
+        - Enforces maximum tag length
+        - Rejects profanity
+        """
+        if tags is None:
+            return
+
+        # Check max tag amount
+        if len(tags) > PostServices.MAX_TAG_AMOUNT:
+            raise ValidationError(
+                f"Tags amount exceed max limit of "
+                f"{PostServices.MAX_TAG_AMOUNT} for a post."
+            )
+
+        for tag_name in tags:
+            # 1. Check max length
+            if len(tag_name) > PostServices.MAX_TAG_LENGTH:
+                raise ValidationError(
+                    (
+                        f"Tag '{tag_name}' exceeds the maximum length of "
+                        f"{PostServices.MAX_TAG_LENGTH} characters."
+                    )
+                )
+
+            # 2. Check for profanity
+            if _CENSOR_RE.search(tag_name):
+                raise ValidationError(
+                    f"Tag '{tag_name}' contains inappropriate language."
+                )
 
 
 class CommentServices:
@@ -109,16 +154,14 @@ class ReportedPostServices:
             raise ValidationError("Invalid user_id or post_id")
 
         # Check if the user exists
-        if not User.objects.filter(id=create_reported_post_data.user_id).exists():
-            raise ValidationError(
-                f"User with id {create_reported_post_data.user_id} doesn't exist."
-            )
+        uid = create_reported_post_data.user_id
+        if not User.objects.filter(id=uid).exists():
+            raise ValidationError(f"User with id {uid} doesn't exist.")
 
         # Check if the post exists
-        if not Post.objects.filter(id=create_reported_post_data.post_id).exists():
-            raise ValidationError(
-                f"Post with id {create_reported_post_data.post_id} doesn't exist."
-            )
+        pid = create_reported_post_data.post_id
+        if not Post.objects.filter(id=pid).exists():
+            raise ValidationError(f"Post with id {pid} doesn't exist.")
 
         # A user should only be able to report a post once
         if ReportedPost.objects.filter(
@@ -154,9 +197,8 @@ class ReactionServices:
         # Validate reaction type
         valid_reactions = [choice[0] for choice in Reaction.Reaction_Choices]
         if reaction_data.reaction_type not in valid_reactions:
-            raise ValidationError(
-                f"Invalid reaction type. Must be one of: {', '.join(valid_reactions)}"
-            )
+            valid_str = ", ".join(valid_reactions)
+            raise ValidationError(f"Invalid reaction type. Must be one of: {valid_str}")
 
         # Check if reaction already exists
         existing_reaction = ReactionDao.get_reaction(
