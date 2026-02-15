@@ -10,14 +10,18 @@ class TestActivityLogService(TestCase):
     def setUp(self):
         # Create a user, post and comment
         self.user = User.objects.create_user(
-            email="test@example.com", password="password", full_name="John Doe"
+            email="test@example.com",
+            password="password",
+            full_name="John Doe",
         )
         self.post = Post.objects.create(user=self.user, content="Original post")
         self.comment = Comment.objects.create(
-            user=self.user, post=self.post, content="Nice post!"
+            user=self.user,
+            post=self.post,
+            content="Nice post!",
         )
 
-        # Update post, comment, and user to create additional historical records
+        # Update post, comment, user to create additional historical records
         self.post.content = "Updated and changed the post!"
         self.post.save()
 
@@ -33,7 +37,7 @@ class TestActivityLogService(TestCase):
 
         # Act
 
-        # Find the first activity corresponding to a created Post (history_type '+')
+        # Find first activity for created Post (history_type '+')
         # returns None if not found
         post_created = next(
             (
@@ -96,21 +100,20 @@ class TestActivityLogService(TestCase):
         )
 
         self.assertIsNotNone(post_updated)
-        self.assertIn(
-            "updated post: content for post to 'updated and changed the post!'",
-            post_updated.description.lower(),
+        expected = (
+            "updated post: content for post to " "'updated and changed the post!'"
         )
+        self.assertIn(expected, post_updated.description.lower())
 
         self.assertIsNotNone(comment_created)
         self.assertIn(
-            "created a comment: 'nice post!'", comment_created.description.lower()
+            "created a comment: 'nice post!'",
+            comment_created.description.lower(),
         )
 
         self.assertIsNotNone(comment_updated)
-        self.assertIn(
-            "updated comment: content to 'updated and changed the comment!'",
-            comment_updated.description.lower(),
-        )
+        expected = "updated comment: content to " "'updated and changed the comment!'"
+        self.assertIn(expected, comment_updated.description.lower())
 
         self.assertIsNotNone(user_created)
         self.assertIn(

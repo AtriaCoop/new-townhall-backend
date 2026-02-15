@@ -18,7 +18,12 @@ from rest_framework.throttling import AnonRateThrottle
 from datetime import timedelta
 import json
 from .models import User, Tag
-from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
+from .types import (
+    CreateUserData,
+    UpdateUserData,
+    FilterUserData,
+    CreateReportData,
+)
 from .serializers import (
     UserSerializer,
     CreateUserSerializer,
@@ -59,12 +64,15 @@ def login_user(request):
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                return JsonResponse({"error": "Invalid email or password"}, status=401)
+                return JsonResponse(
+                    {"error": "Invalid email or password"},
+                    status=401,
+                )
 
             # Check account lockout
             if user.locked_until and timezone.now() < user.locked_until:
                 return JsonResponse(
-                    {"error": "Account temporarily locked. Please try again later."},
+                    {"error": "Account locked. Try again later."},
                     status=429,
                 )
 
@@ -75,11 +83,16 @@ def login_user(request):
                     user.failed_login_attempts = 0
                     user.locked_until = None
                     user.save(
-                        update_fields=["failed_login_attempts", "locked_until"]
+                        update_fields=[
+                            "failed_login_attempts",
+                            "locked_until",
+                        ]
                     )
 
                 login(
-                    request, user, backend="django.contrib.auth.backends.ModelBackend"
+                    request,
+                    user,
+                    backend="django.contrib.auth.backends.ModelBackend",
                 )
 
                 return JsonResponse(
@@ -98,10 +111,11 @@ def login_user(request):
                 user.failed_login_attempts += 1
                 if user.failed_login_attempts >= 5:
                     user.locked_until = timezone.now() + timedelta(minutes=15)
-                user.save(
-                    update_fields=["failed_login_attempts", "locked_until"]
+                user.save(update_fields=["failed_login_attempts", "locked_until"])
+                return JsonResponse(
+                    {"error": "Invalid email or password"},
+                    status=401,
                 )
-                return JsonResponse({"error": "Invalid email or password"}, status=401)
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
@@ -134,13 +148,14 @@ def change_password(request):
 
             if not current_password or not new_password:
                 return JsonResponse(
-                    {"error": "Both current_password and new_password are required"},
+                    {"error": "current_password and new_password required"},
                     status=400,
                 )
 
             if not check_password(current_password, request.user.password):
                 return JsonResponse(
-                    {"error": "Current password is incorrect"}, status=400
+                    {"error": "Current password is incorrect"},
+                    status=400,
                 )
 
             try:
@@ -185,7 +200,8 @@ class UserViewSet(viewsets.ModelViewSet):
         validated_data = serializer.validated_data
 
         create_user_data = CreateUserData(
-            email=validated_data.get("email"), password=validated_data["password"]
+            email=validated_data.get("email"),
+            password=validated_data["password"],
         )
 
         try:
@@ -207,11 +223,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {
-                    "message": "Internal server error",
-                },
+                {"message": "Internal server error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -233,10 +247,15 @@ class UserViewSet(viewsets.ModelViewSet):
 
         serializer.save()
 
-        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        login(
+            request,
+            user,
+            backend="django.contrib.auth.backends.ModelBackend",
+        )
 
         return Response(
-            {"message": "Profile setup completed."}, status=status.HTTP_201_CREATED
+            {"message": "Profile setup completed."},
+            status=status.HTTP_201_CREATED,
         )
 
     # GET a User
@@ -328,7 +347,10 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     # UPDATE A USER BY ID
     @action(detail=True, methods=["patch"], url_path="user")
@@ -392,7 +414,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(
                 {"message": error_message}, status=status.HTTP_404_NOT_FOUND
             )
-        except Exception as e:
+        except Exception:
             return Response(
                 {"message": "Internal server error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -442,7 +464,7 @@ class TagViewSet(viewsets.ModelViewSet):
         url_path="user/tags",
     )
     def get_all_tags_for_a_user(self, request):
-        """Return Tag objects for the current user or for the user_id query param."""
+        """Return Tag objects for current user or user_id query param."""
         # Prefer request.GET for explicitness in tests; handle empty string too.
         user_id_param = request.GET.get("user_id", None)
 
@@ -450,13 +472,15 @@ class TagViewSet(viewsets.ModelViewSet):
             # treat empty string as invalid
             if user_id_param == "":
                 return Response(
-                    {"detail": "Invalid user_id"}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": "Invalid user_id"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
                 user_id = int(user_id_param)
             except (TypeError, ValueError):
                 return Response(
-                    {"detail": "Invalid user_id"}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": "Invalid user_id"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
             if not getattr(request, "user", None) or not request.user.is_authenticated:
@@ -513,7 +537,10 @@ class ReportViewSet(viewsets.ModelViewSet):
         except ValidationError as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except PermissionDenied as e:
-            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
     # get a report
     @action(detail=True, methods=["get"], url_path="report_id")

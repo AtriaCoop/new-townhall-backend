@@ -202,13 +202,13 @@ AUTH_PASSWORD_VALIDATORS = [
         ),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        "NAME": ("django.contrib.auth.password_validation." "CommonPasswordValidator"),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": ("django.contrib.auth.password_validation." "NumericPasswordValidator"),
     },
 ]
 
@@ -285,9 +285,11 @@ if DEBUG:
 else:
     CHANNEL_LAYERS = {
         "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "BACKEND": ("channels_redis.core.RedisChannelLayer"),
             "CONFIG": {
-                "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
+                "hosts": [
+                    os.environ.get("REDIS_URL", "redis://127.0.0.1:6379"),
+                ],
             },
         },
     }

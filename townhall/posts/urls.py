@@ -17,7 +17,11 @@ urlpatterns = [
     path(
         "post/<int:pk>/",
         PostViewSet.as_view(
-            {"get": "get_post", "patch": "update_post", "delete": "delete_post"}
+            {
+                "get": "get_post",
+                "patch": "update_post",
+                "delete": "delete_post",
+            }
         ),
         name="post_id",
     ),
