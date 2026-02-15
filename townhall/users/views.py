@@ -236,7 +236,10 @@ def forgot_password(request):
 
             return JsonResponse(
                 {
-                    "message": "If an account exists with that email, a reset link has been sent."
+                    "message": (
+                        "If an account exists with that email, "
+                        "a reset link has been sent."
+                    ),
                 }
             )
 
@@ -272,9 +275,7 @@ def reset_password(request):
                 user_id = force_str(urlsafe_base64_decode(uid))
                 user = User.objects.get(pk=user_id)
             except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-                return JsonResponse(
-                    {"error": "Invalid reset link"}, status=400
-                )
+                return JsonResponse({"error": "Invalid reset link"}, status=400)
 
             if not default_token_generator.check_token(user, token):
                 return JsonResponse(
@@ -290,9 +291,7 @@ def reset_password(request):
             user.set_password(new_password)
             user.save()
 
-            return JsonResponse(
-                {"message": "Password has been reset successfully"}
-            )
+            return JsonResponse({"message": "Password has been reset successfully"})
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
