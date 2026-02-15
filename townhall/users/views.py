@@ -237,7 +237,8 @@ class UserViewSet(viewsets.ModelViewSet):
             user = User.objects.get(id=pk)
         except User.DoesNotExist:
             return Response(
-                {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
+                {"error": "User not found."},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         serializer = UserProfileSerializer(user, data=request.data, partial=True)
