@@ -105,7 +105,6 @@ class CommentServices:
         post = comment.post
         posted_by = post.user
         commented_by = comment.user
-
         if posted_by.receive_emails and posted_by.email is not None:
             template = jinja_env.get_template("email.txt")
             email_content = template.render(
@@ -119,8 +118,10 @@ class CommentServices:
                 ),
             )
             # Try to send email
-            redis_Q = get_queue("default")
-            redis_Q.enqueue(send_email, email_content, posted_by)
+            # Uncomment the next two lines once a background worker is ready for production 
+            #redis_Q = get_queue("default")
+            #redis_Q.enqueue(send_email, email_content, posted_by)
+            
         return comment
 
     @staticmethod

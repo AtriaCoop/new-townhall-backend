@@ -303,11 +303,12 @@ DEFAULT_FROM_EMAIL = "Atria Townhall <noreplay@atria.townhall.com>"
 
 # MAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # For testing - prints email in terminal instead
-
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379")
 RQ_QUEUES = {
     "default": {
         "HOST": "localhost",
         "PORT": 6379,
         "DB": 0,
+        "URL": REDIS_URL
     }
 }
