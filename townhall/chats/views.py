@@ -63,7 +63,7 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            chats = Chat.objects.filter(participants__id=user_id).distinct()
+            chats = Chat.objects.filter(participants__id=user_id).exclude(hidden_by__id=user_id).distinct()
             serializer = ChatSerializer(chats, many=True)
             return Response(
                 {
@@ -79,27 +79,25 @@ class ChatViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    # DELETE Chat
+    # DELETE (Hide) Chat — soft delete, preserves messages
     @action(detail=True, methods=["delete"], url_path="chats")
     @permission_classes([IsAuthenticated])
     def delete_chat_request(self, request, id):
-        chat_id = id
-
         try:
-            ChatServices.delete_chat(chat_id)
+            chat = Chat.objects.get(id=id)
+            chat.hidden_by.add(request.user)
 
             return Response(
                 {
-                    "message": "Chat Deleted Successfully",
+                    "message": "Chat hidden successfully",
                     "success": True,
                 },
                 status=status.HTTP_200_OK,
             )
-        except ValidationError as e:
-            # If services method returns an error, return an error Response
+        except Chat.DoesNotExist:
             return Response(
                 {
-                    "message": str(e),
+                    "message": "Chat not found",
                     "success": False,
                 },
                 status=status.HTTP_404_NOT_FOUND,
@@ -128,6 +126,9 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         try:
             chat, created = ChatServices.get_or_create_chat(create_chat_data)
+            if not created:
+                # Unhide for current user if it was previously hidden
+                chat.hidden_by.remove(request.user)
             response_serializer = ChatSerializer(chat)
 
             return Response(
@@ -248,6 +249,7 @@ class ChatViewSet(viewsets.ModelViewSet):
             {
                 "messages": [
                     {
+                        "id": m.id,
                         "sender": m.user.id,
                         "full_name": m.user.full_name,
                         "content": m.content,
@@ -281,6 +283,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 {
                     "success": True,
                     "data": {
+                        "id": msg.id,
                         "sender": msg.user.id,
                         "full_name": msg.user.full_name,
                         "content": msg.content,
@@ -297,6 +300,43 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
+
+    # DELETE Group Message
+    @action(detail=True, methods=["delete"], url_path="group-messages")
+    @permission_classes([IsAuthenticated])
+    def delete_group_message(self, request, id):
+        try:
+            msg = GroupMessage.objects.get(id=id)
+            msg.delete()
+            return Response(
+                {"message": "Message Deleted Successfully", "success": True},
+                status=status.HTTP_200_OK,
+            )
+        except GroupMessage.DoesNotExist:
+            return Response(
+                {"message": "Message not found", "success": False},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    # PATCH Group Message
+    @action(detail=True, methods=["patch"], url_path="group-messages")
+    @permission_classes([IsAuthenticated])
+    def update_group_message(self, request, id):
+        try:
+            msg = GroupMessage.objects.get(id=id)
+            content = request.data.get("content")
+            if content is not None:
+                msg.content = content
+                msg.save()
+            return Response(
+                {"message": "Message updated successfully", "success": True},
+                status=status.HTTP_200_OK,
+            )
+        except GroupMessage.DoesNotExist:
+            return Response(
+                {"message": "Message not found", "success": False},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
 
 class MessageViewSet(viewsets.ModelViewSet):

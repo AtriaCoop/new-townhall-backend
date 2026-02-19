@@ -44,6 +44,16 @@ urlpatterns = [
         name="create_group_message",
     ),
     path(
+        "groups/messages/<int:id>/",
+        ChatViewSet.as_view(
+            {
+                "delete": "delete_group_message",
+                "patch": "update_group_message",
+            }
+        ),
+        name="group_message_detail",
+    ),
+    path(
         "chats/messages/",
         MessageViewSet.as_view(
             {
