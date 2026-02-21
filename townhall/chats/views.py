@@ -216,6 +216,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 {
                     "success": True,
                     "data": {
+                        "id": message.id,
                         "sender": message.user.id,
                         "full_name": message.user.full_name,
                         "content": message.content,

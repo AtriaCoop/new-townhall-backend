@@ -3,7 +3,6 @@ from typing import Optional
 from .models import Chat, Message
 from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData, UpdateMessageData
-from django.db.models import Count
 from django.db.models import QuerySet
 import typing
 
@@ -36,16 +35,12 @@ class ChatServices:
         try:
             participant_ids = sorted(data.participant_ids)
 
-            # Check all chats that this user is in
-            possible_chats = (
-                Chat.objects.annotate(num_participants=Count("participants"))
-                .filter(
-                    participants__id__in=participant_ids,
-                    num_participants=len(participant_ids),
-                )
-                .distinct()
-            )
+            # Find chats containing ALL specified participants
+            possible_chats = Chat.objects.all()
+            for pid in participant_ids:
+                possible_chats = possible_chats.filter(participants__id=pid)
 
+            # Verify exact participant match (no extra participants)
             for chat in possible_chats:
                 existing_ids = sorted(chat.participants.values_list("id", flat=True))
                 if existing_ids == participant_ids:

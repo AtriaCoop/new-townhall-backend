@@ -51,6 +51,21 @@ def get_csrf_token(request):
     return JsonResponse({"detail": "CSRF cookie set", "csrfToken": token})
 
 
+def check_session(request):
+    if request.user.is_authenticated:
+        return JsonResponse(
+            {
+                "authenticated": True,
+                "user": {
+                    "id": request.user.id,
+                    "full_name": request.user.full_name,
+                    "email": request.user.email,
+                },
+            }
+        )
+    return JsonResponse({"authenticated": False}, status=401)
+
+
 # USER LOGIN
 @ratelimit(key="ip", rate="5/m", method="POST", block=False)
 def login_user(request):
