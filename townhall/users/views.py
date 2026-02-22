@@ -45,6 +45,34 @@ class SignupThrottle(AnonRateThrottle):
     rate = "3/min"
 
 
+def _send_verification_email(user):
+    """Send an email verification link to the given user via SendGrid."""
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+    verify_url = (
+        f"{settings.FRONTEND_URL}/VerifyEmailPage"
+        f"?uid={uid}&token={token}"
+    )
+
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=user.email,
+        subject="Townhall - Verify Your Email",
+        plain_text_content=(
+            f"Hi there,\n\n"
+            f"Thanks for signing up! Please verify your email by clicking "
+            f"the link below:\n"
+            f"{verify_url}\n\n"
+            f"This link expires in 1 hour.\n\n"
+            f"If you didn't create this account, you can ignore this email."
+        ),
+    )
+
+    sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+    sg.send(message)
+
+
 @ensure_csrf_cookie
 def get_csrf_token(request):
     token = get_token(request)
@@ -60,6 +88,7 @@ def check_session(request):
                     "id": request.user.id,
                     "full_name": request.user.full_name,
                     "email": request.user.email,
+                    "email_verified": request.user.email_verified,
                 },
             }
         )
@@ -99,6 +128,18 @@ def login_user(request):
 
             # Validate Password
             if check_password(password, user.password):
+                # Block login if email is not verified
+                if not user.email_verified:
+                    return JsonResponse(
+                        {
+                            "error": (
+                                "Please verify your email before signing in. "
+                                "Check your inbox for a verification link."
+                            ),
+                        },
+                        status=403,
+                    )
+
                 # Reset failed attempts on successful login
                 if user.failed_login_attempts > 0:
                     user.failed_login_attempts = 0
@@ -123,6 +164,7 @@ def login_user(request):
                             "id": user.id,
                             "full_name": user.full_name,
                             "email": user.email,
+                            "email_verified": user.email_verified,
                         },
                     },
                     status=200,
@@ -314,6 +356,95 @@ def reset_password(request):
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
+# VERIFY EMAIL - Validate Token and Mark Verified
+@ratelimit(key="ip", rate="10/m", method="POST", block=False)
+def verify_email(request):
+    if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many requests. Please try again later."},
+                status=429,
+            )
+
+        try:
+            data = json.loads(request.body)
+            uid = data.get("uid")
+            token = data.get("token")
+
+            if not uid or not token:
+                return JsonResponse(
+                    {"error": "uid and token are required"},
+                    status=400,
+                )
+
+            try:
+                user_id = force_str(urlsafe_base64_decode(uid))
+                user = User.objects.get(pk=user_id)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                return JsonResponse(
+                    {"error": "Invalid verification link"},
+                    status=400,
+                )
+
+            if not default_token_generator.check_token(user, token):
+                return JsonResponse(
+                    {"error": "Verification link has expired or is invalid"},
+                    status=400,
+                )
+
+            user.email_verified = True
+            user.save(update_fields=["email_verified"])
+
+            return JsonResponse(
+                {"message": "Email verified successfully. You can now sign in."}
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# RESEND VERIFICATION EMAIL
+@ratelimit(key="ip", rate="3/m", method="POST", block=False)
+def resend_verification(request):
+    if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many requests. Please try again later."},
+                status=429,
+            )
+
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+
+            if not email:
+                return JsonResponse({"error": "Email is required"}, status=400)
+
+            # Always return success to prevent email enumeration
+            try:
+                user = User.objects.get(email=email)
+                if not user.email_verified:
+                    _send_verification_email(user)
+            except User.DoesNotExist:
+                pass
+
+            return JsonResponse(
+                {
+                    "message": (
+                        "If an account exists with that email, "
+                        "a new verification link has been sent."
+                    ),
+                }
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
 class UserViewSet(viewsets.ModelViewSet):
 
     # CREATE USER
@@ -339,6 +470,12 @@ class UserViewSet(viewsets.ModelViewSet):
 
         try:
             user = UserServices.create_user(create_user_data)
+
+            # Send verification email
+            try:
+                _send_verification_email(user)
+            except Exception:
+                pass  # Don't fail signup if email sending fails
 
             response_serializer = UserSerializer(user)
 

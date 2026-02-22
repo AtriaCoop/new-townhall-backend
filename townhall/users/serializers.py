@@ -25,6 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "receive_emails",
             "is_staff",
+            "email_verified",
             "linkedin_url",
             "facebook_url",
             "x_url",

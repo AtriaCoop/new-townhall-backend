@@ -15,6 +15,8 @@ from .views import (
     change_password,
     forgot_password,
     reset_password,
+    verify_email,
+    resend_verification,
 )
 
 router = DefaultRouter()
@@ -28,6 +30,8 @@ urlpatterns = [
     path("auth/change-password/", change_password, name="change_password"),
     path("auth/forgot-password/", forgot_password, name="forgot_password"),
     path("auth/reset-password/", reset_password, name="reset_password"),
+    path("auth/verify-email/", verify_email, name="verify_email"),
+    path("auth/resend-verification/", resend_verification, name="resend_verification"),
     path(
         "user/",
         UserViewSet.as_view(
