@@ -28,6 +28,18 @@ class Message(models.Model):
         return str(self.id)
 
 
+class ChatReadStatus(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    last_read_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ("user", "chat")
+
+    def __str__(self):
+        return f"User {self.user_id} - Chat {self.chat_id}"
+
+
 class GroupMessage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     group_name = models.CharField(max_length=100)

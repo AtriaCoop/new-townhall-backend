@@ -13,9 +13,8 @@ from .serializers import (
 from .services import ChatServices, MessageServices
 from .types import CreateChatData, CreateMessageData, UpdateMessageData
 from django.utils import timezone
-from .models import Chat
-from .models import Message
-from .models import GroupMessage
+from .models import Chat, Message, GroupMessage, ChatReadStatus
+from django.db.models import Count, Q, Max, Subquery, OuterRef
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -239,6 +238,63 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
+
+    # GET unread DM counts per chat for the current user
+    @action(detail=False, methods=["get"], url_path="unread-counts")
+    @permission_classes([IsAuthenticated])
+    def get_unread_counts(self, request):
+        user = request.user
+
+        chats = Chat.objects.filter(participants=user).exclude(hidden_by=user)
+
+        result = {}
+        for chat in chats:
+            read_status = ChatReadStatus.objects.filter(
+                user=user, chat=chat
+            ).first()
+            last_read = read_status.last_read_at if read_status else None
+
+            msg_qs = Message.objects.filter(chat=chat).exclude(user=user)
+            if last_read:
+                msg_qs = msg_qs.filter(sent_at__gt=last_read)
+
+            count = msg_qs.count()
+            if count == 0:
+                continue
+
+            latest = msg_qs.order_by("-sent_at").first()
+            result[chat.id] = {
+                "count": count,
+                "sender_id": latest.user.id,
+                "sender_name": latest.user.full_name,
+                "sender_image": (
+                    latest.user.profile_image.url
+                    if latest.user.profile_image
+                    else None
+                ),
+                "last_message": latest.content,
+                "timestamp": latest.sent_at.isoformat(),
+            }
+
+        return Response({"success": True, "data": result})
+
+    # POST mark a chat as read
+    @action(detail=True, methods=["post"], url_path="read")
+    @permission_classes([IsAuthenticated])
+    def mark_chat_read(self, request, id):
+        try:
+            chat = Chat.objects.get(id=id)
+            ChatReadStatus.objects.update_or_create(
+                user=request.user,
+                chat=chat,
+                defaults={"last_read_at": timezone.now()},
+            )
+            return Response({"success": True})
+        except Chat.DoesNotExist:
+            return Response(
+                {"success": False, "error": "Chat not found"},
+                status=404,
+            )
 
     # GET Group Message
     @action(

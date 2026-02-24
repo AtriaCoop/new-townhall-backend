@@ -34,6 +34,16 @@ urlpatterns = [
         name="create_direct_message",
     ),
     path(
+        "chats/unread-counts/",
+        ChatViewSet.as_view({"get": "get_unread_counts"}),
+        name="unread_counts",
+    ),
+    path(
+        "chats/<int:id>/read/",
+        ChatViewSet.as_view({"post": "mark_chat_read"}),
+        name="mark_chat_read",
+    ),
+    path(
         "groups/<str:group_name>/messages/",
         ChatViewSet.as_view({"get": "get_group_messages"}),
         name="group_messages",
