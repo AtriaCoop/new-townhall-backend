@@ -129,6 +129,7 @@ INSTALLED_APPS = [
     "simple_history",
     "activities",
     "events",
+    "notifications",
 ]
 
 MIDDLEWARE = [

@@ -98,6 +98,16 @@ class UserConsumer(AsyncWebsocketConsumer):
     async def user_message(self, event):
         await self.send(text_data=json.dumps(event))
 
+    async def notification_push(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "notification",
+                    "notification": event["notification"],
+                }
+            )
+        )
+
 
 class GroupConsumer(AsyncWebsocketConsumer):
     async def connect(self):

@@ -154,9 +154,8 @@ class PostViewSet(viewsets.ModelViewSet):
                 serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if (
-            not post.user_id == user.id
-            and serializer.validated_data.get("content")
+        if post.user_id != user.id and (
+            serializer.validated_data.get("content")
             or serializer.validated_data.get("image")
         ):
             return Response(
@@ -245,6 +244,22 @@ class PostViewSet(viewsets.ModelViewSet):
                 post.liked_by.add(request.user)
                 post.likes += 1
                 post.save()
+
+                try:
+                    from notifications.services import NotificationServices
+                    from notifications.types import CreateNotificationData
+
+                    NotificationServices.create_and_push(
+                        CreateNotificationData(
+                            recipient_id=post.user_id,
+                            actor_id=request.user.id,
+                            notification_type="like",
+                            target_id=post.id,
+                        )
+                    )
+                except Exception:
+                    pass
+
                 return Response(
                     {"message": "Post liked", "likes": post.likes},
                     status=status.HTTP_200_OK,
@@ -339,6 +354,24 @@ class PostViewSet(viewsets.ModelViewSet):
 
             # Get updated post with reactions
             post = Post.objects.get(pk=pk)
+
+            if was_added:
+                try:
+                    from notifications.services import NotificationServices
+                    from notifications.types import CreateNotificationData
+
+                    NotificationServices.create_and_push(
+                        CreateNotificationData(
+                            recipient_id=post.user_id,
+                            actor_id=request.user.id,
+                            notification_type="reaction",
+                            target_id=post.id,
+                            detail=reaction_type,
+                        )
+                    )
+                except Exception:
+                    pass
+
             serializer = PostSerializer(post)
 
             return Response(
@@ -410,6 +443,23 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         try:
             comment = CommentServices.create_comment(create_comment_data)
+
+            try:
+                from notifications.services import NotificationServices
+                from notifications.types import CreateNotificationData
+
+                post = Post.objects.get(id=create_comment_data.post_id)
+                NotificationServices.create_and_push(
+                    CreateNotificationData(
+                        recipient_id=post.user_id,
+                        actor_id=request.user.id,
+                        notification_type="comment",
+                        target_id=post.id,
+                        detail=str(comment.id),
+                    )
+                )
+            except Exception:
+                pass
 
             response_serializer = CommentSerializer(comment)
 

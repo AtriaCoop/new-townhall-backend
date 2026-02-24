@@ -75,6 +75,30 @@ class EventViewSet(viewsets.GenericViewSet):
 
         try:
             event = EventServices.create_event(create_data)
+
+            try:
+                from notifications.services import NotificationServices
+                from notifications.types import CreateNotificationData
+                from users.models import User
+
+                user_ids = list(
+                    User.objects.filter(is_active=True)
+                    .exclude(id=request.user.id)
+                    .values_list("id", flat=True)
+                )
+                for uid in user_ids:
+                    NotificationServices.create_and_push(
+                        CreateNotificationData(
+                            recipient_id=uid,
+                            actor_id=request.user.id,
+                            notification_type="new_event",
+                            target_id=event.id,
+                            detail=event.title,
+                        )
+                    )
+            except Exception:
+                logger.exception("Failed to send new_event notifications")
+
             response_serializer = EventSerializer(event, context={"request": request})
             return Response(
                 {
@@ -123,6 +147,27 @@ class EventViewSet(viewsets.GenericViewSet):
             updated_event = EventServices.update_event(
                 event=event, update_event_data=update_data
             )
+
+            try:
+                from notifications.services import NotificationServices
+                from notifications.types import CreateNotificationData
+
+                participant_ids = list(
+                    updated_event.participants.values_list("id", flat=True)
+                )
+                for uid in participant_ids:
+                    NotificationServices.create_and_push(
+                        CreateNotificationData(
+                            recipient_id=uid,
+                            actor_id=request.user.id,
+                            notification_type="event_update",
+                            target_id=updated_event.id,
+                            detail=updated_event.title,
+                        )
+                    )
+            except Exception:
+                logger.exception("Failed to send event_update notifications")
+
             response_serializer = EventSerializer(
                 updated_event, context={"request": request}
             )
@@ -156,7 +201,30 @@ class EventViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        participant_ids = list(
+            event.participants.values_list("id", flat=True)
+        )
+        event_title = event.title
+        event_id = event.id
+
         EventServices.delete_event(event=event)
+
+        try:
+            from notifications.services import NotificationServices
+            from notifications.types import CreateNotificationData
+
+            for uid in participant_ids:
+                NotificationServices.create_and_push(
+                    CreateNotificationData(
+                        recipient_id=uid,
+                        actor_id=request.user.id,
+                        notification_type="event_cancel",
+                        target_id=event_id,
+                        detail=event_title,
+                    )
+                )
+        except Exception:
+            logger.exception("Failed to send event_cancel notifications")
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post"], url_path="participate")
