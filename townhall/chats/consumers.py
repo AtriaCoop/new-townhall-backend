@@ -48,26 +48,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             },
         )
 
-        # Broadcast to user listeners
-        chat = await sync_to_async(Chat.objects.get)(id=self.chat_id)
-        participant_ids = await sync_to_async(list)(
-            chat.participants.values_list("id", flat=True),
-        )
-
-        for user_id in participant_ids:
-            await self.channel_layer.group_send(
-                f"user_{user_id}",
-                {
-                    "type": "user_message",
-                    "chat_id": self.chat_id,
-                    "message": message,
-                    "sender": sender,
-                    "full_name": user.full_name,
-                    "profile_image": (
-                        user.profile_image.url if user.profile_image else None
-                    ),
-                },
-            )
+        # User-level DM notifications are broadcast from the REST view
+        # (create_direct_message) using the channel layer, same as bell
+        # notifications. This keeps ChatConsumer focused on chat-room events.
 
     # Receive message from group
     async def chat_message(self, event):
@@ -100,7 +83,18 @@ class UserConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def user_message(self, event):
-        await self.send(text_data=json.dumps(event))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "dm",
+                    "chat_id": event["chat_id"],
+                    "message": event["message"],
+                    "sender": event["sender"],
+                    "full_name": event.get("full_name", ""),
+                    "profile_image": event.get("profile_image"),
+                }
+            )
+        )
 
     async def notification_push(self, event):
         await self.send(

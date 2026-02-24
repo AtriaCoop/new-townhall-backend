@@ -15,6 +15,8 @@ from .types import CreateChatData, CreateMessageData, UpdateMessageData
 from django.utils import timezone
 from .models import Chat, Message, GroupMessage, ChatReadStatus
 from django.db.models import Count, Q, Max, Subquery, OuterRef
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -214,6 +216,29 @@ class ChatViewSet(viewsets.ModelViewSet):
             # Unhide chat for all participants so the recipient sees it
             chat = Chat.objects.get(id=chat_id)
             chat.hidden_by.clear()
+
+            # Broadcast to all participants via channel layer (like bell notifications)
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                participant_ids = list(
+                    chat.participants.values_list("id", flat=True)
+                )
+                for pid in participant_ids:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{pid}",
+                        {
+                            "type": "user_message",
+                            "chat_id": chat_id,
+                            "message": content,
+                            "sender": user.id,
+                            "full_name": user.full_name,
+                            "profile_image": (
+                                user.profile_image.url
+                                if user.profile_image
+                                else None
+                            ),
+                        },
+                    )
 
             return Response(
                 {
