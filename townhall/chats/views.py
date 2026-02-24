@@ -127,8 +127,8 @@ class ChatViewSet(viewsets.ModelViewSet):
         try:
             chat, created = ChatServices.get_or_create_chat(create_chat_data)
             if not created:
-                # Unhide for current user if it was previously hidden
-                chat.hidden_by.remove(request.user)
+                # Unhide for all participants when a chat is reused
+                chat.hidden_by.clear()
             response_serializer = ChatSerializer(chat)
 
             return Response(
@@ -211,6 +211,10 @@ class ChatViewSet(viewsets.ModelViewSet):
             message = Message.objects.create(
                 user=user, chat_id=chat_id, content=content, image_content=image
             )
+
+            # Unhide chat for all participants so the recipient sees it
+            chat = Chat.objects.get(id=chat_id)
+            chat.hidden_by.clear()
 
             return Response(
                 {

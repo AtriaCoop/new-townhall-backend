@@ -62,6 +62,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "chat_id": self.chat_id,
                     "message": message,
                     "sender": sender,
+                    "full_name": user.full_name,
+                    "profile_image": (
+                        user.profile_image.url if user.profile_image else None
+                    ),
                 },
             )
 
