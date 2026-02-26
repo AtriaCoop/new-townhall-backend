@@ -117,11 +117,13 @@ class CommentServices:
                     else "unknown user"
                 ),
             )
+            
             # Try to send email
-            # Uncomment the next two lines once a background worker is ready for production 
             #redis_Q = get_queue("default")
             #redis_Q.enqueue(send_email, email_content, posted_by)
             
+            # TODO: Uncomment the aboce two lines once a background worker is ready for production. Otherwise it will build s
+            # up a huge queue with no worker taking jobs off of it 
         return comment
 
     @staticmethod
