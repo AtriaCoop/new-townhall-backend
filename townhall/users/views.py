@@ -713,6 +713,16 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=["get"], url_path="by-tags")
+    def get_users_by_tags(self, request):
+        """Get all users associated with a specific tag"""
+        tag_names = request.query_params.getlist("tags")
+        if not tag_names:
+            raise ValidationError("At least one tag name must be provided.")
+        users = UserServices.get_users_by_tags(tag_names)
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()

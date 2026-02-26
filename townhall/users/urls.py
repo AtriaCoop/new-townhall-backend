@@ -21,6 +21,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r"tags", TagViewSet, basename="tag")
+router.register(r"users", UserViewSet, basename="users")
 
 urlpatterns = [
     path("auth/login/", login_user, name="login_user"),
