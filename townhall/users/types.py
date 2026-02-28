@@ -24,6 +24,9 @@ class UpdateUserData:
     profile_image: Optional[str] = None
     profile_header: Optional[str] = None
     receive_emails: Optional[bool] = None
+    show_email: Optional[bool] = None
+    show_in_directory: Optional[bool] = None
+    allow_dms: Optional[bool] = None
     tags: Optional[List[str]] = None
     linkedin_url: Optional[str] = None
     facebook_url: Optional[str] = None

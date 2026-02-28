@@ -136,8 +136,16 @@ class UserServices:
             user.instagram_url = update_user_data.instagram_url
 
         if update_user_data.receive_emails is not None:
-
             user.receive_emails = update_user_data.receive_emails
+
+        if update_user_data.show_email is not None:
+            user.show_email = update_user_data.show_email
+
+        if update_user_data.show_in_directory is not None:
+            user.show_in_directory = update_user_data.show_in_directory
+
+        if update_user_data.allow_dms is not None:
+            user.allow_dms = update_user_data.allow_dms
 
         if update_user_data.tags is not None:
             tags = Tag.objects.filter(name__in=update_user_data.tags)

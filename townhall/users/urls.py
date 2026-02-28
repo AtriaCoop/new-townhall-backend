@@ -17,6 +17,8 @@ from .views import (
     reset_password,
     verify_email,
     resend_verification,
+    deactivate_account,
+    reactivate_account,
 )
 
 router = DefaultRouter()
@@ -32,6 +34,8 @@ urlpatterns = [
     path("auth/reset-password/", reset_password, name="reset_password"),
     path("auth/verify-email/", verify_email, name="verify_email"),
     path("auth/resend-verification/", resend_verification, name="resend_verification"),
+    path("auth/deactivate/", deactivate_account, name="deactivate_account"),
+    path("auth/reactivate/", reactivate_account, name="reactivate_account"),
     path(
         "user/",
         UserViewSet.as_view(

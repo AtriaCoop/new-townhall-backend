@@ -128,6 +128,19 @@ def login_user(request):
 
             # Validate Password
             if check_password(password, user.password):
+                # Block login if account is deactivated
+                if not user.is_active:
+                    return JsonResponse(
+                        {
+                            "error": "account_deactivated",
+                            "message": (
+                                "Your account has been deactivated. "
+                                "You can reactivate it to sign in again."
+                            ),
+                        },
+                        status=403,
+                    )
+
                 # Block login if email is not verified
                 if not user.email_verified:
                     return JsonResponse(
@@ -445,6 +458,72 @@ def resend_verification(request):
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
+# DEACTIVATE ACCOUNT
+def deactivate_account(request):
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Not authenticated"}, status=401)
+
+        user = request.user
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        logout(request)
+        response = JsonResponse({"message": "Account deactivated successfully."})
+        response.delete_cookie("sessionid")
+        response.delete_cookie("csrftoken")
+        return response
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# REACTIVATE ACCOUNT
+def reactivate_account(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+            password = data.get("password")
+
+            if not email or not password:
+                return JsonResponse(
+                    {"error": "Email and password are required"},
+                    status=400,
+                )
+
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return JsonResponse(
+                    {"error": "Invalid email or password"},
+                    status=401,
+                )
+
+            if not check_password(password, user.password):
+                return JsonResponse(
+                    {"error": "Invalid email or password"},
+                    status=401,
+                )
+
+            if user.is_active:
+                return JsonResponse(
+                    {"message": "Account is already active."},
+                    status=200,
+                )
+
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+
+            return JsonResponse(
+                {"message": "Account reactivated successfully. You can now sign in."}
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
 class UserViewSet(viewsets.ModelViewSet):
 
     # CREATE USER
@@ -579,6 +658,10 @@ class UserViewSet(viewsets.ModelViewSet):
             users = UserServices.get_user_all(None)
             message = "All Users retreived successfully"
 
+        # Filter out deactivated users and users who opted out of directory
+        if users is not None:
+            users = users.filter(is_active=True, show_in_directory=True)
+
         if not users:
             return Response(
                 {"message": "No Users were found"},
@@ -658,6 +741,9 @@ class UserViewSet(viewsets.ModelViewSet):
             profile_image=request.FILES.get("profile_image"),
             profile_header=request.FILES.get("profile_header"),
             receive_emails=validated_data.get("receive_emails"),
+            show_email=validated_data.get("show_email"),
+            show_in_directory=validated_data.get("show_in_directory"),
+            allow_dms=validated_data.get("allow_dms"),
             tags=validated_data.get("tags", []),
             linkedin_url=validated_data.get("linkedin_url"),
             facebook_url=validated_data.get("facebook_url"),

@@ -24,6 +24,9 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_header",
             "date_joined",
             "receive_emails",
+            "show_email",
+            "show_in_directory",
+            "allow_dms",
             "is_staff",
             "email_verified",
             "linkedin_url",
@@ -90,6 +93,9 @@ class UpdateUserSerializer(serializers.Serializer):
     about_me = serializers.CharField(required=False, allow_blank=True)
     skills_interests = serializers.CharField(required=False, allow_blank=True)
     receive_emails = serializers.BooleanField(required=False)
+    show_email = serializers.BooleanField(required=False)
+    show_in_directory = serializers.BooleanField(required=False)
+    allow_dms = serializers.BooleanField(required=False)
     profile_image = serializers.ImageField(required=False, allow_null=True)
     profile_header = serializers.ImageField(required=False, allow_null=True)
     tags = serializers.ListField(

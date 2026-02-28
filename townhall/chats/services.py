@@ -4,6 +4,7 @@ from .models import Chat, Message
 from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData, UpdateMessageData
 from django.db.models import QuerySet
+from users.models import User
 import typing
 
 
@@ -45,6 +46,14 @@ class ChatServices:
                 existing_ids = sorted(chat.participants.values_list("id", flat=True))
                 if existing_ids == participant_ids:
                     return chat, False  # Found existing chat
+
+            # Check if any participant has disabled DMs before creating
+            participants = User.objects.filter(id__in=participant_ids)
+            for participant in participants:
+                if not participant.allow_dms:
+                    raise ValidationError(
+                        "This user does not accept direct messages."
+                    )
 
             # Create new chat if none found
             chat = ChatDao.create_chat(create_chat_data=data)
