@@ -30,16 +30,22 @@ class PostServices:
             raise ValidationError(f"Post with the given id: {id}, does not exist.")
 
     @staticmethod
-    def get_all_posts(page: int = 1, limit: int = 10) -> tuple[typing.List[Post], int]:
+    def get_all_posts(
+        page: int = 1, limit: int = 10, tag_names: list[str] | None = None
+    ) -> tuple[typing.List[Post], int]:
         """Return a paginated list of posts for a given page and limit.
         Also returns total number of pages based on limit."""
         page = max(1, page)
         limit = max(1, min(limit, 100))
         offset = (page - 1) * limit
 
-        posts, total_count = PostDao.get_all_posts(offset, limit)
+        posts, total_count = PostDao.get_all_posts(offset, limit, tag_names)
         total_pages = (total_count + limit - 1) // limit
         return _mask_content_list(posts), total_pages
+
+    @staticmethod
+    def get_trending_tags(limit: int = 10) -> list[dict]:
+        return PostDao.get_trending_tags(limit)
 
     @staticmethod
     def create_post(create_post_data: CreatePostData) -> Post:

@@ -1,3 +1,5 @@
+import logging
+
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from rest_framework import viewsets
@@ -29,6 +31,8 @@ from .services import (
 )
 from .types import ToggleReactionData
 
+logger = logging.getLogger(__name__)
+
 
 class PostViewSet(viewsets.ModelViewSet):
 
@@ -59,8 +63,14 @@ class PostViewSet(viewsets.ModelViewSet):
         try:
             page = int(request.query_params.get("page", 1))
             limit = int(request.query_params.get("limit", 10))
+            tags_param = request.query_params.get("tags", "")
+            tag_names = (
+                [t.strip() for t in tags_param.split(",") if t.strip()]
+                if tags_param
+                else None
+            )
 
-            posts, total_pages = PostServices.get_all_posts(page, limit)
+            posts, total_pages = PostServices.get_all_posts(page, limit, tag_names)
             serializer = PostSerializer(posts, many=True)
             return Response(
                 {
@@ -75,6 +85,21 @@ class PostViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    # GET TRENDING TAGS
+    @action(detail=False, methods=["get"], url_path="trending-tags")
+    @permission_classes([AllowAny])
+    def get_trending_tags(self, request):
+        try:
+            limit = min(int(request.query_params.get("limit", 10)), 20)
+            tags = PostServices.get_trending_tags(limit)
+            return Response({"tags": tags}, status=status.HTTP_200_OK)
+        except Exception:
+            logger.exception("Unexpected error fetching trending tags")
+            return Response(
+                {"error": "An internal error occurred"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

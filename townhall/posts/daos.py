@@ -1,5 +1,7 @@
+import re
 import typing
 
+from django.db.models import Count
 from django.forms import ValidationError
 from django.db import IntegrityError
 from .models import Post, Comment, ReportedPost, Reaction, Tag
@@ -16,14 +18,27 @@ from .types import (
 class PostDao:
 
     def get_post(id: int) -> typing.Optional[Post]:
-        return Post.objects.get(id=id)
+        return Post.objects.prefetch_related('tags').get(id=id)
 
-    def get_all_posts(offset: int, limit: int) -> tuple[typing.List[Post], int]:
-        """Return recent posts paginated with total count."""
-        qs = Post.objects.order_by("-pinned", "-created_at")
+    def get_all_posts(
+        offset: int, limit: int, tag_names: list[str] | None = None
+    ) -> tuple[typing.List[Post], int]:
+        """Return recent posts paginated with total count, optionally filtered by tags."""
+        qs = Post.objects.prefetch_related('tags').order_by("-pinned", "-created_at")
+        if tag_names:
+            qs = qs.filter(tags__name__in=tag_names).distinct()
         total_count = qs.count()
         items = list(qs[offset : offset + limit])
         return items, total_count
+
+    def get_trending_tags(limit: int = 10) -> list[dict]:
+        """Return tags sorted by post usage count."""
+        tags = (
+            Tag.objects.annotate(post_count=Count("posts", distinct=True))
+            .filter(post_count__gte=2)
+            .order_by("-post_count")[:limit]
+        )
+        return [{"name": t.name, "count": t.post_count} for t in tags]
 
     def create_post(post_data: CreatePostData) -> Post:
         post = Post.objects.create(
@@ -67,14 +82,18 @@ class PostDao:
             raise ValueError(f"Post with ID {post_id} does not exist.")
 
     def _create_tag_objects(tags: list[str]) -> list[Tag]:
-        """
-        Convert a list of tag strings into Tag objects
-        """
+        """Convert tag strings to Tag objects, normalizing and deduplicating."""
         tag_objects = []
         if tags is not None:
-            for tag_name in tags:
-                # Create tag object
-                tag_obj, _ = Tag.objects.get_or_create(name=tag_name)
+            seen = set()
+            for tag_name in tags[:5]:  # hard cap at 5
+                clean = re.sub(r"[^a-z0-9-]", "", tag_name.strip().lower())
+                if len(clean) < 2 or len(clean) > 20:
+                    continue
+                if clean in seen:
+                    continue
+                seen.add(clean)
+                tag_obj, _ = Tag.objects.get_or_create(name=clean)
                 tag_objects.append(tag_obj)
         return tag_objects
 

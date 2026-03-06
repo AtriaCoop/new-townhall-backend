@@ -5,6 +5,11 @@ from posts.views import PostViewSet, CommentViewSet
 
 urlpatterns = [
     path(
+        "post/tags/trending/",
+        PostViewSet.as_view({"get": "get_trending_tags"}),
+        name="post_trending_tags",
+    ),
+    path(
         "post/",
         PostViewSet.as_view(
             {
