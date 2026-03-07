@@ -37,7 +37,7 @@ from .serializers import (
     ReportSerializer,
 )
 from .services import UserServices, ReportServices
-from django.core.mail import send_mail
+import resend
 # TODO: When switching back to SendGrid, restore:
 #   from sendgrid import SendGridAPIClient
 #   from sendgrid.helpers.mail import Mail
@@ -57,9 +57,12 @@ def _send_verification_email(user):
         f"?uid={uid}&token={token}"
     )
 
-    send_mail(
-        subject="Townhall - Verify Your Email",
-        message=(
+    resend.api_key = settings.RESEND_API_KEY
+    resend.Emails.send({
+        "from": settings.RESEND_FROM_EMAIL,
+        "to": [user.email],
+        "subject": "Townhall - Verify Your Email",
+        "text": (
             f"Hi there,\n\n"
             f"Thanks for signing up! Please verify your email by clicking "
             f"the link below:\n"
@@ -67,9 +70,7 @@ def _send_verification_email(user):
             f"This link expires in 1 hour.\n\n"
             f"If you didn't create this account, you can ignore this email."
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-    )
+    })
 
 
 @ensure_csrf_cookie
@@ -283,18 +284,19 @@ def forgot_password(request):
                     f"?uid={uid}&token={token}"
                 )
 
-                send_mail(
-                    subject="Townhall - Reset Your Password",
-                    message=(
+                resend.api_key = settings.RESEND_API_KEY
+                resend.Emails.send({
+                    "from": settings.RESEND_FROM_EMAIL,
+                    "to": [user.email],
+                    "subject": "Townhall - Reset Your Password",
+                    "text": (
                         f"Hi {user.full_name or 'there'},\n\n"
                         f"Click the link below to reset your password:\n"
                         f"{reset_url}\n\n"
                         f"This link expires in 1 hour.\n\n"
                         f"If you didn't request this, ignore this email."
                     ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                )
+                })
 
             except User.DoesNotExist:
                 pass  # Don't reveal whether email exists

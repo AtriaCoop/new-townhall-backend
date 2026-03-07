@@ -208,20 +208,19 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Password Reset and Email Security
 PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
 
-# Email Configuration
-# Currently using Gmail SMTP for development (no custom domain).
-# TODO: When a custom domain is acquired, switch back to SendGrid:
-#   1. Re-add SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-#   2. Set DEFAULT_FROM_EMAIL to noreply@yourdomain.com
-#   3. Configure SPF/DKIM records on your domain via SendGrid
-#   4. Update users/views.py to use SendGridAPIClient instead of send_mail
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
+# Email Configuration (Resend HTTP API)
+# Using Resend instead of SMTP — HTTP-based so it works on all hosting providers.
+# Currently sending from onboarding@resend.dev (no custom domain required).
+# TODO: When a custom domain is acquired, switch to SendGrid or update Resend:
+#   Option A - Resend with custom domain:
+#     1. Add your domain in Resend dashboard and verify DNS records
+#     2. Update RESEND_FROM_EMAIL to noreply@yourdomain.com
+#   Option B - Switch back to SendGrid:
+#     1. Re-add SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+#     2. Configure SPF/DKIM records on your domain via SendGrid
+#     3. Update users/views.py to use SendGridAPIClient
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
