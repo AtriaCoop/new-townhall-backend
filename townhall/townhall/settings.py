@@ -208,19 +208,9 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Password Reset and Email Security
 PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
 
-# Email Configuration (Resend HTTP API)
-# Using Resend instead of SMTP — HTTP-based so it works on all hosting providers.
-# Currently sending from onboarding@resend.dev (no custom domain required).
-# TODO: When a custom domain is acquired, switch to SendGrid or update Resend:
-#   Option A - Resend with custom domain:
-#     1. Add your domain in Resend dashboard and verify DNS records
-#     2. Update RESEND_FROM_EMAIL to noreply@yourdomain.com
-#   Option B - Switch back to SendGrid:
-#     1. Re-add SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-#     2. Configure SPF/DKIM records on your domain via SendGrid
-#     3. Update users/views.py to use SendGridAPIClient
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+# Email Configuration (SendGrid)
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@townhall.app")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 

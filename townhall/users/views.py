@@ -37,10 +37,8 @@ from .serializers import (
     ReportSerializer,
 )
 from .services import UserServices, ReportServices
-import resend
-# TODO: When switching back to SendGrid, restore:
-#   from sendgrid import SendGridAPIClient
-#   from sendgrid.helpers.mail import Mail
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 
 class SignupThrottle(AnonRateThrottle):
@@ -57,12 +55,11 @@ def _send_verification_email(user):
         f"?uid={uid}&token={token}"
     )
 
-    resend.api_key = settings.RESEND_API_KEY
-    resend.Emails.send({
-        "from": settings.RESEND_FROM_EMAIL,
-        "to": [user.email],
-        "subject": "Townhall - Verify Your Email",
-        "text": (
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=user.email,
+        subject="Townhall - Verify Your Email",
+        plain_text_content=(
             f"Hi there,\n\n"
             f"Thanks for signing up! Please verify your email by clicking "
             f"the link below:\n"
@@ -70,7 +67,10 @@ def _send_verification_email(user):
             f"This link expires in 1 hour.\n\n"
             f"If you didn't create this account, you can ignore this email."
         ),
-    })
+    )
+
+    sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+    sg.send(message)
 
 
 @ensure_csrf_cookie
@@ -284,19 +284,22 @@ def forgot_password(request):
                     f"?uid={uid}&token={token}"
                 )
 
-                resend.api_key = settings.RESEND_API_KEY
-                resend.Emails.send({
-                    "from": settings.RESEND_FROM_EMAIL,
-                    "to": [user.email],
-                    "subject": "Townhall - Reset Your Password",
-                    "text": (
+                # ✅ Send email using SendGrid API
+                message = Mail(
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to_emails=user.email,
+                    subject="Townhall - Reset Your Password",
+                    plain_text_content=(
                         f"Hi {user.full_name or 'there'},\n\n"
                         f"Click the link below to reset your password:\n"
                         f"{reset_url}\n\n"
                         f"This link expires in 1 hour.\n\n"
                         f"If you didn't request this, ignore this email."
                     ),
-                })
+                )
+
+                sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+                sg.send(message)
 
             except User.DoesNotExist:
                 pass  # Don't reveal whether email exists
