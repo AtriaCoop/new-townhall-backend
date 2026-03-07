@@ -696,6 +696,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         try:
             UserServices.delete_user(uid)
+            logout(request)
 
             return Response(
                 {"message": "User Delete Successfully"},
