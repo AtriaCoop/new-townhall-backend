@@ -141,17 +141,18 @@ def login_user(request):
                         status=403,
                     )
 
+                # TODO: Re-enable email verification once a proper sending domain is configured
                 # Block login if email is not verified
-                if not user.email_verified:
-                    return JsonResponse(
-                        {
-                            "error": (
-                                "Please verify your email before signing in. "
-                                "Check your inbox for a verification link."
-                            ),
-                        },
-                        status=403,
-                    )
+                # if not user.email_verified:
+                #     return JsonResponse(
+                #         {
+                #             "error": (
+                #                 "Please verify your email before signing in. "
+                #                 "Check your inbox for a verification link."
+                #             ),
+                #         },
+                #         status=403,
+                #     )
 
                 # Reset failed attempts on successful login
                 if user.failed_login_attempts > 0:
@@ -550,11 +551,11 @@ class UserViewSet(viewsets.ModelViewSet):
         try:
             user = UserServices.create_user(create_user_data)
 
-            # Send verification email
-            try:
-                _send_verification_email(user)
-            except Exception:
-                pass  # Don't fail signup if email sending fails
+            # TODO: Re-enable once a proper sending domain is configured
+            # try:
+            #     _send_verification_email(user)
+            # except Exception:
+            #     pass
 
             response_serializer = UserSerializer(user)
 
