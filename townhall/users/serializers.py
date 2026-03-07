@@ -1,6 +1,23 @@
 from rest_framework import serializers
+from rest_framework.fields import empty
+from rest_framework.utils import html as drf_html
 
 from .models import User, Tag, Report
+
+
+class OptionalBooleanField(serializers.BooleanField):
+    """
+    BooleanField that treats an absent key in multipart/form-data as
+    "not provided" (empty) rather than False.
+    DRF's default BooleanField mimics HTML checkbox behaviour: if the key
+    is missing from a QueryDict it returns False.  That would silently
+    overwrite db values when a JSON-only field is omitted from a FormData
+    PATCH request (e.g. EditProfilePage updating profile_header).
+    """
+    def get_value(self, dictionary):
+        if drf_html.is_html_input(dictionary) and self.field_name not in dictionary:
+            return empty
+        return super().get_value(dictionary)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -92,12 +109,13 @@ class UpdateUserSerializer(serializers.Serializer):
     other_networks = serializers.CharField(required=False, allow_blank=True)
     about_me = serializers.CharField(required=False, allow_blank=True)
     skills_interests = serializers.CharField(required=False, allow_blank=True)
-    receive_emails = serializers.BooleanField(required=False)
-    show_email = serializers.BooleanField(required=False)
-    show_in_directory = serializers.BooleanField(required=False)
-    allow_dms = serializers.BooleanField(required=False)
+    receive_emails = OptionalBooleanField(required=False)
+    show_email = OptionalBooleanField(required=False)
+    show_in_directory = OptionalBooleanField(required=False)
+    allow_dms = OptionalBooleanField(required=False)
     profile_image = serializers.ImageField(required=False, allow_null=True)
     profile_header = serializers.ImageField(required=False, allow_null=True)
+    remove_profile_header = OptionalBooleanField(required=False)
     tags = serializers.ListField(
         child=serializers.CharField(), required=False, allow_empty=True
     )

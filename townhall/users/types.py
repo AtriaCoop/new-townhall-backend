@@ -23,6 +23,7 @@ class UpdateUserData:
     skills_interests: Optional[str] = None
     profile_image: Optional[str] = None
     profile_header: Optional[str] = None
+    remove_profile_header: Optional[bool] = None
     receive_emails: Optional[bool] = None
     show_email: Optional[bool] = None
     show_in_directory: Optional[bool] = None

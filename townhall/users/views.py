@@ -740,6 +740,7 @@ class UserViewSet(viewsets.ModelViewSet):
             skills_interests=validated_data.get("skills_interests"),
             profile_image=request.FILES.get("profile_image"),
             profile_header=request.FILES.get("profile_header"),
+            remove_profile_header=validated_data.get("remove_profile_header"),
             receive_emails=validated_data.get("receive_emails"),
             show_email=validated_data.get("show_email"),
             show_in_directory=validated_data.get("show_in_directory"),
