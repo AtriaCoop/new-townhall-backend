@@ -110,6 +110,7 @@ class CommentDao:
             post_id=create_comment_data.post_id,
             content=create_comment_data.content,
             created_at=create_comment_data.created_at,
+            anonymous=create_comment_data.anonymous,
         )
 
         return comment

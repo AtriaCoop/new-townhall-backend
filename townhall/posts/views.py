@@ -465,7 +465,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             post_id=validated_data["post"].id,
             content=validated_data["content"],
             created_at=validated_data["created_at"],
-            anonymous=validated_data.get("anonymous", False),
+            anonymous=validated_data["anonymous"],
         )
 
         try:
