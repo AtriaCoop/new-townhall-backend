@@ -66,9 +66,6 @@ class TestChatEndpoint(TestCase):
         # Act
         response = self.client.delete(url, format="json")
 
-        print(f"\nDELETE STATUS CODE: {response.status_code}")
-        print(f"DELETE RESPONSE DATA: {getattr(response, 'data', 'No Data')}\n")
-
         # Assert
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
@@ -78,6 +75,7 @@ class TestChatEndpoint(TestCase):
         assert chat.hidden_by.filter(id=1).exists()
 
         """
+        Maybe need this in the future if we delete the chat instead of hiding it
         try:
             Chat.objects.get(id=3)
             self.fail("Should have returned a Chat Does Not Exist Error")
