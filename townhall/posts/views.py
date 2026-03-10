@@ -131,6 +131,7 @@ class PostViewSet(viewsets.ModelViewSet):
             image=validated_data.get("image", None),
             pinned=validated_data.get("pinned", False),
             tags=tag_names if tag_names else None,
+            anonymous=validated_data.get("anonymous", False),
         )
 
         try:
@@ -464,6 +465,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             post_id=validated_data["post"].id,
             content=validated_data["content"],
             created_at=validated_data["created_at"],
+            anonymous=validated_data.get("anonymous", False),
         )
 
         try:

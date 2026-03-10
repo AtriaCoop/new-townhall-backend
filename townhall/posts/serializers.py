@@ -7,7 +7,7 @@ class CreateCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ["id", "post", "content", "created_at"]
+        fields = ["id", "post", "content", "created_at", "anonymous"]
 
 
 class CommentUserMiniSerializer(serializers.ModelSerializer):
@@ -58,6 +58,7 @@ class PostSerializer(serializers.ModelSerializer):
             "pinned",
             "tags",
             "reactions",
+            "anonymous",
         ]
         read_only_fields = [
             "id",

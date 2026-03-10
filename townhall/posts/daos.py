@@ -47,6 +47,7 @@ class PostDao:
             created_at=post_data.created_at,
             image=post_data.image,
             pinned=post_data.pinned,
+            anonymous=post_data.anonymous,
         )
 
         tag_objects = PostDao._create_tag_objects(post_data.tags)
