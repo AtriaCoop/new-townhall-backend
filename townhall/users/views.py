@@ -681,21 +681,19 @@ class UserViewSet(viewsets.ModelViewSet):
     # DELETE A USER
     @action(detail=True, methods=["delete"], url_path="user")
     def delete_user(self, request, user_id):
-        uid = user_id
-
         if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if request.user.id != uid:
+        if request.user.id != user_id:
             return Response(
                 {"error": "You can only delete your own profile"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
-            UserServices.delete_user(uid)
+            UserServices.delete_user(user_id)
             logout(request)
 
             return Response(
