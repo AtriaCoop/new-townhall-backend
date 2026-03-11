@@ -53,13 +53,20 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_header = CloudinaryField("image", null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
     receive_emails = models.BooleanField(default=True)
+    show_email = models.BooleanField(default=True)
+    show_in_directory = models.BooleanField(default=True)
+    allow_dms = models.BooleanField(default=True)
     linkedin_url = models.URLField(max_length=255, null=True, blank=True)
     facebook_url = models.URLField(max_length=255, null=True, blank=True)
     x_url = models.URLField(max_length=255, null=True, blank=True)
     instagram_url = models.URLField(max_length=255, null=True, blank=True)
 
+    email_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)  # Required for admin panel access
+    is_staff = models.BooleanField(default=False)  # For admin panel
+
+    failed_login_attempts = models.IntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
 
     tags = models.ManyToManyField(Tag, blank=True, related_name="users")
     history = HistoricalRecords()

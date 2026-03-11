@@ -12,14 +12,18 @@ class TestActivityLogEndpoint(TestCase):
 
         # Create a user, post and comment
         self.user = User.objects.create_user(
-            email="test@example.com", password="password", full_name="John Doe"
+            email="test@example.com",
+            password="password",
+            full_name="John Doe",
         )
         self.post = Post.objects.create(user=self.user, content="Original post")
         self.comment = Comment.objects.create(
-            user=self.user, post=self.post, content="Nice post!"
+            user=self.user,
+            post=self.post,
+            content="Nice post!",
         )
 
-        # Update post, comment, and user to create additional historical records
+        # Update post, comment, user to create additional historical records
         self.post.content = "Updated and changed the post!"
         self.post.save()
 
@@ -31,9 +35,7 @@ class TestActivityLogEndpoint(TestCase):
 
     def test_activity_log_success(self):
         # Arrange & Act
-        session = self.client.session
-        session["_auth_user_id"] = self.user.id
-        session.save()
+        self.client.force_authenticate(user=self.user)
         url = "/activities/"
         response = self.client.get(url, format="json")
 
@@ -49,12 +51,10 @@ class TestActivityLogEndpoint(TestCase):
             assert "activity" in activity
 
     def test_activity_log_nonexistent_user(self):
-
-        # Arrange & Act
-
+        # Arrange & Act - no authentication
         url = "/activities/"
         response = self.client.get(url, format="json")
 
-        # Assert
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert not response.data.get("success", False)
+        # Assert - view returns 401 for unauthenticated requests
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "error" in response.data

@@ -6,14 +6,28 @@ from rest_framework.response import Response
 from django.forms import ValidationError
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login, logout
-from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password
 from django.middleware.csrf import get_token
 from django.utils import timezone
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.conf import settings
+from django_ratelimit.decorators import ratelimit
+from rest_framework.throttling import AnonRateThrottle
+from datetime import timedelta
 import json
 from .models import User, Tag
-from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
+from .types import (
+    CreateUserData,
+    UpdateUserData,
+    FilterUserData,
+    CreateReportData,
+)
 from .serializers import (
     UserSerializer,
     CreateUserSerializer,
@@ -23,6 +37,40 @@ from .serializers import (
     ReportSerializer,
 )
 from .services import UserServices, ReportServices
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+
+class SignupThrottle(AnonRateThrottle):
+    rate = "3/min"
+
+
+def _send_verification_email(user):
+    """Send an email verification link to the given user via SendGrid."""
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+    verify_url = (
+        f"{settings.FRONTEND_URL}/VerifyEmailPage"
+        f"?uid={uid}&token={token}"
+    )
+
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=user.email,
+        subject="Townhall - Verify Your Email",
+        plain_text_content=(
+            f"Hi there,\n\n"
+            f"Thanks for signing up! Please verify your email by clicking "
+            f"the link below:\n"
+            f"{verify_url}\n\n"
+            f"This link expires in 1 hour.\n\n"
+            f"If you didn't create this account, you can ignore this email."
+        ),
+    )
+
+    sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+    sg.send(message)
 
 
 @ensure_csrf_cookie
@@ -31,9 +79,32 @@ def get_csrf_token(request):
     return JsonResponse({"detail": "CSRF cookie set", "csrfToken": token})
 
 
+def check_session(request):
+    if request.user.is_authenticated:
+        return JsonResponse(
+            {
+                "authenticated": True,
+                "user": {
+                    "id": request.user.id,
+                    "full_name": request.user.full_name,
+                    "email": request.user.email,
+                    "email_verified": request.user.email_verified,
+                },
+            }
+        )
+    return JsonResponse({"authenticated": False}, status=401)
+
+
 # USER LOGIN
+@ratelimit(key="ip", rate="5/m", method="POST", block=False)
 def login_user(request):
     if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many login attempts. Please try again later."},
+                status=429,
+            )
+
         try:
             data = json.loads(request.body)
             email = data.get("email")
@@ -43,12 +114,62 @@ def login_user(request):
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                return JsonResponse({"error": "User not found"}, status=404)
+                return JsonResponse(
+                    {"error": "Invalid email or password"},
+                    status=401,
+                )
+
+            # Check account lockout
+            if user.locked_until and timezone.now() < user.locked_until:
+                return JsonResponse(
+                    {"error": "Account locked. Try again later."},
+                    status=429,
+                )
 
             # Validate Password
             if check_password(password, user.password):
+                # Block login if account is deactivated
+                if not user.is_active:
+                    return JsonResponse(
+                        {
+                            "error": "account_deactivated",
+                            "message": (
+                                "Your account has been deactivated. "
+                                "You can reactivate it to sign in again."
+                            ),
+                        },
+                        status=403,
+                    )
+
+                # TODO: Re-enable email verification once a proper
+                # sending domain is configured
+                # Block login if email is not verified
+                # if not user.email_verified:
+                #     return JsonResponse(
+                #         {
+                #             "error": (
+                #                 "Please verify your email before signing in. "
+                #                 "Check your inbox for a verification link."
+                #             ),
+                #         },
+                #         status=403,
+                #     )
+
+                # Reset failed attempts on successful login
+                if user.failed_login_attempts > 0:
+                    user.failed_login_attempts = 0
+                    user.locked_until = None
+                    user.save(
+                        update_fields=[
+                            "failed_login_attempts",
+                            "locked_until",
+                        ]
+                    )
+
                 login(
-                    request, user, backend="django.contrib.auth.backends.ModelBackend"
+                    request,
+                    user,
+                    backend="django.contrib.auth.backends.ModelBackend",
                 )
 
                 return JsonResponse(
@@ -58,12 +179,21 @@ def login_user(request):
                             "id": user.id,
                             "full_name": user.full_name,
                             "email": user.email,
+                            "email_verified": user.email_verified,
                         },
                     },
                     status=200,
                 )
             else:
-                return JsonResponse({"error": "Invalid password"}, status=400)
+                # Increment failed attempts and lock after 5 failures
+                user.failed_login_attempts += 1
+                if user.failed_login_attempts >= 5:
+                    user.locked_until = timezone.now() + timedelta(minutes=15)
+                user.save(update_fields=["failed_login_attempts", "locked_until"])
+                return JsonResponse(
+                    {"error": "Invalid email or password"},
+                    status=401,
+                )
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
@@ -72,7 +202,6 @@ def login_user(request):
 
 
 # USER LOGOUT
-@csrf_exempt
 def logout_user(request):
     if request.method == "POST":
         logout(request)
@@ -84,35 +213,352 @@ def logout_user(request):
     return JsonResponse({"error": "Invalid request method."}, status=405)
 
 
+# CHANGE PASSWORD
+def change_password(request):
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Not authenticated"}, status=401)
+
+        try:
+            data = json.loads(request.body)
+            current_password = data.get("current_password")
+            new_password = data.get("new_password")
+
+            if not current_password or not new_password:
+                return JsonResponse(
+                    {"error": "current_password and new_password required"},
+                    status=400,
+                )
+
+            if not check_password(current_password, request.user.password):
+                return JsonResponse(
+                    {"error": "Current password is incorrect"},
+                    status=400,
+                )
+
+            try:
+                validate_password(new_password, request.user)
+            except DjangoValidationError as e:
+                return JsonResponse({"error": e.messages[0]}, status=400)
+
+            request.user.set_password(new_password)
+            request.user.save()
+
+            # Re-authenticate to refresh session hash after password change
+            login(
+                request,
+                request.user,
+                backend="django.contrib.auth.backends.ModelBackend",
+            )
+
+            return JsonResponse({"message": "Password changed successfully"})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# FORGOT PASSWORD - Send Reset Email
+@ratelimit(key="ip", rate="3/m", method="POST", block=False)
+def forgot_password(request):
+    if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many requests. Please try again later."},
+                status=429,
+            )
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+
+            if not email:
+                return JsonResponse({"error": "Email is required"}, status=400)
+
+            # Always return success to prevent email enumeration
+            try:
+                user = User.objects.get(email=email)
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+                reset_url = (
+                    f"{settings.FRONTEND_URL}/ResetPasswordPage"
+                    f"?uid={uid}&token={token}"
+                )
+
+                # ✅ Send email using SendGrid API
+                message = Mail(
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to_emails=user.email,
+                    subject="Townhall - Reset Your Password",
+                    plain_text_content=(
+                        f"Hi {user.full_name or 'there'},\n\n"
+                        f"Click the link below to reset your password:\n"
+                        f"{reset_url}\n\n"
+                        f"This link expires in 1 hour.\n\n"
+                        f"If you didn't request this, ignore this email."
+                    ),
+                )
+
+                sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+                sg.send(message)
+
+            except User.DoesNotExist:
+                pass  # Don't reveal whether email exists
+
+            return JsonResponse(
+                {
+                    "message": (
+                        "If an account exists with that email, "
+                        "a reset link has been sent."
+                    ),
+                }
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# RESET PASSWORD - Validate Token and Set New Password
+@ratelimit(key="ip", rate="5/m", method="POST", block=False)
+def reset_password(request):
+    if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many requests. Please try again later."},
+                status=429,
+            )
+
+        try:
+            data = json.loads(request.body)
+            uid = data.get("uid")
+            token = data.get("token")
+            new_password = data.get("new_password")
+
+            if not uid or not token or not new_password:
+                return JsonResponse(
+                    {"error": "uid, token, and new_password are required"},
+                    status=400,
+                )
+
+            try:
+                user_id = force_str(urlsafe_base64_decode(uid))
+                user = User.objects.get(pk=user_id)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                return JsonResponse({"error": "Invalid reset link"}, status=400)
+
+            if not default_token_generator.check_token(user, token):
+                return JsonResponse(
+                    {"error": "Reset link has expired or is invalid"},
+                    status=400,
+                )
+
+            try:
+                validate_password(new_password, user)
+            except DjangoValidationError as e:
+                return JsonResponse({"error": e.messages[0]}, status=400)
+
+            user.set_password(new_password)
+            user.save()
+
+            return JsonResponse({"message": "Password has been reset successfully"})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# VERIFY EMAIL - Validate Token and Mark Verified
+@ratelimit(key="ip", rate="10/m", method="POST", block=False)
+def verify_email(request):
+    if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many requests. Please try again later."},
+                status=429,
+            )
+
+        try:
+            data = json.loads(request.body)
+            uid = data.get("uid")
+            token = data.get("token")
+
+            if not uid or not token:
+                return JsonResponse(
+                    {"error": "uid and token are required"},
+                    status=400,
+                )
+
+            try:
+                user_id = force_str(urlsafe_base64_decode(uid))
+                user = User.objects.get(pk=user_id)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                return JsonResponse(
+                    {"error": "Invalid verification link"},
+                    status=400,
+                )
+
+            if not default_token_generator.check_token(user, token):
+                return JsonResponse(
+                    {"error": "Verification link has expired or is invalid"},
+                    status=400,
+                )
+
+            user.email_verified = True
+            user.save(update_fields=["email_verified"])
+
+            return JsonResponse(
+                {"message": "Email verified successfully. You can now sign in."}
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# RESEND VERIFICATION EMAIL
+@ratelimit(key="ip", rate="3/m", method="POST", block=False)
+def resend_verification(request):
+    if request.method == "POST":
+        if getattr(request, "limited", False):
+            return JsonResponse(
+                {"error": "Too many requests. Please try again later."},
+                status=429,
+            )
+
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+
+            if not email:
+                return JsonResponse({"error": "Email is required"}, status=400)
+
+            # Always return success to prevent email enumeration
+            try:
+                user = User.objects.get(email=email)
+                if not user.email_verified:
+                    _send_verification_email(user)
+            except User.DoesNotExist:
+                pass
+
+            return JsonResponse(
+                {
+                    "message": (
+                        "If an account exists with that email, "
+                        "a new verification link has been sent."
+                    ),
+                }
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# DEACTIVATE ACCOUNT
+def deactivate_account(request):
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Not authenticated"}, status=401)
+
+        user = request.user
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        logout(request)
+        response = JsonResponse({"message": "Account deactivated successfully."})
+        response.delete_cookie("sessionid")
+        response.delete_cookie("csrftoken")
+        return response
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+# REACTIVATE ACCOUNT
+def reactivate_account(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+            password = data.get("password")
+
+            if not email or not password:
+                return JsonResponse(
+                    {"error": "Email and password are required"},
+                    status=400,
+                )
+
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return JsonResponse(
+                    {"error": "Invalid email or password"},
+                    status=401,
+                )
+
+            if not check_password(password, user.password):
+                return JsonResponse(
+                    {"error": "Invalid email or password"},
+                    status=401,
+                )
+
+            if user.is_active:
+                return JsonResponse(
+                    {"message": "Account is already active."},
+                    status=200,
+                )
+
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+
+            return JsonResponse(
+                {"message": "Account reactivated successfully. You can now sign in."}
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
 class UserViewSet(viewsets.ModelViewSet):
 
     # CREATE USER
-    @action(detail=False, methods=["post"], url_path="user")
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="user",
+        throttle_classes=[SignupThrottle],
+    )
     @permission_classes([AllowAny])
     def create_user(self, request):
-        print("➡️ Received request to create user")
-        print("📨 Request data:", request.data)
-
         serializer = CreateUserSerializer(data=request.data)
 
         if not serializer.is_valid():
-            print("❌ Serializer invalid:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated_data = serializer.validated_data
-        print("✅ Serializer validated data:", validated_data)
 
         create_user_data = CreateUserData(
-            email=validated_data.get("email"), password=validated_data["password"]
+            email=validated_data.get("email"),
+            password=validated_data["password"],
         )
 
         try:
-            print("🔧 Calling UserServices.create_user")
             user = UserServices.create_user(create_user_data)
-            print("✅ User created successfully:", user)
+
+            # TODO: Re-enable once a proper sending domain is configured
+            # try:
+            #     _send_verification_email(user)
+            # except Exception:
+            #     pass
 
             response_serializer = UserSerializer(user)
-            print("📦 Serialized user:", response_serializer.data)
 
             return Response(
                 {
@@ -122,19 +568,15 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
-            print("❌ ValidationError while creating user:", str(e))
             return Response(
                 {
                     "message": str(e),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
-            print("🔥 Unexpected error while creating user:", str(e))
+        except Exception:
             return Response(
-                {
-                    "message": "Internal server error",
-                },
+                {"message": "Internal server error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -146,7 +588,8 @@ class UserViewSet(viewsets.ModelViewSet):
             user = User.objects.get(id=pk)
         except User.DoesNotExist:
             return Response(
-                {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
+                {"error": "User not found."},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         serializer = UserProfileSerializer(user, data=request.data, partial=True)
@@ -156,10 +599,15 @@ class UserViewSet(viewsets.ModelViewSet):
 
         serializer.save()
 
-        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        login(
+            request,
+            user,
+            backend="django.contrib.auth.backends.ModelBackend",
+        )
 
         return Response(
-            {"message": "Profile setup completed."}, status=status.HTTP_201_CREATED
+            {"message": "Profile setup completed."},
+            status=status.HTTP_201_CREATED,
         )
 
     # GET a User
@@ -212,6 +660,10 @@ class UserViewSet(viewsets.ModelViewSet):
             users = UserServices.get_user_all(None)
             message = "All Users retreived successfully"
 
+        # Filter out deactivated users and users who opted out of directory
+        if users is not None:
+            users = users.filter(is_active=True, show_in_directory=True)
+
         if not users:
             return Response(
                 {"message": "No Users were found"},
@@ -230,44 +682,42 @@ class UserViewSet(viewsets.ModelViewSet):
     # DELETE A USER
     @action(detail=True, methods=["delete"], url_path="user")
     def delete_user(self, request, user_id):
-        uid = user_id
-
-        # Check if user is trying to delete their own profile
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if int(user_id) != uid:
+        if request.user.id != user_id:
             return Response(
                 {"error": "You can only delete your own profile"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
-            UserServices.delete_user(uid)
+            UserServices.delete_user(user_id)
+            logout(request)
 
             return Response(
                 {"message": "User Delete Successfully"},
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     # UPDATE A USER BY ID
     @action(detail=True, methods=["patch"], url_path="user")
     def update_user(self, request, user_id):
         uid = user_id
 
-        # Check if user is trying to update their own profile
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if int(user_id) != uid:
+        if request.user.id != uid:
             return Response(
                 {"error": "You can only update your own profile"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -290,7 +740,12 @@ class UserViewSet(viewsets.ModelViewSet):
             about_me=validated_data.get("about_me"),
             skills_interests=validated_data.get("skills_interests"),
             profile_image=request.FILES.get("profile_image"),
+            profile_header=request.FILES.get("profile_header"),
+            remove_profile_header=validated_data.get("remove_profile_header"),
             receive_emails=validated_data.get("receive_emails"),
+            show_email=validated_data.get("show_email"),
+            show_in_directory=validated_data.get("show_in_directory"),
+            allow_dms=validated_data.get("allow_dms"),
             tags=validated_data.get("tags", []),
             linkedin_url=validated_data.get("linkedin_url"),
             facebook_url=validated_data.get("facebook_url"),
@@ -319,10 +774,11 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(
                 {"message": error_message}, status=status.HTTP_404_NOT_FOUND
             )
-        except Exception as e:
-            # Print the error for debugging
-            print(f"Unexpected error in update_user: {e}")
-            print(f"Error type: {type(e).__name__}")
+        except Exception:
+            return Response(
+                {"message": "Internal server error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # SEARCH USERS TO MENTION
     @action(detail=False, methods=["get"], url_path="mention")
@@ -378,7 +834,7 @@ class TagViewSet(viewsets.ModelViewSet):
         url_path="user/tags",
     )
     def get_all_tags_for_a_user(self, request):
-        """Return Tag objects for the current user or for the user_id query param."""
+        """Return Tag objects for current user or user_id query param."""
         # Prefer request.GET for explicitness in tests; handle empty string too.
         user_id_param = request.GET.get("user_id", None)
 
@@ -386,13 +842,15 @@ class TagViewSet(viewsets.ModelViewSet):
             # treat empty string as invalid
             if user_id_param == "":
                 return Response(
-                    {"detail": "Invalid user_id"}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": "Invalid user_id"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
                 user_id = int(user_id_param)
             except (TypeError, ValueError):
                 return Response(
-                    {"detail": "Invalid user_id"}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": "Invalid user_id"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
             if not getattr(request, "user", None) or not request.user.is_authenticated:
@@ -417,17 +875,9 @@ class TagViewSet(viewsets.ModelViewSet):
 class ReportViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="report")
     def create_report_request(self, request):
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = ReportSerializer(data=request.data)
@@ -438,7 +888,7 @@ class ReportViewSet(viewsets.ModelViewSet):
         validated_data = serializer.validated_data
 
         create_report_data = CreateReportData(
-            user_id=user.id,
+            user_id=request.user.id,
             content=validated_data["content"],
             created_at=timezone.now(),
         )
@@ -457,7 +907,10 @@ class ReportViewSet(viewsets.ModelViewSet):
         except ValidationError as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except PermissionDenied as e:
-            return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
     # get a report
     @action(detail=True, methods=["get"], url_path="report_id")
