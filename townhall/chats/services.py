@@ -3,12 +3,13 @@ from typing import Optional
 from .models import Chat, Message
 from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData, UpdateMessageData
-from django.db.models import Count
 from django.db.models import QuerySet
+from users.models import User
 import typing
 
 
 class ChatServices:
+    @staticmethod
     def get_chat(id: int) -> Optional[Chat]:
         try:
             chat = ChatDao.get_chat(id=id)
@@ -16,12 +17,14 @@ class ChatServices:
         except Chat.DoesNotExist:
             raise ValidationError(f"Chat with the given id: {id}, does not exist.")
 
+    @staticmethod
     def get_chat_all() -> QuerySet[Chat]:
         chats = ChatDao.get_chat_all()
-        if not chats.exists():
+        if chats is None or not chats.exists():
             raise ValidationError("No chats were found.")
         return chats
 
+    @staticmethod
     def delete_chat(id: int) -> None:
         try:
             ChatDao.delete_chat(id=id)
@@ -33,20 +36,22 @@ class ChatServices:
         try:
             participant_ids = sorted(data.participant_ids)
 
-            # Check all chats that this user is in
-            possible_chats = (
-                Chat.objects.annotate(num_participants=Count("participants"))
-                .filter(
-                    participants__id__in=participant_ids,
-                    num_participants=len(participant_ids),
-                )
-                .distinct()
-            )
+            # Find chats containing ALL specified participants
+            possible_chats = Chat.objects.all()
+            for pid in participant_ids:
+                possible_chats = possible_chats.filter(participants__id=pid)
 
+            # Verify exact participant match (no extra participants)
             for chat in possible_chats:
                 existing_ids = sorted(chat.participants.values_list("id", flat=True))
                 if existing_ids == participant_ids:
                     return chat, False  # Found existing chat
+
+            # Check if any participant has disabled DMs before creating
+            participants = User.objects.filter(id__in=participant_ids)
+            for participant in participants:
+                if not participant.allow_dms:
+                    raise ValidationError("This user does not accept direct messages.")
 
             # Create new chat if none found
             chat = ChatDao.create_chat(create_chat_data=data)
@@ -55,6 +60,7 @@ class ChatServices:
         except ValidationError:
             raise
 
+    @staticmethod
     def add_user(chat_id: int, user_id: int):
         try:
             ChatDao.add_user(chat_id=chat_id, user_id=user_id)
@@ -79,8 +85,17 @@ class ChatServices:
         except Exception as e:
             raise ValidationError(f"Failed: {str(e)}")
 
+    @staticmethod
+    def remove_user(chat_id: int, user_id: int) -> str:
+        try:
+            ChatDao.remove_user(chat_id=chat_id, user_id=user_id)
+            return f"User {user_id} successfully removed from chat {chat_id}."
+        except ValidationError as e:
+            raise ValidationError(f"Failed to remove user: {e}")
+
 
 class MessageServices:
+    @staticmethod
     def create_message(create_message_data: CreateMessageData) -> Optional[Message]:
         try:
             message = MessageDao.create_message(create_message_data=create_message_data)
@@ -89,6 +104,7 @@ class MessageServices:
         except ValidationError:
             raise
 
+    @staticmethod
     def get_message(id: int) -> typing.Optional[Message]:
         try:
             message = MessageDao.get_message(id=id)
@@ -96,12 +112,14 @@ class MessageServices:
         except Message.DoesNotExist:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
 
+    @staticmethod
     def delete_message(id: int) -> None:
         try:
             MessageDao.delete_message(id=id)
         except Message.DoesNotExist:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
 
+    @staticmethod
     def update_message(id: int, update_message_data: UpdateMessageData) -> None:
         try:
             MessageDao.update_message(id=id, update_message_data=update_message_data)

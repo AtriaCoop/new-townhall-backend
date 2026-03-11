@@ -5,9 +5,16 @@ from users.serializers import UserMiniSerializer
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    profile_image = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = ["id", "full_name", "profile_image", "title"]
+
+    def get_profile_image(self, obj):
+        if obj.profile_image:
+            return obj.profile_image.url
+        return None
 
 
 class CreateChatSerializer(serializers.Serializer):
@@ -63,7 +70,7 @@ class OptionalMessageSerializer(serializers.ModelSerializer):
     user = UserMiniSerializer(required=False)
     chat = ChatMiniSerializer(required=False)
     content = serializers.CharField(required=False)
-    image_content = serializers.CharField(required=False)
+    image_content = serializers.ImageField(required=False, allow_null=True)
     sent_at = serializers.DateTimeField(required=False)
 
     class Meta:

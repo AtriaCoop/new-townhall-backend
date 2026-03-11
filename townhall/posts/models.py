@@ -16,6 +16,7 @@ class Post(models.Model):
     history = HistoricalRecords()
     pinned = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tag, blank=True, related_name="posts")
+    anonymous = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.id)
@@ -28,6 +29,7 @@ class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
     history = HistoricalRecords()
+    anonymous = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.id)
@@ -52,6 +54,12 @@ class Reaction(models.Model):
         ("support", "Support"),
         ("inspired", "Inspired"),
         ("helpful", "Helpful"),
+        ("celebrate", "Celebrate"),
+        ("laugh", "Laugh"),
+        ("fire", "Fire"),
+        ("clap", "Clap"),
+        ("grateful", "Grateful"),
+        ("mindblown", "Mind Blown"),
     ]
 
     id = models.AutoField(primary_key=True)
@@ -64,4 +72,6 @@ class Reaction(models.Model):
         unique_together = ["post", "user", "reaction_type"]
 
     def __str__(self):
-        return f"{self.user.full_name} - {self.reaction_type} on Post {self.post.id}"
+        return (
+            f"{self.user.full_name} - {self.reaction_type} on Post " f"{self.post.id}"
+        )

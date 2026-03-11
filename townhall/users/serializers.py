@@ -1,10 +1,28 @@
 from rest_framework import serializers
+from rest_framework.fields import empty
+from rest_framework.utils import html as drf_html
 
 from .models import User, Tag, Report
 
 
+class OptionalBooleanField(serializers.BooleanField):
+    """
+    BooleanField that treats an absent key in multipart/form-data as
+    "not provided" (empty) rather than False.
+    DRF's default BooleanField mimics HTML checkbox behaviour: if the key
+    is missing from a QueryDict it returns False.  That would silently
+    overwrite db values when a JSON-only field is omitted from a FormData
+    PATCH request (e.g. EditProfilePage updating profile_header).
+    """
+    def get_value(self, dictionary):
+        if drf_html.is_html_input(dictionary) and self.field_name not in dictionary:
+            return empty
+        return super().get_value(dictionary)
+
+
 class UserSerializer(serializers.ModelSerializer):
     profile_image = serializers.SerializerMethodField()
+    profile_header = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -20,9 +38,14 @@ class UserSerializer(serializers.ModelSerializer):
             "about_me",
             "skills_interests",
             "profile_image",
+            "profile_header",
             "date_joined",
             "receive_emails",
+            "show_email",
+            "show_in_directory",
+            "allow_dms",
             "is_staff",
+            "email_verified",
             "linkedin_url",
             "facebook_url",
             "x_url",
@@ -32,6 +55,11 @@ class UserSerializer(serializers.ModelSerializer):
     def get_profile_image(self, obj):
         if obj.profile_image:
             return obj.profile_image.url
+        return None
+
+    def get_profile_header(self, obj):
+        if obj.profile_header:
+            return obj.profile_header.url
         return None
 
 
@@ -81,8 +109,13 @@ class UpdateUserSerializer(serializers.Serializer):
     other_networks = serializers.CharField(required=False, allow_blank=True)
     about_me = serializers.CharField(required=False, allow_blank=True)
     skills_interests = serializers.CharField(required=False, allow_blank=True)
-    receive_emails = serializers.BooleanField(required=False)
+    receive_emails = OptionalBooleanField(required=False)
+    show_email = OptionalBooleanField(required=False)
+    show_in_directory = OptionalBooleanField(required=False)
+    allow_dms = OptionalBooleanField(required=False)
     profile_image = serializers.ImageField(required=False, allow_null=True)
+    profile_header = serializers.ImageField(required=False, allow_null=True)
+    remove_profile_header = OptionalBooleanField(required=False)
     tags = serializers.ListField(
         child=serializers.CharField(), required=False, allow_empty=True
     )
@@ -111,6 +144,7 @@ class UpdateUserSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     profile_image = serializers.ImageField(required=False, allow_null=True)
+    profile_header = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -125,6 +159,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "about_me",
             "skills_interests",
             "profile_image",
+            "profile_header",
             "linkedin_url",
             "facebook_url",
             "x_url",
