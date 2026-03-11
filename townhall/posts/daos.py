@@ -23,7 +23,8 @@ class PostDao:
     def get_all_posts(
         offset: int, limit: int, tag_names: list[str] | None = None
     ) -> tuple[typing.List[Post], int]:
-        """Return recent posts paginated with total count, optionally filtered by tags."""
+        """Return recent posts paginated with total count,
+        optionally filtered by tags."""
         qs = Post.objects.prefetch_related('tags').order_by("-pinned", "-created_at")
         if tag_names:
             qs = qs.filter(tags__name__in=tag_names).distinct()
@@ -47,6 +48,7 @@ class PostDao:
             created_at=post_data.created_at,
             image=post_data.image,
             pinned=post_data.pinned,
+            anonymous=post_data.anonymous,
         )
 
         tag_objects = PostDao._create_tag_objects(post_data.tags)
@@ -109,6 +111,7 @@ class CommentDao:
             post_id=create_comment_data.post_id,
             content=create_comment_data.content,
             created_at=create_comment_data.created_at,
+            anonymous=create_comment_data.anonymous,
         )
 
         return comment

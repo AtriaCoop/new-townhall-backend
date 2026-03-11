@@ -16,6 +16,7 @@ class Post(models.Model):
     history = HistoricalRecords()
     pinned = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tag, blank=True, related_name="posts")
+    anonymous = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.id)
@@ -28,6 +29,7 @@ class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
     history = HistoricalRecords()
+    anonymous = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.id)

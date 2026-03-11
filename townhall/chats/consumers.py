@@ -19,9 +19,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Leave chat group
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    # Receive message from WebSocket (broadcast only — message is already saved via REST API)
+    # Receive message from WebSocket (broadcast only — saved via REST API)
     async def receive(self, text_data):
-        from chats.models import Chat
         from users.models import User
 
         data = json.loads(text_data)
@@ -120,7 +119,7 @@ class GroupConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    # Receive message from WebSocket (broadcast only — message is already saved via REST API)
+    # Receive message from WebSocket (broadcast only — saved via REST API)
     async def receive(self, text_data):
         from users.models import User
 
