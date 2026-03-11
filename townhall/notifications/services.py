@@ -43,7 +43,10 @@ class NotificationServices:
             actor_obj = {
                 "id": notification.actor_id,
                 "full_name": notification.actor.full_name or "",
-                "profile_image": notification.actor.profile_image.url if notification.actor.profile_image else "",
+                "profile_image": (
+                    notification.actor.profile_image.url
+                    if notification.actor.profile_image else ""
+                ),
             }
 
         payload = {

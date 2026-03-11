@@ -141,7 +141,8 @@ def login_user(request):
                         status=403,
                     )
 
-                # TODO: Re-enable email verification once a proper sending domain is configured
+                # TODO: Re-enable email verification once a proper
+                # sending domain is configured
                 # Block login if email is not verified
                 # if not user.email_verified:
                 #     return JsonResponse(
@@ -681,21 +682,20 @@ class UserViewSet(viewsets.ModelViewSet):
     # DELETE A USER
     @action(detail=True, methods=["delete"], url_path="user")
     def delete_user(self, request, user_id):
-        uid = user_id
-
         if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if request.user.id != uid:
+        if request.user.id != user_id:
             return Response(
                 {"error": "You can only delete your own profile"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
-            UserServices.delete_user(uid)
+            UserServices.delete_user(user_id)
+            logout(request)
 
             return Response(
                 {"message": "User Delete Successfully"},
