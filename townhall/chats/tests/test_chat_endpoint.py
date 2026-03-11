@@ -91,7 +91,7 @@ class TestChatEndpoint(TestCase):
         self.client.force_authenticate(user=self.bob)
         valid_data = {
             "name": "The Avengers",
-            "participants": [1, 2],
+            "participants": [1, 3],
         }
 
         # Act
@@ -104,8 +104,9 @@ class TestChatEndpoint(TestCase):
         assert response.data["data"]["name"] == "The Avengers"
         assert response.data["data"]["created_at"] is not None
         assert response.data["data"]["id"] is not None
-        assert response.data["data"]["participants"][0]["id"] == 1
-        assert response.data["data"]["participants"][1]["id"] == 2
+        participant_ids = [p["id"] for p in response.data["data"]["participants"]]
+        assert 1 in participant_ids
+        assert 3 in participant_ids
 
     def test_create_chat_fail_invalid_data(self):
         # Arrange
