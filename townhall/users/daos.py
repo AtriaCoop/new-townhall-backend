@@ -1,4 +1,5 @@
 from django.db.models.query import QuerySet
+from django.db import transaction
 import typing
 from .models import User
 from .models import Tag, Report
@@ -27,7 +28,10 @@ class UserDao:
 
     @staticmethod
     def delete_user(user_id: int) -> None:
-        User.objects.get(id=user_id).delete()
+        with transaction.atomic():
+            user = User.objects.get(id=user_id)
+            user._history_user = None
+            user.delete()
 
     @staticmethod
     def filter_all_users(filtersDict) -> QuerySet[User]:
