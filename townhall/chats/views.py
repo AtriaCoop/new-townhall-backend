@@ -13,10 +13,9 @@ from .serializers import (
 from .services import ChatServices, MessageServices
 from .types import CreateChatData, CreateMessageData, UpdateMessageData
 from django.utils import timezone
-from .models import Chat
-from .models import Message
-from .models import GroupMessage
-from .models import User
+from .models import Chat, Message, GroupMessage, ChatReadStatus
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -64,7 +63,9 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            chats = Chat.objects.filter(participants__id=user_id).distinct()
+            chats = Chat.objects.filter(
+                participants__id=user_id
+            ).exclude(hidden_by__id=user_id).distinct()
             serializer = ChatSerializer(chats, many=True)
             return Response(
                 {
@@ -80,27 +81,25 @@ class ChatViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    # DELETE Chat
+    # DELETE (Hide) Chat — soft delete, preserves messages
     @action(detail=True, methods=["delete"], url_path="chats")
     @permission_classes([IsAuthenticated])
     def delete_chat_request(self, request, id):
-        chat_id = id
-
         try:
-            ChatServices.delete_chat(chat_id)
+            chat = Chat.objects.get(id=id)
+            chat.hidden_by.add(request.user)
 
             return Response(
                 {
-                    "message": "Chat Deleted Successfully",
+                    "message": "Chat hidden successfully",
                     "success": True,
                 },
                 status=status.HTTP_200_OK,
             )
-        except ValidationError as e:
-            # If services method returns an error, return an error Response
+        except Chat.DoesNotExist:
             return Response(
                 {
-                    "message": str(e),
+                    "message": "Chat not found",
                     "success": False,
                 },
                 status=status.HTTP_404_NOT_FOUND,
@@ -129,6 +128,9 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         try:
             chat, created = ChatServices.get_or_create_chat(create_chat_data)
+            if not created:
+                # Unhide for all participants when a chat is reused
+                chat.hidden_by.clear()
             response_serializer = ChatSerializer(chat)
 
             return Response(
@@ -141,7 +143,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                     "success": True,
                     "data": response_serializer.data,
                 },
-                status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+                status=(status.HTTP_201_CREATED if created else status.HTTP_200_OK),
             )
         except ValidationError as e:
             return Response(
@@ -180,7 +182,8 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response(
-                {"message": f"Unexpected error: {str(e)}", "success": False}, status=500
+                {"message": f"Unexpected error: {str(e)}", "success": False},
+                status=500,
             )
 
     # GET Message
@@ -203,17 +206,46 @@ class ChatViewSet(viewsets.ModelViewSet):
 
             if not chat_id:
                 return Response(
-                    {"success": False, "error": "chat_id is required"}, status=400
+                    {"success": False, "error": "chat_id is required"},
+                    status=400,
                 )
 
             message = Message.objects.create(
                 user=user, chat_id=chat_id, content=content, image_content=image
             )
 
+            # Unhide chat for all participants so the recipient sees it
+            chat = Chat.objects.get(id=chat_id)
+            chat.hidden_by.clear()
+
+            # Broadcast to all participants via channel layer (like bell notifications)
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                participant_ids = list(
+                    chat.participants.values_list("id", flat=True)
+                )
+                for pid in participant_ids:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{pid}",
+                        {
+                            "type": "user_message",
+                            "chat_id": chat_id,
+                            "message": content,
+                            "sender": user.id,
+                            "full_name": user.full_name,
+                            "profile_image": (
+                                user.profile_image.url
+                                if user.profile_image
+                                else None
+                            ),
+                        },
+                    )
+
             return Response(
                 {
                     "success": True,
                     "data": {
+                        "id": message.id,
                         "sender": message.user.id,
                         "full_name": message.user.full_name,
                         "content": message.content,
@@ -233,9 +265,68 @@ class ChatViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
 
+    # GET unread DM counts per chat for the current user
+    @action(detail=False, methods=["get"], url_path="unread-counts")
+    @permission_classes([IsAuthenticated])
+    def get_unread_counts(self, request):
+        user = request.user
+
+        chats = Chat.objects.filter(participants=user).exclude(hidden_by=user)
+
+        result = {}
+        for chat in chats:
+            read_status = ChatReadStatus.objects.filter(
+                user=user, chat=chat
+            ).first()
+            last_read = read_status.last_read_at if read_status else None
+
+            msg_qs = Message.objects.filter(chat=chat).exclude(user=user)
+            if last_read:
+                msg_qs = msg_qs.filter(sent_at__gt=last_read)
+
+            count = msg_qs.count()
+            if count == 0:
+                continue
+
+            latest = msg_qs.order_by("-sent_at").first()
+            result[chat.id] = {
+                "count": count,
+                "sender_id": latest.user.id,
+                "sender_name": latest.user.full_name,
+                "sender_image": (
+                    latest.user.profile_image.url
+                    if latest.user.profile_image
+                    else None
+                ),
+                "last_message": latest.content,
+                "timestamp": latest.sent_at.isoformat(),
+            }
+
+        return Response({"success": True, "data": result})
+
+    # POST mark a chat as read
+    @action(detail=True, methods=["post"], url_path="read")
+    @permission_classes([IsAuthenticated])
+    def mark_chat_read(self, request, id):
+        try:
+            chat = Chat.objects.get(id=id)
+            ChatReadStatus.objects.update_or_create(
+                user=request.user,
+                chat=chat,
+                defaults={"last_read_at": timezone.now()},
+            )
+            return Response({"success": True})
+        except Chat.DoesNotExist:
+            return Response(
+                {"success": False, "error": "Chat not found"},
+                status=404,
+            )
+
     # GET Group Message
     @action(
-        detail=False, methods=["get"], url_path="group-messages/(?P<group_name>[^/.]+)"
+        detail=False,
+        methods=["get"],
+        url_path="group-messages/(?P<group_name>[^/.]+)",
     )
     @permission_classes([IsAuthenticated])
     def get_group_messages(self, request, group_name=None):
@@ -245,13 +336,14 @@ class ChatViewSet(viewsets.ModelViewSet):
             {
                 "messages": [
                     {
+                        "id": m.id,
                         "sender": m.user.id,
                         "full_name": m.user.full_name,
                         "content": m.content,
                         "timestamp": m.sent_at,
                         "organization": m.user.primary_organization,
                         "profile_image": (
-                            m.user.profile_image.url if m.user.profile_image else None
+                            (m.user.profile_image.url if m.user.profile_image else None)
                         ),
                         "image": m.image.url if m.image else None,
                     }
@@ -278,6 +370,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 {
                     "success": True,
                     "data": {
+                        "id": msg.id,
                         "sender": msg.user.id,
                         "full_name": msg.user.full_name,
                         "content": msg.content,
@@ -295,23 +388,52 @@ class ChatViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
 
+    # DELETE Group Message
+    @action(detail=True, methods=["delete"], url_path="group-messages")
+    @permission_classes([IsAuthenticated])
+    def delete_group_message(self, request, id):
+        try:
+            msg = GroupMessage.objects.get(id=id)
+            msg.delete()
+            return Response(
+                {"message": "Message Deleted Successfully", "success": True},
+                status=status.HTTP_200_OK,
+            )
+        except GroupMessage.DoesNotExist:
+            return Response(
+                {"message": "Message not found", "success": False},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    # PATCH Group Message
+    @action(detail=True, methods=["patch"], url_path="group-messages")
+    @permission_classes([IsAuthenticated])
+    def update_group_message(self, request, id):
+        try:
+            msg = GroupMessage.objects.get(id=id)
+            content = request.data.get("content")
+            if content is not None:
+                msg.content = content
+                msg.save()
+            return Response(
+                {"message": "Message updated successfully", "success": True},
+                status=status.HTTP_200_OK,
+            )
+        except GroupMessage.DoesNotExist:
+            return Response(
+                {"message": "Message not found", "success": False},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
 
 class MessageViewSet(viewsets.ModelViewSet):
     # POST (Create) message
     @action(detail=False, methods=["post"], url_path="messages")
     def create_message_request(self, request):
-        # Check if user is authenticated
-        user_id = request.session.get("_auth_user_id")
-        if not user_id:
+        if not request.user.is_authenticated:
             return Response(
-                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         serializer = MessageSerializer(data=request.data)
@@ -327,7 +449,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         validated_data = serializer.validated_data
         created_message_data = CreateMessageData(
-            user_id=user.id,
+            user_id=request.user.id,
             chat_id=validated_data["chat"].id,
             content=validated_data["content"],
             image_content=validated_data.get("image_content", None),
@@ -392,7 +514,10 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # If the data is NOT valid return with message serializers errors
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # If here, the data was validated
         validated_data = serializer.validated_data

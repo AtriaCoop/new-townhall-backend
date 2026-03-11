@@ -1,4 +1,5 @@
 from django.db.models.query import QuerySet
+from django.db import transaction
 import typing
 from .models import User
 from .models import Tag, Report
@@ -27,7 +28,10 @@ class UserDao:
 
     @staticmethod
     def delete_user(user_id: int) -> None:
-        User.objects.get(id=user_id).delete()
+        with transaction.atomic():
+            user = User.objects.get(id=user_id)
+            user._history_user = None
+            user.delete()
 
     @staticmethod
     def filter_all_users(filtersDict) -> QuerySet[User]:
@@ -72,7 +76,7 @@ class UserDao:
 
     def get_tags_for_user(user_id: int) -> QuerySet[Tag]:
         user = User.objects.get(id=user_id)
-        return list(user.tags.values_list("name", flat=True))
+        return user.tags.all()
 
     @staticmethod
     def search_users(query: str) -> QuerySet[User]:
@@ -82,11 +86,14 @@ class UserDao:
             # compare and rank in the QuerySet
             User.objects.annotate(
                 full_name_lowercase=Lower("full_name"),
-                # Give ranking scores based on if exact match, starts with, or contains
+                # Rank: exact match, starts with, or contains
                 rank=Case(
                     When(full_name_lowercase=query, then=Value(3)),
                     When(full_name_lowercase__startswith=query, then=Value(2)),
-                    When(full_name_lowercase__icontains=query, then=Value(1)),
+                    When(
+                        full_name_lowercase__icontains=query,
+                        then=Value(1),
+                    ),
                     default=Value(0),
                     output_field=IntegerField(),
                 ),
@@ -108,3 +115,7 @@ class ReportDao:
         )
 
         return report
+
+    @staticmethod
+    def get_report(id: int) -> typing.Optional[Report]:
+        return Report.objects.get(id=id)

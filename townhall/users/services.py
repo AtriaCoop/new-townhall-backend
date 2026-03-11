@@ -6,7 +6,12 @@ from django.contrib.auth.hashers import make_password
 from django.db.models.query import QuerySet
 import typing
 from .models import User, Report, Tag
-from .types import CreateUserData, UpdateUserData, FilterUserData, CreateReportData
+from .types import (
+    CreateUserData,
+    UpdateUserData,
+    FilterUserData,
+    CreateReportData,
+)
 from .daos import UserDao, ReportDao
 
 
@@ -35,7 +40,9 @@ class UserServices:
             raise ValidationError(e.messages[0])
 
         # Prevent emails that are too similar to the password
-        if email.lower() in password.lower() or password.lower() in email.lower():
+        email_lower = email.lower()
+        pwd_lower = password.lower()
+        if email_lower in pwd_lower or pwd_lower in email_lower:
             logger.error(f"Password is too similar to the email: {email}")
             raise ValidationError("Password is too similar to the email.")
 
@@ -46,7 +53,8 @@ class UserServices:
             if User.objects.filter(email=create_user_data.email).exists():
                 raise ValidationError("A User with this email already exists.")
             UserServices.validate_user(
-                create_user_data.email, create_user_data.password
+                create_user_data.email,
+                create_user_data.password,
             )
             create_user_data.password = make_password(create_user_data.password)
             user = UserDao.create_user(create_user_data=create_user_data)
@@ -112,6 +120,11 @@ class UserServices:
         if update_user_data.profile_image is not None:
             user.profile_image = update_user_data.profile_image
 
+        if update_user_data.remove_profile_header:
+            user.profile_header = None
+        elif update_user_data.profile_header is not None:
+            user.profile_header = update_user_data.profile_header
+
         if update_user_data.linkedin_url is not None:
             user.linkedin_url = update_user_data.linkedin_url
 
@@ -125,8 +138,16 @@ class UserServices:
             user.instagram_url = update_user_data.instagram_url
 
         if update_user_data.receive_emails is not None:
-
             user.receive_emails = update_user_data.receive_emails
+
+        if update_user_data.show_email is not None:
+            user.show_email = update_user_data.show_email
+
+        if update_user_data.show_in_directory is not None:
+            user.show_in_directory = update_user_data.show_in_directory
+
+        if update_user_data.allow_dms is not None:
+            user.allow_dms = update_user_data.allow_dms
 
         if update_user_data.tags is not None:
             tags = Tag.objects.filter(name__in=update_user_data.tags)
@@ -164,7 +185,7 @@ class UserServices:
         tags = UserDao.get_tags_given_prefix(prefix=prefix)
         return [tag.name for tag in tags]
 
-    def get_tags_for_user(user_id: int) -> typing.List[str]:
+    def get_tags_for_user(user_id: int) -> QuerySet[Tag]:
         try:
             tags = UserDao.get_tags_for_user(user_id=user_id)
             return tags
@@ -180,3 +201,11 @@ class ReportServices:
     def create_report(create_report_data: CreateReportData) -> Report:
         report = ReportDao.create_report(report_data=create_report_data)
         return report
+
+    @staticmethod
+    def get_report(id: int) -> typing.Optional[Report]:
+        try:
+            report = ReportDao.get_report(id=id)
+            return report
+        except Report.DoesNotExist:
+            raise ValidationError(f"Report with the given id: {id}, does not exist.")

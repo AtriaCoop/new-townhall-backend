@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Optional, List
 from dataclasses import dataclass
 
 
@@ -10,6 +10,8 @@ class CreatePostData:
     created_at: datetime
     image: Optional[str] = None
     pinned: bool = False
+    tags: Optional[List[str]] = None
+    anonymous: bool = False
 
 
 @dataclass
@@ -18,6 +20,7 @@ class UpdatePostData:
     content: Optional[str] = None
     image: Optional[str] = None
     pinned: Optional[bool] = None
+    tags: Optional[List[str]] = None
 
 
 @dataclass
@@ -26,6 +29,7 @@ class CreateCommentData:
     post_id: int
     content: str
     created_at: datetime
+    anonymous: bool = False
 
 
 @dataclass

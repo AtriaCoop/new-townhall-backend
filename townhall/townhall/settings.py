@@ -45,9 +45,72 @@ ALLOWED_HOSTS = [
 
 APPEND_SLASH = True
 
+# Jazzmin Admin Theme
+JAZZMIN_SETTINGS = {
+    "site_title": "Townhall Admin",
+    "site_header": "Townhall",
+    "site_brand": "Townhall",
+    "welcome_sign": "Welcome to the Townhall Admin Panel",
+    "search_model": ["users.User"],
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index"},
+        {"name": "View Site", "url": "/", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "icons": {
+        "users.User": "fas fa-users",
+        "users.Tag": "fas fa-tags",
+        "posts.Post": "fas fa-newspaper",
+        "posts.Comment": "fas fa-comments",
+        "posts.Reaction": "fas fa-smile",
+        "events.Event": "fas fa-calendar-alt",
+        "chats.Chat": "fas fa-comment-dots",
+        "chats.Message": "fas fa-envelope",
+        "auth.Group": "fas fa-layer-group",
+    },
+    "default_icon_parents": "fas fa-folder",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "use_google_fonts_cdn": True,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": False,
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+}
+
 # Application definition
 
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -66,6 +129,8 @@ INSTALLED_APPS = [
     "simple_history",
     "activities",
     "django_rq",
+    "events",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -86,7 +151,7 @@ CSRF_COOKIE_SECURE = not DEBUG  # Only secure in production
 SESSION_COOKIE_SECURE = not DEBUG  # Only secure in production
 CSRF_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"
 SESSION_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"
-CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_DOMAIN = None
 SESSION_COOKIE_DOMAIN = None
 
@@ -131,15 +196,24 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "signup": "3/min",
+    },
 }
 
 # Session Security
-SESSION_COOKIE_AGE = 86400  # 24 hours
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 604800  # 7 days
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
 
 # Password Reset and Email Security
 PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
+
+# Email Configuration (SendGrid)
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@townhall.app")
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 # File Upload Security
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
@@ -200,13 +274,13 @@ AUTH_PASSWORD_VALIDATORS = [
         ),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        "NAME": ("django.contrib.auth.password_validation." "CommonPasswordValidator"),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": ("django.contrib.auth.password_validation." "NumericPasswordValidator"),
     },
 ]
 
@@ -274,14 +348,23 @@ cloudinary.config(
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
+if DEBUG:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": ("channels_redis.core.RedisChannelLayer"),
+            "CONFIG": {
+                "hosts": [
+                    os.environ.get("REDIS_URL", "redis://127.0.0.1:6379"),
+                ],
+            },
+        },
+    }
 
 
 # Debug information (only in development)

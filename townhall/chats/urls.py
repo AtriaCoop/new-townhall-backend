@@ -34,6 +34,16 @@ urlpatterns = [
         name="create_direct_message",
     ),
     path(
+        "chats/unread-counts/",
+        ChatViewSet.as_view({"get": "get_unread_counts"}),
+        name="unread_counts",
+    ),
+    path(
+        "chats/<int:id>/read/",
+        ChatViewSet.as_view({"post": "mark_chat_read"}),
+        name="mark_chat_read",
+    ),
+    path(
         "groups/<str:group_name>/messages/",
         ChatViewSet.as_view({"get": "get_group_messages"}),
         name="group_messages",
@@ -42,6 +52,16 @@ urlpatterns = [
         "groups/messages/",
         ChatViewSet.as_view({"post": "create_group_message"}),
         name="create_group_message",
+    ),
+    path(
+        "groups/messages/<int:id>/",
+        ChatViewSet.as_view(
+            {
+                "delete": "delete_group_message",
+                "patch": "update_group_message",
+            }
+        ),
+        name="group_message_detail",
     ),
     path(
         "chats/messages/",
@@ -55,7 +75,10 @@ urlpatterns = [
     path(
         "chats/messages/<int:id>/",
         MessageViewSet.as_view(
-            {"delete": "delete_message_request", "patch": "update_message_request"}
+            {
+                "delete": "delete_message_request",
+                "patch": "update_message_request",
+            }
         ),
         name="messages",
     ),

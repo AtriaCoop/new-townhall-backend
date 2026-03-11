@@ -1,6 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
+from django.utils import timezone
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -18,28 +19,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Leave chat group
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    # Receive message from WebSocket
+    # Receive message from WebSocket (broadcast only — saved via REST API)
     async def receive(self, text_data):
-        from chats.models import Chat
-        from chats.services import MessageServices
-        from chats.types import CreateMessageData
-        from datetime import datetime
+        from users.models import User
 
         data = json.loads(text_data)
         message = data["message"]
         sender = data["sender"]
-
-        # ✅ Save the message
-        await sync_to_async(MessageServices.create_message)(
-            CreateMessageData(
-                user_id=sender,
-                chat_id=int(self.chat_id),
-                content=message,
-                sent_at=datetime.now(),
-            )
-        )
-
-        from users.models import User
+        message_id = data.get("id")
 
         user = await sync_to_async(User.objects.get)(id=sender)
 
@@ -48,41 +35,34 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {
                 "type": "chat_message",
+                "id": message_id,
                 "message": message,
                 "sender_id": sender,
                 "full_name": user.full_name,
                 "organization": user.primary_organization,
-                "profile_image": user.profile_image.url if user.profile_image else None,
+                "profile_image": (
+                    user.profile_image.url if user.profile_image else None
+                ),
+                "timestamp": str(timezone.now()),
             },
         )
 
-        # Broadcast to user listeners
-        chat = await sync_to_async(Chat.objects.get)(id=self.chat_id)
-        participant_ids = await sync_to_async(list)(
-            chat.participants.values_list("id", flat=True)
-        )
-
-        for user_id in participant_ids:
-            await self.channel_layer.group_send(
-                f"user_{user_id}",
-                {
-                    "type": "user_message",
-                    "chat_id": self.chat_id,
-                    "message": message,
-                    "sender": sender,
-                },
-            )
+        # User-level DM notifications are broadcast from the REST view
+        # (create_direct_message) using the channel layer, same as bell
+        # notifications. This keeps ChatConsumer focused on chat-room events.
 
     # Receive message from group
     async def chat_message(self, event):
         await self.send(
             text_data=json.dumps(
                 {
+                    "id": event.get("id"),
                     "message": event["message"],
                     "sender_id": event["sender_id"],
                     "full_name": event["full_name"],
                     "organization": event["organization"],
                     "profile_image": event["profile_image"],
+                    "timestamp": event.get("timestamp", ""),
                 }
             )
         )
@@ -102,7 +82,28 @@ class UserConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def user_message(self, event):
-        await self.send(text_data=json.dumps(event))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "dm",
+                    "chat_id": event["chat_id"],
+                    "message": event["message"],
+                    "sender": event["sender"],
+                    "full_name": event.get("full_name", ""),
+                    "profile_image": event.get("profile_image"),
+                }
+            )
+        )
+
+    async def notification_push(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "notification",
+                    "notification": event["notification"],
+                }
+            )
+        )
 
 
 class GroupConsumer(AsyncWebsocketConsumer):
@@ -118,9 +119,8 @@ class GroupConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
+    # Receive message from WebSocket (broadcast only — saved via REST API)
     async def receive(self, text_data):
-        from chats.models import GroupMessage
-        from django.utils import timezone
         from users.models import User
 
         data = json.loads(text_data)
@@ -137,15 +137,11 @@ class GroupConsumer(AsyncWebsocketConsumer):
                 "sender_id": sender,
                 "full_name": user.full_name,
                 "organization": user.primary_organization,
-                "profile_image": user.profile_image.url if user.profile_image else None,
+                "profile_image": (
+                    user.profile_image.url if user.profile_image else None
+                ),
+                "timestamp": str(timezone.now()),
             },
-        )
-
-        await sync_to_async(GroupMessage.objects.create)(
-            user_id=sender,
-            group_name=self.group_name,
-            content=message,
-            sent_at=timezone.now(),
         )
 
     async def group_message(self, event):
@@ -157,6 +153,7 @@ class GroupConsumer(AsyncWebsocketConsumer):
                     "full_name": event["full_name"],
                     "organization": event["organization"],
                     "profile_image": event["profile_image"],
+                    "timestamp": event.get("timestamp", ""),
                 }
             )
         )

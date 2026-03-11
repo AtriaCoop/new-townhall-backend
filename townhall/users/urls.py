@@ -11,6 +11,14 @@ from .views import (
     login_user,
     logout_user,
     get_csrf_token,
+    check_session,
+    change_password,
+    forgot_password,
+    reset_password,
+    verify_email,
+    resend_verification,
+    deactivate_account,
+    reactivate_account,
 )
 
 router = DefaultRouter()
@@ -20,6 +28,14 @@ urlpatterns = [
     path("auth/login/", login_user, name="login_user"),
     path("auth/logout/", logout_user),
     path("auth/csrf/", get_csrf_token),
+    path("auth/session/", check_session, name="check_session"),
+    path("auth/change-password/", change_password, name="change_password"),
+    path("auth/forgot-password/", forgot_password, name="forgot_password"),
+    path("auth/reset-password/", reset_password, name="reset_password"),
+    path("auth/verify-email/", verify_email, name="verify_email"),
+    path("auth/resend-verification/", resend_verification, name="resend_verification"),
+    path("auth/deactivate/", deactivate_account, name="deactivate_account"),
+    path("auth/reactivate/", reactivate_account, name="reactivate_account"),
     path(
         "user/",
         UserViewSet.as_view(
@@ -59,6 +75,11 @@ urlpatterns = [
         "user/report/",
         ReportViewSet.as_view({"post": "create_report_request"}),
         name="report",
+    ),
+    path(
+        "user/report/<int:report_id>/",
+        ReportViewSet.as_view({"get": "get_report"}),
+        name="report_id",
     ),
     path("", include(router.urls)),  # <-- Make sure this is here
 ] + debug_toolbar_urls()
