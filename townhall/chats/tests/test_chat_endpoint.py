@@ -25,6 +25,8 @@ class TestChatEndpoint(TestCase):
         jerome = User.objects.get(pk=2)
         chat.participants.add(self.bob, jerome)
 
+        self.client.force_authenticate(user=self.bob)
+
     def test_get_chat_success(self):
         # Arrange
         url = "/chats/3/"
@@ -69,8 +71,18 @@ class TestChatEndpoint(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
         assert response.data["message"] == "Chat hidden successfully"
+
         chat = Chat.objects.get(id=3)
-        assert self.bob in chat.hidden_by.all()
+        assert chat.hidden_by.filter(id=1).exists()
+
+        """
+        Maybe need this in the future if we delete the chat instead of hiding it
+        try:
+            Chat.objects.get(id=3)
+            self.fail("Should have returned a Chat Does Not Exist Error")
+        except Chat.DoesNotExist:
+            pass
+        """
 
     def test_delete_chat_fail_does_not_exist(self):
         # Arrange
@@ -80,6 +92,9 @@ class TestChatEndpoint(TestCase):
         # Act
         response = self.client.delete(url, format="json")
 
+        print(f"\nFAIL DELETE STATUS: {response.status_code}")
+        print(f"FAIL DELETE RESPONSE DATA: {response.data}\n")
+
         # Assert
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert not response.data["success"]
@@ -88,14 +103,19 @@ class TestChatEndpoint(TestCase):
     def test_create_chat_success(self):
         # Arrange
         url = "/chats/"
-        self.client.force_authenticate(user=self.bob)
+        new_user = User.objects.create(
+            email="newuser@example.com", full_name="Tony Stark"
+        )
         valid_data = {
             "name": "The Avengers",
-            "participants": [1, 3],
+            "participants": [1, new_user.id],
         }
 
         # Act
         response = self.client.post(url, valid_data, format="json")
+
+        print(f"\nSTATUS CODE: {response.status_code}")
+        print(f"RESPONSE DATA: {response.data}\n")
 
         # Assert
         assert response.status_code == status.HTTP_201_CREATED
@@ -104,9 +124,8 @@ class TestChatEndpoint(TestCase):
         assert response.data["data"]["name"] == "The Avengers"
         assert response.data["data"]["created_at"] is not None
         assert response.data["data"]["id"] is not None
-        participant_ids = [p["id"] for p in response.data["data"]["participants"]]
-        assert 1 in participant_ids
-        assert 3 in participant_ids
+        assert response.data["data"]["participants"][0]["id"] == 1
+        assert response.data["data"]["participants"][1]["id"] == new_user.id
 
     def test_create_chat_fail_invalid_data(self):
         # Arrange

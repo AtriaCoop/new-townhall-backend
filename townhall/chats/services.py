@@ -51,9 +51,7 @@ class ChatServices:
             participants = User.objects.filter(id__in=participant_ids)
             for participant in participants:
                 if not participant.allow_dms:
-                    raise ValidationError(
-                        "This user does not accept direct messages."
-                    )
+                    raise ValidationError("This user does not accept direct messages.")
 
             # Create new chat if none found
             chat = ChatDao.create_chat(create_chat_data=data)
@@ -86,6 +84,14 @@ class ChatServices:
 
         except Exception as e:
             raise ValidationError(f"Failed: {str(e)}")
+
+    @staticmethod
+    def remove_user(chat_id: int, user_id: int) -> str:
+        try:
+            ChatDao.remove_user(chat_id=chat_id, user_id=user_id)
+            return f"User {user_id} successfully removed from chat {chat_id}."
+        except ValidationError as e:
+            raise ValidationError(f"Failed to remove user: {e}")
 
 
 class MessageServices:
