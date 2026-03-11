@@ -23,7 +23,8 @@ class PostDao:
     def get_all_posts(
         offset: int, limit: int, tag_names: list[str] | None = None
     ) -> tuple[typing.List[Post], int]:
-        """Return recent posts paginated with total count, optionally filtered by tags."""
+        """Return recent posts paginated with total count,
+        optionally filtered by tags."""
         qs = Post.objects.prefetch_related('tags').order_by("-pinned", "-created_at")
         if tag_names:
             qs = qs.filter(tags__name__in=tag_names).distinct()

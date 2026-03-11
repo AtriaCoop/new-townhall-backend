@@ -141,7 +141,8 @@ def login_user(request):
                         status=403,
                     )
 
-                # TODO: Re-enable email verification once a proper sending domain is configured
+                # TODO: Re-enable email verification once a proper
+                # sending domain is configured
                 # Block login if email is not verified
                 # if not user.email_verified:
                 #     return JsonResponse(

@@ -21,9 +21,9 @@ class TestChatEndpoint(TestCase):
         call_command("loaddata", "fixtures/user_fixture.json", verbosity=0)
 
         chat = Chat.objects.get(pk=3)
-        bob = User.objects.get(pk=1)
+        self.bob = User.objects.get(pk=1)
         jerome = User.objects.get(pk=2)
-        chat.participants.add(bob, jerome)
+        chat.participants.add(self.bob, jerome)
 
     def test_get_chat_success(self):
         # Arrange
@@ -60,6 +60,7 @@ class TestChatEndpoint(TestCase):
     def test_delete_chat_success(self):
         # Arrange
         url = "/chats/3/"
+        self.client.force_authenticate(user=self.bob)
 
         # Act
         response = self.client.delete(url, format="json")
@@ -67,16 +68,14 @@ class TestChatEndpoint(TestCase):
         # Assert
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
-        assert response.data["message"] == "Chat Deleted Successfully"
-        try:
-            Chat.objects.get(id=3)
-            self.fail("Should have returned a Chat Does Not Exist Error")
-        except Chat.DoesNotExist:
-            pass
+        assert response.data["message"] == "Chat hidden successfully"
+        chat = Chat.objects.get(id=3)
+        assert self.bob in chat.hidden_by.all()
 
     def test_delete_chat_fail_does_not_exist(self):
         # Arrange
         url = "/chats/99999999/"
+        self.client.force_authenticate(user=self.bob)
 
         # Act
         response = self.client.delete(url, format="json")
@@ -84,14 +83,12 @@ class TestChatEndpoint(TestCase):
         # Assert
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert not response.data["success"]
-        assert (
-            response.data["message"]
-            == "['Chat with the given id: 99999999, does not exist.']"
-        )
+        assert response.data["message"] == "Chat not found"
 
     def test_create_chat_success(self):
         # Arrange
         url = "/chats/"
+        self.client.force_authenticate(user=self.bob)
         valid_data = {
             "name": "The Avengers",
             "participants": [1, 2],

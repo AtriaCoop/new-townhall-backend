@@ -25,7 +25,7 @@ class TestPostTags(TestCase):
         saved_tags = list(post.tags.values_list("name", flat=True))
 
         # Assert
-        self.assertCountEqual(saved_tags, ["Greeting", "Coding"])
+        self.assertCountEqual(saved_tags, ["greeting", "coding"])
 
     def testSuccessfulTagUpdate(self):
         # Arrange
@@ -39,7 +39,7 @@ class TestPostTags(TestCase):
         saved_tags = list(post.tags.values_list("name", flat=True))
 
         # Assert
-        self.assertCountEqual(saved_tags, ["Test"])
+        self.assertCountEqual(saved_tags, ["test"])
 
     def testEmptyTagCreation(self):
         # Arrange
@@ -84,7 +84,7 @@ class TestPostTags(TestCase):
         saved_tags = list(post.tags.values_list("name", flat=True))
 
         # Assert
-        self.assertCountEqual(saved_tags, ["Greeting", "Coding"])
+        self.assertCountEqual(saved_tags, ["greeting", "coding"])
 
     def testTagCreationLimit(self):
         # Arrange
