@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("users", "0017_historicaluser_allow_dms_historicaluser_show_email_and_more"),
+        ("users", "0016_user_email_verified"),
     ]
 
     operations = [
