@@ -25,7 +25,7 @@ class TestChatEndpoint(TestCase):
         jerome = User.objects.get(pk=2)
         chat.participants.add(self.bob, jerome)
 
-        self.client.force_authenticate(user=bob)
+        self.client.force_authenticate(user=self.bob)
 
     def test_get_chat_success(self):
         # Arrange
