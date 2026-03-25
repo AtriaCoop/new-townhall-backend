@@ -72,7 +72,16 @@ class UserServices:
             if filter_user_data.email:
                 filters["email__iexact"] = filter_user_data.email
 
-            return UserDao.filter_all_users(filtersDict=filters)
+            users = (
+                UserDao.filter_all_users(filtersDict=filters)
+                if filters
+                else UserDao.get_user_all()
+            )
+
+            if filter_user_data.tags:
+                users = users.filter(tags__name__in=filter_user_data.tags).distinct()
+
+            return users
         else:
             return UserDao.get_user_all()
 

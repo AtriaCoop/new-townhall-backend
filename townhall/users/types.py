@@ -34,6 +34,7 @@ class UpdateUserData:
 class FilterUserData:
     full_name: Optional[str] = None
     email: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 
 @dataclass

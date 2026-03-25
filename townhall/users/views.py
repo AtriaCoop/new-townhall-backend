@@ -323,6 +323,10 @@ class UserViewSet(viewsets.ModelViewSet):
             # Print the error for debugging
             print(f"Unexpected error in update_user: {e}")
             print(f"Error type: {type(e).__name__}")
+            return Response(
+                {"message": "Internal server error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # SEARCH USERS TO MENTION
     @action(detail=False, methods=["get"], url_path="mention")
@@ -345,13 +349,19 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=["get"], url_path="by-tags")
-    def get_users_by_tags(self, request):
-        """Get all users associated with a specific tag"""
-        tag_names = request.query_params.getlist("tags")
-        if not tag_names:
-            raise ValidationError("At least one tag name must be provided.")
-        users = UserServices.get_users_by_tags(tag_names)
+    def list(self, request):
+        """List users with optional filters: full_name, email, tags."""
+        tags = request.query_params.getlist("tags")
+        full_name = request.query_params.get("full_name")
+        email = request.query_params.get("email")
+
+        filter_user_data = FilterUserData(
+            full_name=full_name,
+            email=email,
+            tags=tags if tags else None,
+        )
+
+        users = UserServices.get_user_all(filter_user_data)
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
