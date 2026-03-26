@@ -201,9 +201,6 @@ class UserServices:
         except User.DoesNotExist:
             raise ValidationError(f"User with the given id: {user_id}, does not exist.")
 
-    def get_users_by_tags(tag_names: typing.List[str]) -> QuerySet[User]:
-        return UserDao.get_users_by_tags(tag_names=tag_names)
-
 
 class ReportServices:
     @staticmethod
