@@ -7,6 +7,7 @@ from cloudinary.models import CloudinaryField
 
 class Chat(models.Model):
     participants = models.ManyToManyField(User, related_name="chats")
+    hidden_by = models.ManyToManyField(User, related_name="hidden_chats", blank=True)
     name = models.CharField(max_length=127)
     created_at = models.DateTimeField(default=timezone.now)
     history = HistoricalRecords()
@@ -25,6 +26,18 @@ class Message(models.Model):
 
     def __str__(self):
         return str(self.id)
+
+
+class ChatReadStatus(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    last_read_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ("user", "chat")
+
+    def __str__(self):
+        return f"User {self.user_id} - Chat {self.chat_id}"
 
 
 class GroupMessage(models.Model):

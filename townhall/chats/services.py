@@ -3,8 +3,8 @@ from typing import Optional
 from .models import Chat, Message
 from .daos import ChatDao, MessageDao
 from .types import CreateChatData, CreateMessageData, UpdateMessageData
-from django.db.models import Count
 from django.db.models import QuerySet
+from users.models import User
 import typing
 
 
@@ -36,20 +36,22 @@ class ChatServices:
         try:
             participant_ids = sorted(data.participant_ids)
 
-            # Check all chats that this user is in
-            possible_chats = (
-                Chat.objects.annotate(num_participants=Count("participants"))
-                .filter(
-                    participants__id__in=participant_ids,
-                    num_participants=len(participant_ids),
-                )
-                .distinct()
-            )
+            # Find chats containing ALL specified participants
+            possible_chats = Chat.objects.all()
+            for pid in participant_ids:
+                possible_chats = possible_chats.filter(participants__id=pid)
 
+            # Verify exact participant match (no extra participants)
             for chat in possible_chats:
                 existing_ids = sorted(chat.participants.values_list("id", flat=True))
                 if existing_ids == participant_ids:
                     return chat, False  # Found existing chat
+
+            # Check if any participant has disabled DMs before creating
+            participants = User.objects.filter(id__in=participant_ids)
+            for participant in participants:
+                if not participant.allow_dms:
+                    raise ValidationError("This user does not accept direct messages.")
 
             # Create new chat if none found
             chat = ChatDao.create_chat(create_chat_data=data)
@@ -82,6 +84,14 @@ class ChatServices:
 
         except Exception as e:
             raise ValidationError(f"Failed: {str(e)}")
+
+    @staticmethod
+    def remove_user(chat_id: int, user_id: int) -> str:
+        try:
+            ChatDao.remove_user(chat_id=chat_id, user_id=user_id)
+            return f"User {user_id} successfully removed from chat {chat_id}."
+        except ValidationError as e:
+            raise ValidationError(f"Failed to remove user: {e}")
 
 
 class MessageServices:

@@ -7,7 +7,7 @@ class CreateCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ["id", "post", "content", "created_at"]
+        fields = ["id", "post", "content", "created_at", "anonymous"]
 
 
 class CommentUserMiniSerializer(serializers.ModelSerializer):
@@ -28,7 +28,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ["id", "user", "post", "content", "created_at"]
+        fields = ["id", "user", "post", "content", "created_at", "anonymous"]
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -58,6 +58,7 @@ class PostSerializer(serializers.ModelSerializer):
             "pinned",
             "tags",
             "reactions",
+            "anonymous",
         ]
         read_only_fields = [
             "id",
@@ -72,10 +73,15 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_reactions(self, obj):
         reactions_by_type = {}
-        for reaction in obj.reactions.all():
+        for reaction in obj.reactions.select_related("user").all():
             if reaction.reaction_type not in reactions_by_type:
                 reactions_by_type[reaction.reaction_type] = []
-            reactions_by_type[reaction.reaction_type].append(reaction.user.id)
+            reactions_by_type[reaction.reaction_type].append(
+                {
+                    "id": reaction.user.id,
+                    "full_name": reaction.user.full_name,
+                }
+            )
 
         return reactions_by_type
 

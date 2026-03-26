@@ -74,10 +74,7 @@ def get_activity_description(activity) -> str:
                 field_label = format_field_name(name)
                 if model_name == "comment":
                     changed_fields.append(f"{field_label} to '{new}'")
-                # elif model_name == "post":
-                #     changed_fields.append(f"{field_label} for your post to '{new}'")
                 elif field_label == "last login":
-                    # changed_fields.append(f"Last logged in: {new}")
                     changed_fields.append("You've logged in and started a session")
 
                 elif model_name == "user":
@@ -88,14 +85,13 @@ def get_activity_description(activity) -> str:
         if changed_fields:
             # If more than 2 fields changed, show first 2 and "+ x more"
             if len(changed_fields) > 2:
-                displayed_fields = changed_fields[:2]
-                remaining_count = len(changed_fields) - 2
-                return (
-                    f"Updated {model_name}: {', '.join(displayed_fields)} "
-                    f"+ {remaining_count} more..."
-                )
+                displayed = changed_fields[:2]
+                remaining = len(changed_fields) - 2
+                joined = ", ".join(displayed)
+                return f"Updated {model_name}: {joined} " f"+ {remaining} more..."
             else:
-                return f"Updated {model_name}: {', '.join(changed_fields)}"
+                fields_str = ", ".join(changed_fields)
+                return f"Updated {model_name}: {fields_str}"
         else:
 
             if model_name == "post":
@@ -104,7 +100,8 @@ def get_activity_description(activity) -> str:
             else:
                 return f"Updated {model_name}"
 
-    return f"{HISTORY_TYPE.get(activity.history_type, 'changed')} {model_name}"
+    hist = HISTORY_TYPE.get(activity.history_type, "changed")
+    return f"{hist} {model_name}"
 
 
 class ActivityServices:
@@ -118,13 +115,11 @@ class ActivityServices:
 
         all_activities = ActivityDao.get_user_activities(user_id)
 
-        # Add a property 'description' using list comprehension so we can display
-        # in the client
-        # Use the type we created
+        # Add 'description' via list comprehension for client display
         activities_with_desc = [
             ActivityWithDescription(
                 description=get_activity_description(a),
-                model=a.__class__.__name__.replace("Historical", "").lower(),
+                model=(a.__class__.__name__.replace("Historical", "").lower()),
                 activity={
                     f.name: (
                         getattr(a, f.name).id
