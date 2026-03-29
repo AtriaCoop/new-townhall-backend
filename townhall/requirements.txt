@@ -8,7 +8,6 @@ Django==5.2
 django-cors-headers==4.7.0
 django-debug-toolbar==5.1.0
 djangorestframework==3.16.0
-fakeredis==2.34.1
 filelock==3.18.0
 flake8==7.2.0
 identify==2.6.10
