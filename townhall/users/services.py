@@ -80,7 +80,16 @@ class UserServices:
             if filter_user_data.email:
                 filters["email__iexact"] = filter_user_data.email
 
-            return UserDao.filter_all_users(filtersDict=filters)
+            users = (
+                UserDao.filter_all_users(filtersDict=filters)
+                if filters
+                else UserDao.get_user_all()
+            )
+
+            if filter_user_data.tags:
+                users = users.filter(tags__name__in=filter_user_data.tags).distinct()
+
+            return users
         else:
             return UserDao.get_user_all()
 
@@ -191,9 +200,6 @@ class UserServices:
             return tags
         except User.DoesNotExist:
             raise ValidationError(f"User with the given id: {user_id}, does not exist.")
-
-    def get_users_by_tags(tag_names: typing.List[str]) -> QuerySet[User]:
-        return UserDao.get_users_by_tags(tag_names=tag_names)
 
 
 class ReportServices:
