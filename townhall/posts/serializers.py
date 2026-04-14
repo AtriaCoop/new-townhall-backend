@@ -44,6 +44,8 @@ class PostSerializer(serializers.ModelSerializer):
 
     tags = serializers.SerializerMethodField()
 
+    content = serializers.CharField(max_length=1000)
+
     class Meta:
         model = Post
         fields = [

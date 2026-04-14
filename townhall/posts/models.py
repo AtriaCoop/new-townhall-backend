@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MaxLengthValidator
 from users.models import User, Tag
 from cloudinary.models import CloudinaryField
 from simple_history.models import HistoricalRecords
@@ -8,7 +9,7 @@ from simple_history.models import HistoricalRecords
 class Post(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    content = models.TextField()
+    content = models.TextField(validators=[MaxLengthValidator(1000)])
     created_at = models.DateTimeField(default=timezone.now)
     image = CloudinaryField("image", blank=True, null=True)
     likes = models.IntegerField(default=0)
