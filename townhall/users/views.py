@@ -50,10 +50,7 @@ def _send_verification_email(user):
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-    verify_url = (
-        f"{settings.FRONTEND_URL}/VerifyEmailPage"
-        f"?uid={uid}&token={token}"
-    )
+    verify_url = f"{settings.FRONTEND_URL}/VerifyEmailPage" f"?uid={uid}&token={token}"
 
     message = Mail(
         from_email=settings.DEFAULT_FROM_EMAIL,
@@ -800,6 +797,22 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def list(self, request):
+        """List users with optional filters: full_name, email, tags."""
+        tags = request.query_params.getlist("tags")
+        full_name = request.query_params.get("full_name")
+        email = request.query_params.get("email")
+
+        filter_user_data = FilterUserData(
+            full_name=full_name,
+            email=email,
+            tags=tags if tags else None,
+        )
+
+        users = UserServices.get_user_all(filter_user_data)
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TagViewSet(viewsets.ModelViewSet):
