@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    command: >
+      sh -c "python manage.py migrate &&
+             daphne -b 0.0.0.0 -p 8000 townhall.asgi:application"
+
+  frontend:
+    build:
+      context: ../../townhallfrontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../../townhallfrontend/.env.local
+    volumes:
+      - ../../townhallfrontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
