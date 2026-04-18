@@ -73,6 +73,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
+    is_verified = models.BooleanField(default=False)
+
     USERNAME_FIELD = "email"  # for authentication
     REQUIRED_FIELDS = []  # email is required by default
 
