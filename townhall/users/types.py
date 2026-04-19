@@ -33,6 +33,7 @@ class UpdateUserData:
     facebook_url: Optional[str] = None
     x_url: Optional[str] = None
     instagram_url: Optional[str] = None
+    bluesky_url: Optional[str] = None
 
 
 @dataclass

@@ -60,6 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     facebook_url = models.URLField(max_length=255, null=True, blank=True)
     x_url = models.URLField(max_length=255, null=True, blank=True)
     instagram_url = models.URLField(max_length=255, null=True, blank=True)
+    bluesky_url = models.URLField(max_length=255, null=True, blank=True)
 
     email_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

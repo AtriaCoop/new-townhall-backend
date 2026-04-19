@@ -146,6 +146,9 @@ class UserServices:
         if update_user_data.instagram_url is not None:
             user.instagram_url = update_user_data.instagram_url
 
+        if update_user_data.bluesky_url is not None:
+            user.bluesky_url = update_user_data.bluesky_url
+
         if update_user_data.receive_emails is not None:
             user.receive_emails = update_user_data.receive_emails
 
