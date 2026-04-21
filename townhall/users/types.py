@@ -34,6 +34,7 @@ class UpdateUserData:
     x_url: Optional[str] = None
     instagram_url: Optional[str] = None
     bluesky_url: Optional[str] = None
+    is_verified: Optional[bool] = None
 
 
 @dataclass

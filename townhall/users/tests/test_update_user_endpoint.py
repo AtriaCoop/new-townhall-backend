@@ -127,3 +127,13 @@ class UpdateUserEndpointTagsTests(TestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             call_args = mock_update_user.call_args[0][0]
             self.assertEqual(call_args.tags, ["solo-tag"])
+
+    @patch("users.views.UserServices.update_user")
+    def test_update_user_verify_feature(self, mock_update_user):
+        mock_update_user.return_value = None
+
+        data = {"is_verified": True}
+        response = self.client.patch(self.url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "User Updated Successfully")
