@@ -68,11 +68,12 @@ class UpdateUserTagsTests(TestCase):
             set(self.user.tags.all()), {self.tag2, self.tag3, self.tag4}
         )
 
-    def test_verify_user(self):
+    def test_update_user_verify_feature(self):
         # assert that the user is not verified first.
         self.assertEqual(self.user.is_verified, False)
 
-        UserServices.verify_user(user_id=self.user.id)
+        update_data = UpdateUserData(id=self.user.id, is_verified=True)
+        UserServices.update_user(update_data)
         self.user.refresh_from_db()
 
         self.assertEqual(self.user.is_verified, True)

@@ -52,6 +52,7 @@ class UserSerializer(serializers.ModelSerializer):
             "x_url",
             "instagram_url",
             "bluesky_url",
+            "is_verified",
         ]
 
     def get_profile_image(self, obj):
@@ -126,6 +127,7 @@ class UpdateUserSerializer(serializers.Serializer):
     x_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
     instagram_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
     bluesky_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
+    is_verified = OptionalBooleanField(required=False)
 
     def validate_tags(self, value):
         """Custom validation for tags to ensure all items are strings"""
