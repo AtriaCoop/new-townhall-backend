@@ -14,6 +14,7 @@ class OptionalBooleanField(serializers.BooleanField):
     overwrite db values when a JSON-only field is omitted from a FormData
     PATCH request (e.g. EditProfilePage updating profile_header).
     """
+
     def get_value(self, dictionary):
         if drf_html.is_html_input(dictionary) and self.field_name not in dictionary:
             return empty
@@ -50,6 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
             "facebook_url",
             "x_url",
             "instagram_url",
+            "bluesky_url",
         ]
 
     def get_profile_image(self, obj):
@@ -123,6 +125,7 @@ class UpdateUserSerializer(serializers.Serializer):
     facebook_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
     x_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
     instagram_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
+    bluesky_url = OptionalURLField(required=False, allow_blank=True, allow_null=True)
 
     def validate_tags(self, value):
         """Custom validation for tags to ensure all items are strings"""
@@ -164,6 +167,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "facebook_url",
             "x_url",
             "instagram_url",
+            "bluesky_url",
         ]
 
 
