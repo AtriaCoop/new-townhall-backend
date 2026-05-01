@@ -38,15 +38,11 @@ def get_activity_description(activity) -> str:
     # Updated → compare fields with previous version
     if activity.history_type == "~":
         # Get the previous version (ordered by history_date)
-        previous_qs = activity.__class__.objects.filter(id=activity.id).order_by(
-            "-history_date"
-        )
+        previous = activity.prev_record
 
         # Edge case, if updated there should be at least 2 records
-        if previous_qs.count() < 2:
+        if previous is None:
             return f"updated {model_name}"
-
-        previous = previous_qs[1]  # the version before this one
 
         changed_fields = []
         ignored_fields = [
