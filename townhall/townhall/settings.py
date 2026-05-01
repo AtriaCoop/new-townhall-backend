@@ -131,6 +131,7 @@ INSTALLED_APPS = [
     "django_rq",
     "events",
     "notifications",
+    "core",
 ]
 
 MIDDLEWARE = [
