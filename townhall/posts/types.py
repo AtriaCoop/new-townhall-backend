@@ -11,6 +11,7 @@ class CreatePostData:
     image: Optional[str] = None
     pinned: bool = False
     tags: Optional[List[str]] = None
+    anonymous: bool = False
 
 
 @dataclass
@@ -28,6 +29,7 @@ class CreateCommentData:
     post_id: int
     content: str
     created_at: datetime
+    anonymous: bool = False
 
 
 @dataclass

@@ -106,3 +106,18 @@ To create a superuser you'll run the following command:
 - `python3 manage.py createsuperuser`
 
 It'll ask for a username, password, and email, you use what you'd like, but its simpler to just use `townhall` for the username and password, along with your personal email. If you dont see the password you're writing being typed out, THAT IS OK, the text you are writing when setting your password is purposefully invisible, just don't make any typos!
+
+#### Accessing the Admin Panel
+
+Make sure that the following variable is in your .env file before running backend locally
+- `DEBUG = True`
+
+
+To Run backend locally:
+- `python3 manage.py runserver`
+
+This should return a local address. Open this in your browser, appending 'admin/' to the end of the URL.
+- e.g. 127.0.0.1:8000/admin/
+
+
+This should take you to the admin page, or prompt you to log in with your superuser credentials (see Section 'Creating a Superuser' Above).

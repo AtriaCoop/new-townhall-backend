@@ -1,4 +1,5 @@
 from django.db.models.query import QuerySet
+from django.db import transaction
 import typing
 from .models import User
 from .models import Tag, Report
@@ -27,7 +28,10 @@ class UserDao:
 
     @staticmethod
     def delete_user(user_id: int) -> None:
-        User.objects.get(id=user_id).delete()
+        with transaction.atomic():
+            user = User.objects.get(id=user_id)
+            user._history_user = None
+            user.delete()
 
     @staticmethod
     def filter_all_users(filtersDict) -> QuerySet[User]:
@@ -46,13 +50,6 @@ class UserDao:
             return True
         except User.DoesNotExist:
             return False
-
-    @staticmethod
-    def get_users_by_tags(tag_names: list[str]) -> QuerySet[User]:
-        """
-        Returns a QuerySet of users associated with any of the given tag names.
-        """
-        return User.objects.filter(tags__name__in=tag_names).distinct()
 
     def update_receive_emails(user_id: int, receive_emails: bool) -> bool:
         try:

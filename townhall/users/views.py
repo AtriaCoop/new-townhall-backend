@@ -50,10 +50,7 @@ def _send_verification_email(user):
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-    verify_url = (
-        f"{settings.FRONTEND_URL}/VerifyEmailPage"
-        f"?uid={uid}&token={token}"
-    )
+    verify_url = f"{settings.FRONTEND_URL}/VerifyEmailPage" f"?uid={uid}&token={token}"
 
     message = Mail(
         from_email=settings.DEFAULT_FROM_EMAIL,
@@ -141,7 +138,8 @@ def login_user(request):
                         status=403,
                     )
 
-                # TODO: Re-enable email verification once a proper sending domain is configured
+                # TODO: Re-enable email verification once a proper
+                # sending domain is configured
                 # Block login if email is not verified
                 # if not user.email_verified:
                 #     return JsonResponse(
@@ -681,21 +679,20 @@ class UserViewSet(viewsets.ModelViewSet):
     # DELETE A USER
     @action(detail=True, methods=["delete"], url_path="user")
     def delete_user(self, request, user_id):
-        uid = user_id
-
         if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if request.user.id != uid:
+        if request.user.id != user_id:
             return Response(
                 {"error": "You can only delete your own profile"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
-            UserServices.delete_user(uid)
+            UserServices.delete_user(user_id)
+            logout(request)
 
             return Response(
                 {"message": "User Delete Successfully"},
@@ -751,6 +748,7 @@ class UserViewSet(viewsets.ModelViewSet):
             facebook_url=validated_data.get("facebook_url"),
             x_url=validated_data.get("x_url"),
             instagram_url=validated_data.get("instagram_url"),
+            bluesky_url=validated_data.get("bluesky_url"),
         )
         try:
             UserServices.update_user(update_user_data)
@@ -800,6 +798,22 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def list(self, request):
+        """List users with optional filters: full_name, email, tags."""
+        tags = request.query_params.getlist("tags")
+        full_name = request.query_params.get("full_name")
+        email = request.query_params.get("email")
+
+        filter_user_data = FilterUserData(
+            full_name=full_name,
+            email=email,
+            tags=tags if tags else None,
+        )
+
+        users = UserServices.get_user_all(filter_user_data)
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TagViewSet(viewsets.ModelViewSet):

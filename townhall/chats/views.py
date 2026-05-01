@@ -14,7 +14,6 @@ from .services import ChatServices, MessageServices
 from .types import CreateChatData, CreateMessageData, UpdateMessageData
 from django.utils import timezone
 from .models import Chat, Message, GroupMessage, ChatReadStatus
-from django.db.models import Count, Q, Max, Subquery, OuterRef
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
@@ -64,7 +63,9 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            chats = Chat.objects.filter(participants__id=user_id).exclude(hidden_by__id=user_id).distinct()
+            chats = Chat.objects.filter(
+                participants__id=user_id
+            ).exclude(hidden_by__id=user_id).distinct()
             serializer = ChatSerializer(chats, many=True)
             return Response(
                 {

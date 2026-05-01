@@ -50,6 +50,7 @@ class UserAdmin(BaseUserAdmin):
                     "facebook_url",
                     "x_url",
                     "instagram_url",
+                    "bluesky_url",
                 ),
                 "classes": ("collapse",),
             },

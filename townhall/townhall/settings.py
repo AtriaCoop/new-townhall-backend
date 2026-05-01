@@ -130,6 +130,7 @@ INSTALLED_APPS = [
     "activities",
     "events",
     "notifications",
+    "core",
 ]
 
 MIDDLEWARE = [

@@ -80,7 +80,16 @@ class UserServices:
             if filter_user_data.email:
                 filters["email__iexact"] = filter_user_data.email
 
-            return UserDao.filter_all_users(filtersDict=filters)
+            users = (
+                UserDao.filter_all_users(filtersDict=filters)
+                if filters
+                else UserDao.get_user_all()
+            )
+
+            if filter_user_data.tags:
+                users = users.filter(tags__name__in=filter_user_data.tags).distinct()
+
+            return users
         else:
             return UserDao.get_user_all()
 
@@ -136,6 +145,9 @@ class UserServices:
 
         if update_user_data.instagram_url is not None:
             user.instagram_url = update_user_data.instagram_url
+
+        if update_user_data.bluesky_url is not None:
+            user.bluesky_url = update_user_data.bluesky_url
 
         if update_user_data.receive_emails is not None:
             user.receive_emails = update_user_data.receive_emails
@@ -194,6 +206,15 @@ class UserServices:
 
     def get_users_by_tags(tag_names: typing.List[str]) -> QuerySet[User]:
         return UserDao.get_users_by_tags(tag_names=tag_names)
+
+    def verify_user(user_id: int) -> typing.Optional[User]:
+        try:
+            user = UserDao.get_user(id=user_id)
+            user.is_verified = True
+            user.save()
+            return user
+        except User.DoesNotExist:
+            raise ValidationError(f"User with the given id: {user_id}, does not exist.")
 
 
 class ReportServices:
