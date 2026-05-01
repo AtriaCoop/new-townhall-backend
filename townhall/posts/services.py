@@ -17,7 +17,9 @@ from users.models import User
 from .profanity import censor_text, _CENSOR_RE
 
 import jinja2
-from django_rq import get_queue
+
+# TODO: uncomment to enable emails
+# from django_rq import get_queue
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -152,6 +154,11 @@ class CommentServices:
         if hasattr(comment, "content"):
             comment.content = censor_text(comment.content)
 
+        # TODO: Uncomment following block once a
+        # background worker is ready for production.
+        # Otherwise it will build up a huge
+        # queue with no worker taking jobs off of it
+        """
         # Get user who posted
         post = comment.post
         posted_by = post.user
@@ -168,13 +175,10 @@ class CommentServices:
                     else "unknown user"
                 ),
             )
-            
             # Try to send email
-            #redis_Q = get_queue("default")
-            #redis_Q.enqueue(send_email, email_content, posted_by)
-            
-            # TODO: Uncomment the aboce two lines once a background worker is ready for production. Otherwise it will build s
-            # up a huge queue with no worker taking jobs off of it 
+            # redis_Q = get_queue("default")
+            # redis_Q.enqueue(send_email, email_content, posted_by)
+            """
         return comment
 
     @staticmethod
