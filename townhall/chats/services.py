@@ -64,6 +64,7 @@ class ChatServices:
     def add_user(chat_id: int, user_id: int):
         try:
             ChatDao.add_user(chat_id=chat_id, user_id=user_id)
+            return f"User {user_id} successfully added to chat {chat_id}."
         except ValidationError as e:
             raise ValidationError(f"Failed to add user: {e}")
 
