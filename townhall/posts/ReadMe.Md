@@ -1,0 +1,1 @@
+We have funcionality for email sending in services.py, but we do not have any more free tiers in render to run a background worker to asynchronously do the jobs. If we end up getting more funding in the future or find another service to setup the background workers uncomment the two lines in services.py in the create comment method. 
