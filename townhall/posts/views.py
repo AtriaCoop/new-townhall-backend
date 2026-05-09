@@ -19,6 +19,7 @@ from .types import (
 )
 from .serializers import (
     PostSerializer,
+    PostCreateUpdateSerializer,
     CreateCommentSerializer,
     CommentSerializer,
     ReportedPostSerializer,
@@ -42,7 +43,7 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_post(self, request, pk=None):
         try:
             post = PostServices.get_post(id=pk)
-            serializer = PostSerializer(post)
+            serializer = PostSerializer(post, context={"request": request})
             return Response(
                 {
                     "message": "Post fetched successfully",
@@ -71,7 +72,7 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
             posts, total_pages = PostServices.get_all_posts(page, limit, tag_names)
-            serializer = PostSerializer(posts, many=True)
+            serializer = PostSerializer(posts, context={"request": request}, many=True)
             return Response(
                 {
                     "message": "Posts fetched successfully",
@@ -112,7 +113,7 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        serializer = PostSerializer(data=request.data)
+        serializer = PostCreateUpdateSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(
@@ -136,7 +137,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
         try:
             post = PostServices.create_post(create_post_data)
-            response_serializer = PostSerializer(post)
+            response_serializer = PostSerializer(post, context={"request": request})
             return Response(
                 {
                     "message": "Post Created Successfully",
@@ -174,7 +175,7 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        serializer = PostSerializer(post, data=request.data, partial=True)
+        serializer = PostCreateUpdateSerializer(post, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(
                 serializer.errors,
@@ -398,7 +399,7 @@ class PostViewSet(viewsets.ModelViewSet):
                 except Exception:
                     pass
 
-            serializer = PostSerializer(post)
+            serializer = PostSerializer(post, context={"request": request})
 
             return Response(
                 {
@@ -488,7 +489,9 @@ class CommentViewSet(viewsets.ModelViewSet):
             except Exception:
                 pass
 
-            response_serializer = CommentSerializer(comment)
+            response_serializer = CommentSerializer(
+                comment, context={"request": request}
+            )
 
             return Response(
                 {
@@ -525,7 +528,9 @@ class CommentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        serializer = CommentSerializer(comment, data=request.data, partial=True)
+        serializer = CreateCommentSerializer(
+            comment, data=request.data, partial=True, context={"request": request}
+        )
         if not serializer.is_valid():
             return Response(
                 serializer.errors,
