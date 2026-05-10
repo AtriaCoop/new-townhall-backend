@@ -14,7 +14,7 @@ from .types import (
 )
 from .daos import PostDao, CommentDao, ReportedPostDao, ReactionDao
 from users.models import User
-from .profanity import censor_text, _CENSOR_RE
+from .profanity import _CENSOR_RE
 
 
 class PostServices:
@@ -25,7 +25,7 @@ class PostServices:
     def get_post(id: int) -> typing.Optional[Post]:
         try:
             post = PostDao.get_post(id=id)
-            return _mask_content_instance(post)
+            return post
         except Post.DoesNotExist:
             raise ValidationError(f"Post with the given id: {id}, does not exist.")
 
@@ -41,7 +41,7 @@ class PostServices:
 
         posts, total_count = PostDao.get_all_posts(offset, limit, tag_names)
         total_pages = (total_count + limit - 1) // limit
-        return _mask_content_list(posts), total_pages
+        return posts, total_pages
 
     @staticmethod
     def get_trending_tags(limit: int = 10) -> list[dict]:
@@ -59,7 +59,7 @@ class PostServices:
 
         post = PostDao.create_post(post_data=create_post_data)
 
-        return _mask_content_instance(post)
+        return post
 
     @staticmethod
     def update_post(id: int, update_post_data: UpdatePostData) -> Post:
@@ -73,7 +73,7 @@ class PostServices:
 
         post = PostDao.update_post(id=id, post_data=update_post_data)
 
-        return _mask_content_instance(post)
+        return post
 
     @staticmethod
     def delete_post(post_id: int) -> None:
@@ -116,6 +116,11 @@ class PostServices:
                     f"Tag '{tag_name}' contains inappropriate language."
                 )
 
+    @staticmethod
+    def _validate_content(content: str):
+        if content and _CENSOR_RE.search(content):
+            raise ValidationError("Content contains inappropriate language.")
+
 
 class CommentServices:
     @staticmethod
@@ -124,26 +129,11 @@ class CommentServices:
 
     @staticmethod
     def create_comment(create_comment_data: CreateCommentData) -> None:
-        comment = CommentDao.create_comment(create_comment_data=create_comment_data)
-        if hasattr(comment, "content"):
-            comment.content = censor_text(comment.content)
-        return comment
+        return CommentDao.create_comment(create_comment_data=create_comment_data)
 
     @staticmethod
     def update_comment(id: int, update_comment_data: UpdateCommentData) -> Comment:
-        comment = CommentDao.update_comment(id, update_comment_data)
-        return _mask_content_instance(comment)
-
-
-# Masking helpers
-def _mask_content_instance(object) -> typing.Any:
-    if hasattr(object, "content"):
-        object.content = censor_text(object.content)
-    return object
-
-
-def _mask_content_list(objects: typing.Iterable) -> typing.List:
-    return [_mask_content_instance(object) for object in objects]
+        return CommentDao.update_comment(id, update_comment_data)
 
 
 class ReportedPostServices:

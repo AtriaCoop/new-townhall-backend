@@ -52,5 +52,8 @@ class TestCommentService(TestCase):
         )
 
         # Assert
-        self.assertEqual(updated_comment.content, "****")
+        # Service returns RAW content
+        self.assertEqual(updated_comment.content, "hell")
+
+        # DB stores RAW content
         self.assertEqual(Comment.objects.get(pk=1).content, "hell")
