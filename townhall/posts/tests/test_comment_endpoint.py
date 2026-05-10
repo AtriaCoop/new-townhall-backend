@@ -28,7 +28,7 @@ class CommentEndpointTests(TestCase):
 
         # Act
         response = self.client.patch(self.url, payload, format="json")
-        print(response.data)
+
         # Assert
         self.assertEqual(response.status_code, 200)
         self.comment.refresh_from_db()
