@@ -21,11 +21,11 @@ class TestChatEndpoint(TestCase):
         call_command("loaddata", "fixtures/user_fixture.json", verbosity=0)
 
         chat = Chat.objects.get(pk=3)
-        self.bob = User.objects.get(pk=1)
+        bob = User.objects.get(pk=1)
         jerome = User.objects.get(pk=2)
-        chat.participants.add(self.bob, jerome)
+        chat.participants.add(bob, jerome)
 
-        self.client.force_authenticate(user=self.bob)
+        self.client.force_authenticate(user=bob)
 
     def test_get_chat_success(self):
         # Arrange
@@ -62,7 +62,6 @@ class TestChatEndpoint(TestCase):
     def test_delete_chat_success(self):
         # Arrange
         url = "/chats/3/"
-        self.client.force_authenticate(user=self.bob)
 
         # Act
         response = self.client.delete(url, format="json")
@@ -87,7 +86,6 @@ class TestChatEndpoint(TestCase):
     def test_delete_chat_fail_does_not_exist(self):
         # Arrange
         url = "/chats/99999999/"
-        self.client.force_authenticate(user=self.bob)
 
         # Act
         response = self.client.delete(url, format="json")
