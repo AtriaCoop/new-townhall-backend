@@ -749,6 +749,7 @@ class UserViewSet(viewsets.ModelViewSet):
             x_url=validated_data.get("x_url"),
             instagram_url=validated_data.get("instagram_url"),
             bluesky_url=validated_data.get("bluesky_url"),
+            is_verified=validated_data.get("is_verified"),
         )
         try:
             UserServices.update_user(update_user_data)

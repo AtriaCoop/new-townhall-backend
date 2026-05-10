@@ -165,6 +165,9 @@ class UserServices:
             tags = Tag.objects.filter(name__in=update_user_data.tags)
             user.tags.set(tags)
 
+        if update_user_data.is_verified is not None:
+            user.is_verified = update_user_data.is_verified
+
         user.save()
         return user
 
@@ -206,15 +209,6 @@ class UserServices:
 
     def get_users_by_tags(tag_names: typing.List[str]) -> QuerySet[User]:
         return UserDao.get_users_by_tags(tag_names=tag_names)
-
-    def verify_user(user_id: int) -> typing.Optional[User]:
-        try:
-            user = UserDao.get_user(id=user_id)
-            user.is_verified = True
-            user.save()
-            return user
-        except User.DoesNotExist:
-            raise ValidationError(f"User with the given id: {user_id}, does not exist.")
 
 
 class ReportServices:
