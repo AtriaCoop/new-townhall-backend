@@ -63,9 +63,11 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            chats = Chat.objects.filter(
-                participants__id=user_id
-            ).exclude(hidden_by__id=user_id).distinct()
+            chats = (
+                Chat.objects.filter(participants__id=user_id)
+                .exclude(hidden_by__id=user_id)
+                .distinct()
+            )
             serializer = ChatSerializer(chats, many=True)
             return Response(
                 {
@@ -124,6 +126,7 @@ class ChatViewSet(viewsets.ModelViewSet):
         create_chat_data = CreateChatData(
             name=validated_data["name"],
             participant_ids=validated_data["participants"],
+            is_group=validated_data.get("is_group", False),
         )
 
         try:
@@ -221,9 +224,7 @@ class ChatViewSet(viewsets.ModelViewSet):
             # Broadcast to all participants via channel layer (like bell notifications)
             channel_layer = get_channel_layer()
             if channel_layer:
-                participant_ids = list(
-                    chat.participants.values_list("id", flat=True)
-                )
+                participant_ids = list(chat.participants.values_list("id", flat=True))
                 for pid in participant_ids:
                     async_to_sync(channel_layer.group_send)(
                         f"user_{pid}",
@@ -234,9 +235,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                             "sender": user.id,
                             "full_name": user.full_name,
                             "profile_image": (
-                                user.profile_image.url
-                                if user.profile_image
-                                else None
+                                user.profile_image.url if user.profile_image else None
                             ),
                         },
                     )
@@ -275,9 +274,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         result = {}
         for chat in chats:
-            read_status = ChatReadStatus.objects.filter(
-                user=user, chat=chat
-            ).first()
+            read_status = ChatReadStatus.objects.filter(user=user, chat=chat).first()
             last_read = read_status.last_read_at if read_status else None
 
             msg_qs = Message.objects.filter(chat=chat).exclude(user=user)
@@ -294,9 +291,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 "sender_id": latest.user.id,
                 "sender_name": latest.user.full_name,
                 "sender_image": (
-                    latest.user.profile_image.url
-                    if latest.user.profile_image
-                    else None
+                    latest.user.profile_image.url if latest.user.profile_image else None
                 ),
                 "last_message": latest.content,
                 "timestamp": latest.sent_at.isoformat(),

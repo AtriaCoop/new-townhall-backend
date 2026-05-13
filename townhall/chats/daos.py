@@ -28,6 +28,7 @@ class ChatDao:
     def create_chat(create_chat_data: CreateChatData) -> Optional[Chat]:
         chat = Chat.objects.create(
             name=create_chat_data.name,
+            is_group=create_chat_data.is_group,
         )
 
         chat.participants.add(*create_chat_data.participant_ids)

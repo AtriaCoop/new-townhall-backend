@@ -6,11 +6,13 @@ from cloudinary.models import CloudinaryField
 
 
 class Chat(models.Model):
+    id = models.AutoField(primary_key=True)
     participants = models.ManyToManyField(User, related_name="chats")
     hidden_by = models.ManyToManyField(User, related_name="hidden_chats", blank=True)
     name = models.CharField(max_length=127)
     created_at = models.DateTimeField(default=timezone.now)
     history = HistoricalRecords()
+    is_group = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.id)

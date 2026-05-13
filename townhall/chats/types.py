@@ -7,6 +7,7 @@ from datetime import datetime
 class CreateChatData:
     participant_ids: List[int]
     name: str
+    is_group: bool = False
 
 
 @dataclass
