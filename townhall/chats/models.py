@@ -11,6 +11,7 @@ class Chat(models.Model):
     name = models.CharField(max_length=127)
     created_at = models.DateTimeField(default=timezone.now)
     history = HistoricalRecords()
+    is_group = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.id)

@@ -44,7 +44,7 @@ class ChatServices:
             # Verify exact participant match (no extra participants)
             for chat in possible_chats:
                 existing_ids = sorted(chat.participants.values_list("id", flat=True))
-                if existing_ids == participant_ids:
+                if existing_ids == participant_ids and chat.is_group == data.is_group:
                     return chat, False  # Found existing chat
 
             # Check if any participant has disabled DMs before creating
