@@ -194,6 +194,31 @@ class ReactionServices:
         return was_added, f"{action} {reaction_type} reaction"
 
     @staticmethod
+    def _toggle_reaction(
+        reaction_type: str,
+        get_existing: typing.Callable[[], typing.Optional[Reaction]],
+        create: typing.Callable[[], None],
+        delete: typing.Callable[[Reaction], None],
+    ) -> typing.Tuple[bool, str]:
+        existing = get_existing()
+        if existing:
+            delete(existing)
+            return ReactionServices._reaction_result(False, reaction_type)
+
+        try:
+            create()
+            return ReactionServices._reaction_result(True, reaction_type)
+        except IntegrityError:
+            # Race: reaction created between check and insert — treat as toggle-off
+            existing = get_existing()
+            if not existing:
+                raise ValidationError(
+                    "Failed to create reaction due to database constraint"
+                )
+            delete(existing)
+            return ReactionServices._reaction_result(False, reaction_type)
+
+    @staticmethod
     def _get_post_reaction(reaction_data: ToggleReactionData):
         return ReactionDao.get_reaction(
             post_id=reaction_data.post_id,
@@ -205,25 +230,12 @@ class ReactionServices:
     def _toggle_post_reaction(
         reaction_data: ToggleReactionData,
     ) -> typing.Tuple[bool, str]:
-        existing = ReactionServices._get_post_reaction(reaction_data)
-        reaction_type = reaction_data.reaction_type
-
-        if existing:
-            ReactionDao.delete_reaction(existing)
-            return ReactionServices._reaction_result(False, reaction_type)
-
-        try:
-            ReactionDao.create_reaction(reaction_data)
-            return ReactionServices._reaction_result(True, reaction_type)
-        except IntegrityError:
-            # Race: reaction created between check and insert — treat as toggle-off
-            existing = ReactionServices._get_post_reaction(reaction_data)
-            if not existing:
-                raise ValidationError(
-                    "Failed to create reaction due to database constraint"
-                )
-            ReactionDao.delete_reaction(existing)
-            return ReactionServices._reaction_result(False, reaction_type)
+        return ReactionServices._toggle_reaction(
+            reaction_data.reaction_type,
+            lambda: ReactionServices._get_post_reaction(reaction_data),
+            lambda: ReactionDao.create_reaction(reaction_data),
+            ReactionDao.delete_reaction,
+        )
 
     @staticmethod
     def toggle_reaction_on_post(
