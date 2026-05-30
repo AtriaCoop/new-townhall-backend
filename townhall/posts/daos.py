@@ -18,14 +18,14 @@ from .types import (
 class PostDao:
 
     def get_post(id: int) -> typing.Optional[Post]:
-        return Post.objects.prefetch_related('tags').get(id=id)
+        return Post.objects.prefetch_related("tags").get(id=id)
 
     def get_all_posts(
         offset: int, limit: int, tag_names: list[str] | None = None
     ) -> tuple[typing.List[Post], int]:
         """Return recent posts paginated with total count,
         optionally filtered by tags."""
-        qs = Post.objects.prefetch_related('tags').order_by("-pinned", "-created_at")
+        qs = Post.objects.prefetch_related("tags").order_by("-pinned", "-created_at")
         if tag_names:
             qs = qs.filter(tags__name__in=tag_names).distinct()
         total_count = qs.count()
@@ -150,21 +150,29 @@ class ReportedPostDao:
 
 class ReactionDao:
     @staticmethod
-    def get_reaction(
-        post_id: int, user_id: int, reaction_type: str
-    ) -> typing.Optional[Reaction]:
-        """Get an existing reaction if it exists."""
+    def _get_reaction(**filters) -> typing.Optional[Reaction]:
         try:
-            return Reaction.objects.get(
-                post_id=post_id, user_id=user_id, reaction_type=reaction_type
-            )
+            return Reaction.objects.get(**filters)
         except Reaction.DoesNotExist:
             return None
 
     @staticmethod
+    def _create_reaction(**fields) -> Reaction:
+        return Reaction.objects.create(**fields)
+
+    @staticmethod
+    def get_reaction(
+        post_id: int, user_id: int, reaction_type: str
+    ) -> typing.Optional[Reaction]:
+        return ReactionDao._get_reaction(
+            post_id=post_id,
+            user_id=user_id,
+            reaction_type=reaction_type,
+        )
+
+    @staticmethod
     def create_reaction(reaction_data: ToggleReactionData) -> Reaction:
-        """Create a new reaction."""
-        return Reaction.objects.create(
+        return ReactionDao._create_reaction(
             post_id=reaction_data.post_id,
             user_id=reaction_data.user_id,
             reaction_type=reaction_data.reaction_type,
@@ -172,5 +180,4 @@ class ReactionDao:
 
     @staticmethod
     def delete_reaction(reaction: Reaction) -> None:
-        """Delete a reaction."""
         reaction.delete()

@@ -50,6 +50,6 @@ urlpatterns = [
     path("post/<int:pk>/report", PostViewSet.as_view({"post": "report_post"})),
     path(
         "post/<int:pk>/reaction/",
-        PostViewSet.as_view({"patch": "toggle_reaction"}),
+        PostViewSet.as_view({"patch": "toggle_reaction_on_post"}),
     ),
 ]
