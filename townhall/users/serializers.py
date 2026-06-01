@@ -77,7 +77,13 @@ class UserMiniSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "full_name", "primary_organization", "profile_image"]
+        fields = [
+            "id",
+            "full_name",
+            "primary_organization",
+            "profile_image",
+            "is_verified",
+        ]
 
     def get_profile_image(self, obj):
         if obj.profile_image:
