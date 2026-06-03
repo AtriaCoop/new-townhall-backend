@@ -22,6 +22,7 @@ class CreateChatSerializer(serializers.Serializer):
     participants = serializers.ListField(
         child=serializers.IntegerField(), allow_empty=False
     )
+    is_group = serializers.BooleanField(default=False)
 
 
 class ChatSerializer(serializers.ModelSerializer):
@@ -30,14 +31,14 @@ class ChatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ["id", "name", "participants", "created_at"]
-        read_only_fields = ["id", "created_at"]
+        fields = ["id", "name", "participants", "created_at", "is_group"]
+        read_only_fields = ["id", "created_at", "is_group"]
 
 
 class ChatMiniSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chat
-        fields = ["id", "name"]
+        fields = ["id", "name", "is_group"]
 
 
 class MessageSerializer(serializers.ModelSerializer):
