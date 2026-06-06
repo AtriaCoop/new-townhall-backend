@@ -1,6 +1,13 @@
+import typing
 from typing import Optional
-from .models import Chat, Message
-from .types import CreateChatData, CreateMessageData, UpdateMessageData
+
+from .models import Chat, Message, MessageReaction
+from .types import (
+    CreateChatData,
+    CreateMessageData,
+    UpdateMessageData,
+    ToggleMessageReactionData,
+)
 from django.db.models import QuerySet
 from django.db import DatabaseError
 from django.core.exceptions import ValidationError
@@ -108,3 +115,38 @@ class MessageDao:
             message.sent_at = update_message_data.sent_at
 
         message.save()
+
+
+class ReactionDao:
+    @staticmethod
+    def _get_reaction(**filters) -> typing.Optional[MessageReaction]:
+        try:
+            return MessageReaction.objects.get(**filters)
+        except MessageReaction.DoesNotExist:
+            return None
+
+    @staticmethod
+    def _create_reaction(**fields) -> MessageReaction:
+        return MessageReaction.objects.create(**fields)
+
+    @staticmethod
+    def get_reaction(
+        message_id: int, user_id: int, reaction_type: str
+    ) -> typing.Optional[MessageReaction]:
+        return ReactionDao._get_reaction(
+            message_id=message_id,
+            user_id=user_id,
+            reaction_type=reaction_type,
+        )
+
+    @staticmethod
+    def create_reaction(reaction_data: ToggleMessageReactionData) -> MessageReaction:
+        return ReactionDao._create_reaction(
+            message_id=reaction_data.message_id,
+            user_id=reaction_data.user_id,
+            reaction_type=reaction_data.reaction_type,
+        )
+
+    @staticmethod
+    def delete_reaction(reaction: MessageReaction) -> None:
+        reaction.delete()
