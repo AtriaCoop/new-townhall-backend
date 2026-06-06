@@ -400,7 +400,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
         reaction_type = request.data["reaction_type"]
         try:
-            was_added, message = ReactionServices.toggle_reaction_on_post(
+            reaction_created, message = ReactionServices.toggle_reaction_on_post(
                 ToggleReactionData(
                     user_id=request.user.id,
                     post_id=int(pk),
@@ -411,7 +411,7 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         post = Post.objects.get(pk=pk)
-        if was_added:
+        if reaction_created:
             self._notify_reaction(
                 recipient_id=post.user_id,
                 actor_id=request.user.id,
