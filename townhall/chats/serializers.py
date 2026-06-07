@@ -50,6 +50,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     content = serializers.CharField(required=True, allow_blank=False)
     image_content = serializers.ImageField(required=False, allow_null=True)
+    reactions = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -62,8 +63,22 @@ class MessageSerializer(serializers.ModelSerializer):
             "content",
             "image_content",
             "sent_at",
+            "reactions",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "reactions"]
+
+    def get_reactions(self, obj):
+        reactions_by_type = {}
+        for reaction in obj.reactions.select_related("user").all():
+            if reaction.reaction_type not in reactions_by_type:
+                reactions_by_type[reaction.reaction_type] = []
+            reactions_by_type[reaction.reaction_type].append(
+                {
+                    "id": reaction.user.id,
+                    "full_name": reaction.user.full_name,
+                }
+            )
+        return reactions_by_type
 
 
 class OptionalMessageSerializer(serializers.ModelSerializer):

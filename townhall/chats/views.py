@@ -10,8 +10,14 @@ from .serializers import (
     CreateChatSerializer,
     OptionalMessageSerializer,
 )
-from .services import ChatServices, MessageServices
-from .types import CreateChatData, CreateMessageData, UpdateMessageData
+from posts.views import PostViewSet
+from .services import ChatServices, MessageServices, ReactionServices
+from .types import (
+    CreateChatData,
+    CreateMessageData,
+    ToggleMessageReactionData,
+    UpdateMessageData,
+)
 from django.utils import timezone
 from .models import Chat, Message, GroupMessage, ChatReadStatus
 from channels.layers import get_channel_layer
@@ -63,9 +69,11 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            chats = Chat.objects.filter(
-                participants__id=user_id
-            ).exclude(hidden_by__id=user_id).distinct()
+            chats = (
+                Chat.objects.filter(participants__id=user_id)
+                .exclude(hidden_by__id=user_id)
+                .distinct()
+            )
             serializer = ChatSerializer(chats, many=True)
             return Response(
                 {
@@ -221,9 +229,7 @@ class ChatViewSet(viewsets.ModelViewSet):
             # Broadcast to all participants via channel layer (like bell notifications)
             channel_layer = get_channel_layer()
             if channel_layer:
-                participant_ids = list(
-                    chat.participants.values_list("id", flat=True)
-                )
+                participant_ids = list(chat.participants.values_list("id", flat=True))
                 for pid in participant_ids:
                     async_to_sync(channel_layer.group_send)(
                         f"user_{pid}",
@@ -234,9 +240,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                             "sender": user.id,
                             "full_name": user.full_name,
                             "profile_image": (
-                                user.profile_image.url
-                                if user.profile_image
-                                else None
+                                user.profile_image.url if user.profile_image else None
                             ),
                         },
                     )
@@ -275,9 +279,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         result = {}
         for chat in chats:
-            read_status = ChatReadStatus.objects.filter(
-                user=user, chat=chat
-            ).first()
+            read_status = ChatReadStatus.objects.filter(user=user, chat=chat).first()
             last_read = read_status.last_read_at if read_status else None
 
             msg_qs = Message.objects.filter(chat=chat).exclude(user=user)
@@ -294,9 +296,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 "sender_id": latest.user.id,
                 "sender_name": latest.user.full_name,
                 "sender_image": (
-                    latest.user.profile_image.url
-                    if latest.user.profile_image
-                    else None
+                    latest.user.profile_image.url if latest.user.profile_image else None
                 ),
                 "last_message": latest.content,
                 "timestamp": latest.sent_at.isoformat(),
@@ -548,3 +548,37 @@ class MessageViewSet(viewsets.ModelViewSet):
                 {"message": str(e), "success": False},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+    @action(detail=True, methods=["patch"], url_path="reaction")
+    def toggle_reaction_on_message(self, request, id):
+        if error := PostViewSet._reaction_request_error(request):
+            return error
+
+        reaction_type = request.data["reaction_type"]
+        try:
+            reaction_created, message_text = (
+                ReactionServices.toggle_reaction_on_message(
+                    ToggleMessageReactionData(
+                        user_id=request.user.id,
+                        message_id=int(id),
+                        reaction_type=reaction_type,
+                    )
+                )
+            )
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        message = Message.objects.get(pk=id)
+        if reaction_created:
+            PostViewSet._notify_reaction(
+                recipient_id=message.user_id,
+                actor_id=request.user.id,
+                target_id=message.id,
+                reaction_type=reaction_type,
+            )
+
+        serializer = MessageSerializer(message)
+        return Response(
+            {"message": message_text, "reactions": serializer.data["reactions"]},
+            status=status.HTTP_200_OK,
+        )
