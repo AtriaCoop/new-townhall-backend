@@ -1,6 +1,7 @@
 import datetime
 from typing import Optional, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
 @dataclass
@@ -8,7 +9,7 @@ class CreatePostData:
     user_id: int
     content: str
     created_at: datetime
-    image: Optional[str] = None
+    images: List[InMemoryUploadedFile] = field(default_factory=list)
     pinned: bool = False
     tags: Optional[List[str]] = None
     anonymous: bool = False
@@ -18,7 +19,7 @@ class CreatePostData:
 class UpdatePostData:
     user_id: int
     content: Optional[str] = None
-    image: Optional[str] = None
+    # Images omitted — use add_post_images() / delete_post_image() endpoints.
     pinned: Optional[bool] = None
     tags: Optional[List[str]] = None
 

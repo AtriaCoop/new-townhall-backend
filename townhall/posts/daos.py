@@ -4,7 +4,7 @@ import typing
 from django.db.models import Count
 from django.forms import ValidationError
 from django.db import IntegrityError
-from .models import Post, Comment, ReportedPost, Reaction, Tag
+from .models import Post, PostImage, Comment, ReportedPost, Reaction, Tag
 from .types import (
     CreatePostData,
     UpdatePostData,
@@ -18,14 +18,16 @@ from .types import (
 class PostDao:
 
     def get_post(id: int) -> typing.Optional[Post]:
-        return Post.objects.prefetch_related('tags').get(id=id)
+        return Post.objects.prefetch_related("tags", "images").get(id=id)
 
     def get_all_posts(
         offset: int, limit: int, tag_names: list[str] | None = None
     ) -> tuple[typing.List[Post], int]:
         """Return recent posts paginated with total count,
         optionally filtered by tags."""
-        qs = Post.objects.prefetch_related('tags').order_by("-pinned", "-created_at")
+        qs = Post.objects.prefetch_related("tags", "images").order_by(
+            "-pinned", "-created_at"
+        )
         if tag_names:
             qs = qs.filter(tags__name__in=tag_names).distinct()
         total_count = qs.count()
@@ -46,7 +48,6 @@ class PostDao:
             user_id=post_data.user_id,
             content=post_data.content,
             created_at=post_data.created_at,
-            image=post_data.image,
             pinned=post_data.pinned,
             anonymous=post_data.anonymous,
         )
@@ -57,6 +58,7 @@ class PostDao:
         return post
 
     def update_post(id: int, post_data: UpdatePostData) -> Post:
+        # text fields only — image operations belong to PostImageDao
         try:
             post = Post.objects.get(id=id)
         except Post.DoesNotExist:
@@ -64,8 +66,6 @@ class PostDao:
 
         if post_data.content is not None:
             post.content = post_data.content
-        if post_data.image is not None:
-            post.image = post_data.image
         if post_data.pinned is not None:
             post.pinned = post_data.pinned
 
@@ -98,6 +98,26 @@ class PostDao:
                 tag_obj, _ = Tag.objects.get_or_create(name=clean)
                 tag_objects.append(tag_obj)
         return tag_objects
+
+
+class PostImageDao:
+    # Separated from PostDao because PostImage is its own table.
+    # Adding images (POST /post/images/) and deleting an image
+    # (DELETE /post/images/{id}/) are distinct REST operations on a
+    # child resource — keeping them in a dedicated DAO reflects that.
+
+    def create_images(post_id: int, images: list) -> list:
+        created = []
+        for image_file in images:
+            created.append(PostImage.objects.create(post_id=post_id, image=image_file))
+        return created
+
+    def delete_image(image_id: int, post_id: int) -> None:
+        try:
+            image = PostImage.objects.get(id=image_id, post_id=post_id)
+            image.delete()
+        except PostImage.DoesNotExist:
+            raise ValueError(f"Image {image_id} not found on post {post_id}.")
 
 
 class CommentDao:

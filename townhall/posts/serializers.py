@@ -13,14 +13,12 @@ class CreateCommentSerializer(serializers.ModelSerializer):
 
 class PostCreateUpdateSerializer(serializers.ModelSerializer):
     content = serializers.CharField(max_length=1000)
-    image = serializers.ImageField(required=False, allow_null=True)
     tags = serializers.ListField(child=serializers.CharField(), required=False)
 
     class Meta:
         model = Post
         fields = [
             "content",
-            "image",
             "tags",
             "pinned",
             "anonymous",
@@ -65,7 +63,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
 
-    image = serializers.ImageField(required=False, allow_null=True)
+    images = serializers.SerializerMethodField()
 
     comments = CommentSerializer(many=True, read_only=True, source="comment_set")
 
@@ -84,7 +82,7 @@ class PostSerializer(serializers.ModelSerializer):
             "user",
             "content",
             "created_at",
-            "image",
+            "images",
             "likes",
             "liked_by",
             "comments",
@@ -102,7 +100,11 @@ class PostSerializer(serializers.ModelSerializer):
             "user",
             "reactions",
             "tags",
+            "images",
         ]
+
+    def get_images(self, obj):
+        return [{"id": img.id, "url": img.image.url} for img in obj.images.all()]
 
     def get_reactions(self, obj):
         reactions_by_type = {}

@@ -52,4 +52,14 @@ urlpatterns = [
         "post/<int:pk>/reaction/",
         PostViewSet.as_view({"patch": "toggle_reaction"}),
     ),
+    path(
+        "post/<int:pk>/images/",
+        PostViewSet.as_view({"post": "add_post_images"}),
+        name="post_add_images",
+    ),
+    path(
+        "post/<int:pk>/images/<int:image_id>/",
+        PostViewSet.as_view({"delete": "delete_post_image"}),
+        name="post_delete_image",
+    ),
 ]
