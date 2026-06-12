@@ -12,7 +12,7 @@ from .types import (
     UpdateCommentData,
     ToggleReactionData,
 )
-from .daos import PostDao, CommentDao, ReportedPostDao, ReactionDao
+from .daos import PostDao, PostImageDao, CommentDao, ReportedPostDao, ReactionDao
 from users.models import User
 from .profanity import _CENSOR_RE
 
@@ -49,7 +49,6 @@ class PostServices:
 
     @staticmethod
     def create_post(create_post_data: CreatePostData) -> Post:
-
         user = User.objects.get(id=create_post_data.user_id)
         if not user.is_staff and create_post_data.pinned:
             raise PermissionDenied("You are not authorized to pin posts.")
@@ -59,11 +58,16 @@ class PostServices:
 
         post = PostDao.create_post(post_data=create_post_data)
 
+        # Images are uploaded at creation time as one atomic user action,
+        # so the service orchestrates PostDao + PostImageDao together here.
+        if create_post_data.images:
+            PostImageDao.create_images(post.id, create_post_data.images)
+
         return post
 
     @staticmethod
     def update_post(id: int, update_post_data: UpdatePostData) -> Post:
-
+        # text fields only — images have dedicated endpoints (strict REST).
         user = User.objects.get(id=update_post_data.user_id)
         if not user.is_staff and update_post_data.pinned is not None:
             raise PermissionDenied("You are not authorized to pin posts.")
@@ -76,9 +80,33 @@ class PostServices:
         return post
 
     @staticmethod
+    def add_post_images(post_id: int, images: list, requesting_user_id: int) -> list:
+        # Only used when adding images to an EXISTING POST, not at creation time.
+        try:
+            post = PostDao.get_post(id=post_id)
+        except Post.DoesNotExist:
+            raise ValidationError(f"Post {post_id} does not exist.")
+        if post.user_id != requesting_user_id:
+            raise PermissionDenied("You can only add images to your own posts.")
+        return PostImageDao.create_images(post_id, images)
+
+    @staticmethod
     def delete_post(post_id: int) -> None:
         try:
             PostDao.delete_post(post_id)
+        except ValueError as e:
+            raise ValidationError(str(e))
+
+    @staticmethod
+    def delete_post_image(image_id: int, post_id: int, requesting_user_id: int) -> None:
+        try:
+            post = PostDao.get_post(id=post_id)
+        except Post.DoesNotExist:
+            raise ValidationError(f"Post {post_id} does not exist.")
+        if post.user_id != requesting_user_id:
+            raise PermissionDenied("You can only delete images from your own posts.")
+        try:
+            PostImageDao.delete_image(image_id=image_id, post_id=post_id)
         except ValueError as e:
             raise ValidationError(str(e))
 

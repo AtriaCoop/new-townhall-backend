@@ -111,7 +111,6 @@ class PostPinnedTests(TestCase):
 
         update_data = UpdatePostData(
             content=None,
-            image=None,
             pinned=True,
             user_id=123,
         )

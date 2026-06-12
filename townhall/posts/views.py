@@ -34,6 +34,24 @@ from .types import ToggleReactionData
 
 logger = logging.getLogger(__name__)
 
+_MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB — matches Cloudinary free plan limit
+_MAX_IMAGES_PER_POST = 10
+
+
+def _validate_images(images: list) -> str | None:
+    # Image validation is done here in the view separately from serializer validation
+    # because DRF serializers do not handle repeated file keys in multipart/form-data.
+    # Cloudinary also validates images on its end, but we check here first to avoid
+    # wasting a Cloudinary API call on clearly invalid images.
+    if len(images) > _MAX_IMAGES_PER_POST:
+        return f"A post can have at most {_MAX_IMAGES_PER_POST} images."
+    for f in images:
+        if not f.content_type.startswith("image/"):
+            return f"'{f.name}' is not a supported image type."
+        if f.size > _MAX_IMAGE_SIZE_BYTES:
+            return f"'{f.name}' exceeds the 10 MB size limit."
+    return None
+
 
 class PostViewSet(viewsets.ModelViewSet):
 
@@ -124,12 +142,17 @@ class PostViewSet(viewsets.ModelViewSet):
         validated_data = serializer.validated_data
 
         tag_names = request.data.getlist("tags")
+        images = request.FILES.getlist("images")
+
+        image_error = _validate_images(images)
+        if image_error:
+            return Response({"error": image_error}, status=status.HTTP_400_BAD_REQUEST)
 
         create_post_data = CreatePostData(
             user_id=request.user.id,
             content=validated_data["content"],
             created_at=timezone.now(),
-            image=validated_data.get("image", None),
+            images=images,
             pinned=validated_data.get("pinned", False),
             tags=tag_names if tag_names else None,
             anonymous=validated_data.get("anonymous", False),
@@ -175,16 +198,16 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # text fields only — images are managed via dedicated endpoints:
+        # POST /post/images/ to add, DELETE /post/images/{id}/ to remove.
         serializer = PostCreateUpdateSerializer(post, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(
                 serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if post.user_id != user.id and (
-            serializer.validated_data.get("content")
-            or serializer.validated_data.get("image")
-        ):
+
+        if post.user_id != user.id and serializer.validated_data.get("content"):
             return Response(
                 {"message": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -194,7 +217,6 @@ class PostViewSet(viewsets.ModelViewSet):
 
         update_post_data = UpdatePostData(
             content=serializer.validated_data.get("content", None),
-            image=serializer.validated_data.get("image", None),
             pinned=serializer.validated_data.get("pinned", None),
             tags=tag_names if tag_names else None,
             user_id=user.id,
@@ -246,6 +268,71 @@ class PostViewSet(viewsets.ModelViewSet):
                 {"error": str(e)},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+    # ADD IMAGES TO AN EXISTING POST
+    # Separate endpoint from update post for strict REST
+    @action(detail=True, methods=["post"], url_path="post/images")
+    def add_post_images(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        images = request.FILES.getlist("images")
+        if not images:
+            return Response(
+                {"error": "No images provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        image_error = _validate_images(images)
+        if image_error:
+            return Response({"error": image_error}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            created = PostServices.add_post_images(
+                post_id=int(pk),
+                images=images,
+                requesting_user_id=request.user.id,
+            )
+            return Response(
+                {
+                    "message": "Images added successfully",
+                    "images": [{"id": img.id, "url": img.image.url} for img in created],
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionDenied as e:
+            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+
+    # Delete an image from a post
+    # Separate endpoint from PATCH /post/ for strict REST
+    @action(
+        detail=True, methods=["delete"], url_path="post/images/(?P<image_id>[^/.]+)"
+    )
+    def delete_post_image(self, request, pk=None, image_id=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        try:
+            PostServices.delete_post_image(
+                image_id=int(image_id),
+                post_id=int(pk),
+                requesting_user_id=request.user.id,
+            )
+            return Response(
+                {"message": "Image deleted successfully"},
+                status=status.HTTP_200_OK,
+            )
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionDenied as e:
+            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
     # LIKE A POST
     @action(detail=True, methods=["patch"], url_path="like")
