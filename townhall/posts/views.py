@@ -16,6 +16,7 @@ from .types import (
     CreateCommentData,
     ReportedPostData,
     UpdateCommentData,
+    ToggleReactionData,
 )
 from .serializers import (
     PostSerializer,
@@ -30,7 +31,6 @@ from .services import (
     ReportedPostServices,
     ReactionServices,
 )
-from .types import ToggleReactionData
 
 logger = logging.getLogger(__name__)
 
@@ -441,86 +441,76 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=True, methods=["patch"], url_path="reaction")
-    def toggle_reaction(self, request, pk=None):
+    @staticmethod
+    def _reaction_request_error(request) -> Response | None:
         if not request.user.is_authenticated:
             return Response(
                 {"error": "Not authenticated"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-
-        reaction_type = request.data.get("reaction_type")
-        if not reaction_type:
+        if not request.data.get("reaction_type"):
             return Response(
                 {"error": "Reaction type is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        return None
 
+    @staticmethod
+    def _notify_reaction(
+        *,
+        recipient_id: int,
+        actor_id: int,
+        target_id: int,
+        reaction_type: str,
+        notification_type: str = "reaction",
+    ) -> None:
         try:
-            reaction_data = ToggleReactionData(
-                user_id=request.user.id,
-                post_id=int(pk),
+            from notifications.services import NotificationServices
+            from notifications.types import CreateNotificationData
+
+            NotificationServices.create_and_push(
+                CreateNotificationData(
+                    recipient_id=recipient_id,
+                    actor_id=actor_id,
+                    notification_type=notification_type,
+                    target_id=target_id,
+                    detail=reaction_type,
+                )
+            )
+        except Exception:
+            logger.exception("Failed to send %s notification", notification_type)
+
+    @action(detail=True, methods=["patch"], url_path="reaction")
+    def toggle_reaction_on_post(self, request, pk=None):
+        if error := self._reaction_request_error(request):
+            return error
+
+        reaction_type = request.data["reaction_type"]
+        try:
+            was_added, message = ReactionServices.toggle_reaction_on_post(
+                ToggleReactionData(
+                    user_id=request.user.id,
+                    post_id=int(pk),
+                    reaction_type=reaction_type,
+                )
+            )
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        post = Post.objects.get(pk=pk)
+        if was_added:
+            self._notify_reaction(
+                recipient_id=post.user_id,
+                actor_id=request.user.id,
+                target_id=post.id,
                 reaction_type=reaction_type,
             )
 
-            # Delegate business logic to service layer
-            was_added, message = ReactionServices.toggle_reaction(reaction_data)
-
-            # Get updated post with reactions
-            post = Post.objects.get(pk=pk)
-
-            if was_added:
-                try:
-                    from notifications.services import NotificationServices
-                    from notifications.types import CreateNotificationData
-
-                    NotificationServices.create_and_push(
-                        CreateNotificationData(
-                            recipient_id=post.user_id,
-                            actor_id=request.user.id,
-                            notification_type="reaction",
-                            target_id=post.id,
-                            detail=reaction_type,
-                        )
-                    )
-                except Exception:
-                    pass
-
-            serializer = PostSerializer(post, context={"request": request})
-
-            return Response(
-                {
-                    "message": message,
-                    "reactions": serializer.data["reactions"],
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        except ValidationError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Post.DoesNotExist:
-            return Response(
-                {"error": "Post not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except IntegrityError:
-            return Response(
-                {"error": "Database constraint violation. " "Please try again."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except ValueError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Exception:
-            return Response(
-                {"error": "An unexpected error occurred"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        serializer = PostSerializer(post, context={"request": request})
+        return Response(
+            {"message": message, "reactions": serializer.data["reactions"]},
+            status=status.HTTP_200_OK,
+        )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
