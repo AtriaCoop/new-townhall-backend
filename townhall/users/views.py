@@ -97,26 +97,27 @@ class Echo:
     def write(self, value):
         return value
 
-
+#DATE FORMAT HELPER FUNCTION
 def _format_datetime(value):
     return value.isoformat() if value else None
 
-
+#IMAGE_URL HELPER FUNCTION
 def _cloudinary_url(value):
     return value.url if value else None
 
-
+#EXPORT TO JSON/CSV
 def export_user_data(request):
-    if request.method != "GET":
+    #exporting data should be read-only, so only GET should be allowed.
+    if request.method != "GET": 
         return JsonResponse({"error": "Invalid request method"}, status=405)
 
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated: #A logged-out user should not be able to export anything
         return JsonResponse({"error": "Not authenticated"}, status=401)
 
     from chats.models import GroupMessage, Message
     from posts.models import Comment, Post
 
-    export_format = request.GET.get("format", "json").lower()
+    export_format = request.GET.get("format", "json").lower() #defaulted to json if format isn't provided
     user = request.user
 
     if export_format not in {"json", "csv"}:
@@ -125,11 +126,24 @@ def export_user_data(request):
             status=400,
         )
 
+    #EXPORT AS CSV
     if export_format == "csv":
         pseudo_buffer = Echo()
         writer = csv.writer(pseudo_buffer)
 
+        #yields one CSV row at a time.
         def stream_rows():
+            """
+            Generator that yields CSV rows for the authenticated user's exported data.
+
+            Yields the header row first, followed by rows for posts, comments,
+            direct messages, and group messages — in that order. Each row is a
+            formatted string produced by csv.writer, ready to be streamed via
+            StreamingHttpResponse.
+
+            Yields:
+                str: A single CSV-formatted row.
+            """
             yield writer.writerow(
                 [
                     "type",
@@ -227,6 +241,8 @@ def export_user_data(request):
         )
         return response
 
+
+    #EXPORT AS JSON
     posts = [
         {
             "id": post["id"],
