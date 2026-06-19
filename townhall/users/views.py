@@ -7,7 +7,7 @@ from django.forms import ValidationError
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth import login, logout
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.http import JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from django.contrib.auth.hashers import check_password
 from django.middleware.csrf import get_token
 from django.utils import timezone
@@ -20,6 +20,7 @@ from django.conf import settings
 from django_ratelimit.decorators import ratelimit
 from rest_framework.throttling import AnonRateThrottle
 from datetime import timedelta
+import csv
 import json
 from .models import User, Tag
 from .types import (
@@ -90,6 +91,256 @@ def check_session(request):
             }
         )
     return JsonResponse({"authenticated": False}, status=401)
+
+
+class Echo:
+    def write(self, value):
+        return value
+
+
+def _format_datetime(value):
+    return value.isoformat() if value else None
+
+
+def _cloudinary_url(value):
+    return value.url if value else None
+
+
+def export_user_data(request):
+    if request.method != "GET":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Not authenticated"}, status=401)
+
+    from chats.models import GroupMessage, Message
+    from posts.models import Comment, Post
+
+    export_format = request.GET.get("format", "json").lower()
+    user = request.user
+
+    if export_format not in {"json", "csv"}:
+        return JsonResponse(
+            {"error": "format must be either 'json' or 'csv'"},
+            status=400,
+        )
+
+    if export_format == "csv":
+        pseudo_buffer = Echo()
+        writer = csv.writer(pseudo_buffer)
+
+        def stream_rows():
+            yield writer.writerow(
+                [
+                    "type",
+                    "id",
+                    "content",
+                    "created_at",
+                    "post_id",
+                    "chat_id",
+                    "group_name",
+                    "image_url",
+                ]
+            )
+
+            for post in (
+                Post.objects.filter(user=user)
+                .order_by("created_at", "id")
+                .values("id", "content", "created_at")
+                .iterator()
+            ):
+                yield writer.writerow(
+                    [
+                        "post",
+                        post["id"],
+                        post["content"],
+                        _format_datetime(post["created_at"]),
+                        "",
+                        "",
+                        "",
+                        "",
+                    ]
+                )
+
+            for comment in (
+                Comment.objects.filter(user=user)
+                .order_by("created_at", "id")
+                .values("id", "content", "created_at", "post_id")
+                .iterator()
+            ):
+                yield writer.writerow(
+                    [
+                        "comment",
+                        comment["id"],
+                        comment["content"],
+                        _format_datetime(comment["created_at"]),
+                        comment["post_id"],
+                        "",
+                        "",
+                        "",
+                    ]
+                )
+
+            for message in (
+                Message.objects.filter(user=user)
+                .order_by("sent_at", "id")
+                .only("id", "content", "sent_at", "chat_id", "image_content")
+                .iterator()
+            ):
+                image_url = _cloudinary_url(message.image_content)
+                yield writer.writerow(
+                    [
+                        "direct_message",
+                        message.id,
+                        message.content,
+                        _format_datetime(message.sent_at),
+                        "",
+                        message.chat_id,
+                        "",
+                        image_url or "",
+                    ]
+                )
+
+            for group_message in (
+                GroupMessage.objects.filter(user=user)
+                .order_by("sent_at", "id")
+                .only("id", "content", "sent_at", "group_name", "image")
+                .iterator()
+            ):
+                image_url = _cloudinary_url(group_message.image)
+                yield writer.writerow(
+                    [
+                        "group_message",
+                        group_message.id,
+                        group_message.content,
+                        _format_datetime(group_message.sent_at),
+                        "",
+                        "",
+                        group_message.group_name,
+                        image_url or "",
+                    ]
+                )
+
+        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
+        response["Content-Disposition"] = (
+            'attachment; filename="townhall-user-data.csv"'
+        )
+        return response
+
+    posts = [
+        {
+            "id": post["id"],
+            "content": post["content"],
+            "created_at": _format_datetime(post["created_at"]),
+            "likes": post["likes"],
+            "pinned": post["pinned"],
+            "anonymous": post["anonymous"],
+        }
+        for post in Post.objects.filter(user=user)
+        .order_by("created_at", "id")
+        .values(
+            "id",
+            "content",
+            "created_at",
+            "likes",
+            "pinned",
+            "anonymous",
+        )
+    ]
+
+    comments = [
+        {
+            "id": comment["id"],
+            "post_id": comment["post_id"],
+            "content": comment["content"],
+            "created_at": _format_datetime(comment["created_at"]),
+            "anonymous": comment["anonymous"],
+        }
+        for comment in Comment.objects.filter(user=user)
+        .order_by("created_at", "id")
+        .values(
+            "id",
+            "post_id",
+            "content",
+            "created_at",
+            "anonymous",
+        )
+    ]
+
+    direct_messages = [
+        {
+            "id": message.id,
+            "chat_id": message.chat_id,
+            "content": message.content,
+            "image_url": _cloudinary_url(message.image_content),
+            "sent_at": _format_datetime(message.sent_at),
+        }
+        for message in Message.objects.filter(user=user)
+        .order_by("sent_at", "id")
+        .only(
+            "id",
+            "chat_id",
+            "content",
+            "image_content",
+            "sent_at",
+        )
+    ]
+
+    group_messages = [
+        {
+            "id": group_message.id,
+            "group_name": group_message.group_name,
+            "content": group_message.content,
+            "image_url": _cloudinary_url(group_message.image),
+            "sent_at": _format_datetime(group_message.sent_at),
+        }
+        for group_message in GroupMessage.objects.filter(user=user)
+        .order_by("sent_at", "id")
+        .only(
+            "id",
+            "group_name",
+            "content",
+            "image",
+            "sent_at",
+        )
+    ]
+
+    response = JsonResponse(
+        {
+            "exported_at": timezone.now().isoformat(),
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "pronouns": user.pronouns,
+                "title": user.title,
+                "primary_organization": user.primary_organization,
+                "other_organizations": user.other_organizations,
+                "other_networks": user.other_networks,
+                "about_me": user.about_me,
+                "skills_interests": user.skills_interests,
+                "profile_image_url": _cloudinary_url(user.profile_image),
+                "profile_header_url": _cloudinary_url(user.profile_header),
+                "date_joined": _format_datetime(user.date_joined),
+                "receive_emails": user.receive_emails,
+                "show_email": user.show_email,
+                "show_in_directory": user.show_in_directory,
+                "allow_dms": user.allow_dms,
+                "linkedin_url": user.linkedin_url,
+                "facebook_url": user.facebook_url,
+                "x_url": user.x_url,
+                "instagram_url": user.instagram_url,
+                "bluesky_url": user.bluesky_url,
+            },
+            "posts": posts,
+            "comments": comments,
+            "direct_messages": direct_messages,
+            "group_messages": group_messages,
+        },
+        json_dumps_params={"indent": 2},
+    )
+    response["Content-Disposition"] = 'attachment; filename="townhall-user-data.json"'
+    return response
 
 
 # USER LOGIN
