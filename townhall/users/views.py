@@ -97,6 +97,7 @@ class Echo:
     def write(self, value):
         return value
 
+
 def _format_datetime(value):
     return value.isoformat() if value else None
 
