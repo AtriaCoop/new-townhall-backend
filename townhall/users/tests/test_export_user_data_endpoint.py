@@ -92,16 +92,18 @@ class ExportUserDataEndpointTests(TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_export_rejects_unknown_format(self):
-        """Requests with an unsupported format parameter should receive a 400 response (e.g. format=pdf)."""
+        """
+        Requests with an unsupported format parameter should receive a 400
+        response.
+        """
 
         self.client.force_login(self.user)
 
         response = self.client.get("/user/export/?format=pdf")
 
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(
-            response.json()["error"], "format must be either 'json' or 'csv'"
-        )
+        error = response.json()["error"]
+        self.assertEqual(error, "format must be either 'json' or 'csv'")
 
     def test_export_json_returns_only_current_users_data(self):
         """
@@ -122,7 +124,10 @@ class ExportUserDataEndpointTests(TestCase):
 
         payload = response.json()
         self.assertEqual(payload["user"]["id"], self.user.id)
-        self.assertEqual([post["content"] for post in payload["posts"]], ["Owner post"])
+        self.assertEqual(
+            [post["content"] for post in payload["posts"]],
+            ["Owner post"],
+        )
         self.assertEqual(
             [comment["content"] for comment in payload["comments"]],
             ["Owner comment"],
@@ -142,7 +147,7 @@ class ExportUserDataEndpointTests(TestCase):
         header and stream only the authenticated user's data, excluding
         any content belonging to other users.
         """
-        
+
         self.client.force_login(self.user)
 
         response = self.client.get("/user/export/?format=csv")
