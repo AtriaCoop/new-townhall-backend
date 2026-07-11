@@ -1,4 +1,18 @@
+import re
 from html.parser import HTMLParser
+
+_URL_RE = re.compile(r"https?://\S+")
+_TRAILING_PUNCTUATION = ").,!?;:'\"]}>"
+
+
+def extract_first_url(text: str) -> str | None:
+    """Find the first http(s) URL in a block of post content text, if any, trimming
+    trailing punctuation that's clearly not part of the URL itself
+    (e.g. a period ending the sentence it was written in)."""
+    match = _URL_RE.search(text)
+    if not match:
+        return None
+    return match.group(0).rstrip(_TRAILING_PUNCTUATION) or None
 
 
 class _MetadataHTMLParser(HTMLParser):

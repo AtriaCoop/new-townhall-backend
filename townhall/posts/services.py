@@ -9,7 +9,7 @@ from django.forms import ValidationError
 import typing
 
 from core.url_safety import is_safe_url
-from .link_preview_parser import parse_metadata
+from .link_preview_parser import parse_metadata, extract_first_url
 from .models import Post, ReportedPost, Comment, Reaction
 from .types import (
     CreatePostData,
@@ -137,7 +137,14 @@ class PostServices:
         # Validate tags for the post
         PostServices._validate_tags(create_post_data.tags)
 
-        post = PostDao.create_post(post_data=create_post_data)
+        link_preview = None
+        url = extract_first_url(create_post_data.content)
+        if url:
+            link_preview = PostServices.get_link_preview(url)
+
+        post = PostDao.create_post(
+            post_data=create_post_data, link_preview=link_preview
+        )
 
         # Images are uploaded at creation time as one atomic user action,
         # so the service orchestrates PostDao + PostImageDao together here.
