@@ -1,11 +1,20 @@
-from django.core.exceptions import ValidationError
-from typing import Optional
-from .models import Chat, Message
-from .daos import ChatDao, MessageDao
-from .types import CreateChatData, CreateMessageData, UpdateMessageData
-from django.db.models import QuerySet
-from users.models import User
 import typing
+
+from django.core.exceptions import ValidationError
+from django.db.models import QuerySet
+from typing import Optional
+
+from posts.services import ReactionServices as PostReactionServices
+from users.models import User
+
+from .daos import ChatDao, MessageDao, ReactionDao
+from .models import Chat, Message
+from .types import (
+    CreateChatData,
+    CreateMessageData,
+    ToggleMessageReactionData,
+    UpdateMessageData,
+)
 
 
 class ChatServices:
@@ -126,3 +135,23 @@ class MessageServices:
             MessageDao.update_message(id=id, update_message_data=update_message_data)
         except Message.DoesNotExist:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
+
+
+class ReactionServices:
+    @staticmethod
+    def toggle_reaction_on_message(
+        reaction_data: ToggleMessageReactionData,
+    ) -> typing.Tuple[bool, str]:
+        MessageServices.get_message(id=reaction_data.message_id)
+        PostReactionServices._validate_user_exists(reaction_data.user_id)
+        PostReactionServices._validate_reaction_type(reaction_data.reaction_type)
+        return PostReactionServices._toggle_reaction(
+            reaction_data.reaction_type,
+            lambda: ReactionDao.get_reaction(
+                message_id=reaction_data.message_id,
+                user_id=reaction_data.user_id,
+                reaction_type=reaction_data.reaction_type,
+            ),
+            lambda: ReactionDao.create_reaction(reaction_data),
+            ReactionDao.delete_reaction,
+        )

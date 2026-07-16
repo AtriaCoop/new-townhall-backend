@@ -27,3 +27,10 @@ class UpdateMessageData:
     content: Optional[str] = None
     image_content: Optional[str] = None
     sent_at: Optional[datetime] = None
+
+
+@dataclass
+class ToggleMessageReactionData:
+    user_id: int
+    message_id: int
+    reaction_type: str
