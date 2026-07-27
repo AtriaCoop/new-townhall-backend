@@ -9,6 +9,7 @@ from .serializers import (
     MessageSerializer,
     CreateChatSerializer,
     OptionalMessageSerializer,
+    MessageStatusSerializer,
 )
 from posts.views import PostViewSet
 from .services import ChatServices, MessageServices, ReactionServices
@@ -549,6 +550,28 @@ class MessageViewSet(viewsets.ModelViewSet):
                 {"message": str(e), "success": False},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+    @action(detail=True, methods=["patch"])
+    def update_status(self, request, id):
+
+        message = MessageServices.get_message(id)
+
+        serializer = MessageStatusSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        update_data = UpdateMessageData(
+            id=message.id, status=serializer.validated_data["status"]
+        )
+
+        MessageServices.update_message(message.id, update_data)
+
+        return Response(
+            {
+                "success": True,
+                "message": "Message status updated successfully",
+            }
+        )
 
     @action(detail=True, methods=["patch"], url_path="reaction")
     def toggle_reaction_on_message(self, request, id):
