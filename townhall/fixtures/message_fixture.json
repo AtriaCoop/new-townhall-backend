@@ -5,7 +5,8 @@
         "fields": {
             "user": 1,
             "chat": 3,
-            "content": "Test message"
+            "content": "Test message",
+            "status": 1
         }
     }
 ]

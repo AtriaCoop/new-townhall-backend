@@ -132,3 +132,15 @@ class TestMessageEndpoint(TestCase):
             response.data["message"]
             == "['Message with the given id: 999999999, does not exist.']"
         )
+
+    def test_change_message_status(self):
+        # Arrange
+        url = "/chats/messages/3/status/"
+        updated_data = {"status": 3}  # change to read
+
+        # Act
+        response = self.client.patch(url, updated_data, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"]
+        assert response.data["message"] == "Message status updated successfully"
