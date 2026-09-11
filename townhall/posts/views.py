@@ -636,6 +636,48 @@ class CommentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    # LIKE A COMMENT
+    @action(detail=True, methods=["patch"], url_path="like")
+    def like_comment(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        try:
+            liked, likes = CommentServices.like_comment(pk, request.user.id)
+
+            if liked:
+                try:
+                    from notifications.services import NotificationServices
+                    from notifications.types import CreateNotificationData
+
+                    comment = CommentServices.get_comment(pk)
+                    NotificationServices.create_and_push(
+                        CreateNotificationData(
+                            recipient_id=comment.user_id,
+                            actor_id=request.user.id,
+                            notification_type="like",
+                            target_id=comment.post_id,
+                            detail=str(comment.id),
+                        )
+                    )
+                except Exception:
+                    pass
+
+            message = "Comment liked" if liked else "Comment unliked"
+            return Response(
+                {"message": message, "likes": likes},
+                status=status.HTTP_200_OK,
+            )
+
+        except ValidationError:
+            return Response(
+                {"error": "Comment not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
     # DELETE COMMENT (only by author)
     def destroy(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
