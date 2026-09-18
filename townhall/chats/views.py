@@ -241,6 +241,9 @@ class ChatViewSet(viewsets.ModelViewSet):
                             "message": content,
                             "sender": user.id,
                             "full_name": user.full_name,
+                            "timestamp": message.sent_at.isoformat(),
+                            "message_id": message.id,
+                            "status": message.status,
                             "profile_image": (
                                 user.profile_image.url if user.profile_image else None
                             ),
@@ -265,6 +268,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                             if message.user.profile_image
                             else None
                         ),
+                        "status": message.status,
                     },
                 }
             )
@@ -312,12 +316,31 @@ class ChatViewSet(viewsets.ModelViewSet):
     def mark_chat_read(self, request, id):
         try:
             chat = Chat.objects.get(id=id)
+
+            # Keep the existing unread-count functionality
             ChatReadStatus.objects.update_or_create(
                 user=request.user,
                 chat=chat,
                 defaults={"last_read_at": timezone.now()},
             )
-            return Response({"success": True})
+
+            # Mark messages from the other participant as READ
+            messages = Message.objects.filter(
+                chat=chat,
+                status=Message.Status.DELIVERED,
+            ).exclude(user=request.user)
+
+            message_ids = list(messages.values_list("id", flat=True))
+
+            messages.update(status=Message.Status.READ)
+
+            return Response(
+                {
+                    "success": True,
+                    "message_ids": message_ids,
+                }
+            )
+
         except Chat.DoesNotExist:
             return Response(
                 {"success": False, "error": "Chat not found"},
