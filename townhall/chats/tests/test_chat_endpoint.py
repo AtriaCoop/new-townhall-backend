@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.core.exceptions import ValidationError
 from rest_framework import status
 from rest_framework.test import APIClient
-from chats.models import Chat
+from chats.models import Chat, Message
 from users.models import User
 
 # Running all tests: python3 manage.py test
@@ -19,6 +19,7 @@ class TestChatEndpoint(TestCase):
 
         call_command("loaddata", "fixtures/chat_fixture.json", verbosity=0)
         call_command("loaddata", "fixtures/user_fixture.json", verbosity=0)
+        call_command("loaddata", "fixtures/message_fixture.json", verbosity=0)
 
         chat = Chat.objects.get(pk=3)
         bob = User.objects.get(pk=1)
@@ -188,3 +189,43 @@ class TestChatEndpoint(TestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert not response.data["success"]
         assert "at least two participants" in response.data["message"].lower()
+
+    def test_mark_chat_read_own_message(self):
+        chat_id = 3
+        message_id = 3  # user 1 (Bob) sent this message
+
+        url = f"/chats/{chat_id}/read/"
+
+        response = self.client.post(url, message_id, format="json")
+        message = Message.objects.get(id=message_id)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"]
+        assert (
+            message.status == Message.Status.DELIVERED
+        )  # should not change since its your message
+
+    def test_mark_chat_read_success(self):
+        chat_id = 3
+        message_id = 4
+
+        url = f"/chats/{chat_id}/read/"
+
+        response = self.client.post(url, message_id, format="json")
+        message = Message.objects.get(id=message_id)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"]
+        assert message.status == Message.Status.READ
+
+    def test_mark_chat_read_fail_no_chat(self):
+        chat_id = 9999  # assume this does not exist
+        message_id = -1
+
+        url = f"/chats/{chat_id}/read/"
+
+        response = self.client.post(url, message_id, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not response.data["success"]
+        assert response.data["error"] == "Chat not found"
