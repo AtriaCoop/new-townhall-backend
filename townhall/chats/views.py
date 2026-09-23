@@ -4,6 +4,7 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
+from users.models import User
 from .serializers import (
     ChatSerializer,
     MessageSerializer,
@@ -23,6 +24,9 @@ from django.utils import timezone
 from .models import Chat, Message, GroupMessage, ChatReadStatus
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from django.conf import settings
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -249,6 +253,27 @@ class ChatViewSet(viewsets.ModelViewSet):
                             ),
                         },
                     )
+
+                for pid in participant_ids:
+                    if pid == user.id:
+                        continue
+                    recipient = User.objects.get(id=pid)
+
+                    if recipient.enable_notifications:
+                        email = Mail(
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to_emails=recipient.email,
+                            subject=f"New message from {user.full_name}",
+                            plain_text_content=(
+                                f"Hi {recipient.full_name},\n\n"
+                                f"{user.full_name} sent you a new message:\n\n"
+                                f"{message.content}\n\n"
+                                f"Log in to Townhall to reply."
+                            ),
+                        )
+
+                        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+                        sg.send(email)
 
             return Response(
                 {

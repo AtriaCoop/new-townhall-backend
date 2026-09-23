@@ -45,6 +45,7 @@ class UserSerializer(serializers.ModelSerializer):
             "show_email",
             "show_in_directory",
             "allow_dms",
+            "enable_notifications",
             "is_staff",
             "email_verified",
             "linkedin_url",
@@ -122,6 +123,7 @@ class UpdateUserSerializer(serializers.Serializer):
     show_email = OptionalBooleanField(required=False)
     show_in_directory = OptionalBooleanField(required=False)
     allow_dms = OptionalBooleanField(required=False)
+    enable_notifications = OptionalBooleanField(required=False)
     profile_image = serializers.ImageField(required=False, allow_null=True)
     profile_header = serializers.ImageField(required=False, allow_null=True)
     remove_profile_header = OptionalBooleanField(required=False)
