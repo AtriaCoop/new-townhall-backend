@@ -65,6 +65,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "image_content",
             "sent_at",
             "reactions",
+            "status",
         ]
         read_only_fields = ["id", "reactions"]
 
