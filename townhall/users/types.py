@@ -28,6 +28,7 @@ class UpdateUserData:
     show_email: Optional[bool] = None
     show_in_directory: Optional[bool] = None
     allow_dms: Optional[bool] = None
+    enable_notifications: Optional[bool] = None
     tags: Optional[List[str]] = None
     linkedin_url: Optional[str] = None
     facebook_url: Optional[str] = None

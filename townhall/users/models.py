@@ -56,6 +56,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     show_email = models.BooleanField(default=True)
     show_in_directory = models.BooleanField(default=True)
     allow_dms = models.BooleanField(default=True)
+    enable_notifications = models.BooleanField(default=False)
     linkedin_url = models.URLField(max_length=255, null=True, blank=True)
     facebook_url = models.URLField(max_length=255, null=True, blank=True)
     x_url = models.URLField(max_length=255, null=True, blank=True)
