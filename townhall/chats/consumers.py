@@ -63,6 +63,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "organization": event["organization"],
                     "profile_image": event["profile_image"],
                     "timestamp": event.get("timestamp", ""),
+                    "status": event.get("status"),
+                }
+            )
+        )
+
+    async def message_status(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "message_status",
+                    "message_id": event["message_id"],
+                    "status": event["status"],
                 }
             )
         )

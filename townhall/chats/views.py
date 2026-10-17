@@ -589,6 +589,17 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         MessageServices.update_message(message.id, update_data)
 
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            f"chat_{message.chat_id}",
+            {
+                "type": "message_status",
+                "message_id": message.id,
+                "status": serializer.validated_data["status"],
+            },
+        )
+
         return Response(
             {
                 "success": True,
