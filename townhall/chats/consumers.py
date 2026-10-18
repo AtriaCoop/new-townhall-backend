@@ -27,6 +27,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data["message"]
         sender = data["sender"]
         message_id = data.get("id")
+        status = data.get("status")
 
         user = await sync_to_async(User.objects.get)(id=sender)
 
@@ -44,6 +45,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     user.profile_image.url if user.profile_image else None
                 ),
                 "timestamp": str(timezone.now()),
+                "status": status,
             },
         )
 
