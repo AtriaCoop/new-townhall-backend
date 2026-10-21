@@ -1,6 +1,9 @@
 import re
 import typing
 
+import requests
+from django.conf import settings
+
 from django.db.models import Count
 from django.forms import ValidationError
 from django.db import IntegrityError
@@ -12,6 +15,8 @@ from .types import (
     UpdateCommentData,
     ReportedPostData,
     ToggleReactionData,
+    GifProviderError,
+    GifProviderNotConfigured,
 )
 
 
@@ -201,3 +206,65 @@ class ReactionDao:
     @staticmethod
     def delete_reaction(reaction: Reaction) -> None:
         reaction.delete()
+
+
+class GifDao:
+    """Fetches GIFs from GIPHY and converts them to our small Gif dict."""
+
+    BASE_URL = "https://api.giphy.com/v1/gifs"
+    RATING = "pg"
+    TIMEOUT_SECONDS = 5
+
+    @staticmethod
+    def search(query: str, limit: int) -> list[dict]:
+        return GifDao._fetch("search", {"q": query, "limit": limit})
+
+    @staticmethod
+    def trending(limit: int) -> list[dict]:
+        return GifDao._fetch("trending", {"limit": limit})
+
+    @staticmethod
+    def normalize_giphy_item(item: dict) -> dict | None:
+        """Turn one GIPHY result into a Gif dict, or None if fields are missing."""
+        try:
+            images = item["images"]
+            original = images["original"]
+            gif = {
+                "provider": "giphy",
+                "id": item["id"],
+                "title": item.get("title") or "",
+                "video_url": original["mp4"],
+                "preview_url": images["fixed_width"]["mp4"],
+                "still_url": images["original_still"]["url"],
+                "width": int(original["width"]),
+                "height": int(original["height"]),
+            }
+        except (KeyError, TypeError, ValueError):
+            return None
+        if not all(gif[k] for k in ("id", "video_url", "preview_url", "still_url")):
+            return None
+        return gif
+
+    @staticmethod
+    def _fetch(endpoint: str, params: dict) -> list[dict]:
+        api_key = getattr(settings, "GIPHY_API_KEY", None)
+        if not api_key:
+            raise GifProviderNotConfigured()
+
+        try:
+            response = requests.get(
+                f"{GifDao.BASE_URL}/{endpoint}",
+                params={"api_key": api_key, **params, "rating": GifDao.RATING},
+                timeout=GifDao.TIMEOUT_SECONDS,
+            )
+            if not response.ok:
+                raise GifProviderError(f"GIPHY returned {response.status_code}")
+            items = response.json().get("data")
+        except (requests.RequestException, ValueError) as e:
+            raise GifProviderError(str(e)) from e
+
+        if not isinstance(items, list):
+            raise GifProviderError("GIPHY response has no data list")
+
+        gifs = (GifDao.normalize_giphy_item(item) for item in items)
+        return [gif for gif in gifs if gif is not None]

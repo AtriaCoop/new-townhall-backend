@@ -215,6 +215,9 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@townhall.app")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
+# GIF search (GIPHY). Server-side only: never expose this key to the frontend.
+GIPHY_API_KEY = os.getenv("GIPHY_API_KEY")
+
 # File Upload Security
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB

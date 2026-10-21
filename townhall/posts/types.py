@@ -50,3 +50,11 @@ class ToggleReactionData:
     user_id: int
     post_id: int
     reaction_type: str
+
+
+class GifProviderError(Exception):
+    """The GIF provider (GIPHY) failed, timed out, or sent back something unusable."""
+
+
+class GifProviderNotConfigured(GifProviderError):
+    """No GIF provider API key is set on the server."""

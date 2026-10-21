@@ -12,7 +12,14 @@ from .types import (
     UpdateCommentData,
     ToggleReactionData,
 )
-from .daos import PostDao, PostImageDao, CommentDao, ReportedPostDao, ReactionDao
+from .daos import (
+    PostDao,
+    PostImageDao,
+    CommentDao,
+    ReportedPostDao,
+    ReactionDao,
+    GifDao,
+)
 from users.models import User
 from .profanity import _CENSOR_RE
 
@@ -273,3 +280,16 @@ class ReactionServices:
         ReactionServices._validate_user_exists(reaction_data.user_id)
         ReactionServices._validate_reaction_type(reaction_data.reaction_type)
         return ReactionServices._toggle_post_reaction(reaction_data)
+
+
+class GifServices:
+    PAGE_SIZE = 30
+
+    @staticmethod
+    def search_gifs(query: str) -> list[dict]:
+        # The view has already checked that the query is non-empty and short enough.
+        return GifDao.search(query, GifServices.PAGE_SIZE)
+
+    @staticmethod
+    def trending_gifs() -> list[dict]:
+        return GifDao.trending(GifServices.PAGE_SIZE)

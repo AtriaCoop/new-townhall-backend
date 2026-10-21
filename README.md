@@ -112,6 +112,9 @@ It'll ask for a username, password, and email, you use what you'd like, but its 
 Make sure that the following variable is in your .env file before running backend locally
 - `DEBUG = True`
 
+Optional, for GIF search in posts (free key from https://developers.giphy.com). Without it, the GIF picker shows an error but everything else works:
+- `GIPHY_API_KEY = <your key>`
+
 
 To Run backend locally:
 - `python3 manage.py runserver`

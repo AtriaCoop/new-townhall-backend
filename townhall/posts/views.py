@@ -17,6 +17,8 @@ from .types import (
     ReportedPostData,
     UpdateCommentData,
     ToggleReactionData,
+    GifProviderError,
+    GifProviderNotConfigured,
 )
 from .serializers import (
     PostSerializer,
@@ -30,12 +32,15 @@ from .services import (
     CommentServices,
     ReportedPostServices,
     ReactionServices,
+    GifServices,
 )
 
 logger = logging.getLogger(__name__)
 
 _MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB — matches Cloudinary free plan limit
 _MAX_IMAGES_PER_POST = 10
+_MAX_GIF_QUERY_LENGTH = 50
+_GIF_UNAVAILABLE = "GIF search is unavailable right now."
 
 
 def _validate_images(images: list) -> str | None:
@@ -664,3 +669,55 @@ class CommentViewSet(viewsets.ModelViewSet):
             {"message": "Comment deleted"},
             status=status.HTTP_204_NO_CONTENT,
         )
+
+
+class GifViewSet(viewsets.ViewSet):
+    """Search proxy so the GIPHY API key never reaches the browser."""
+
+    def trending(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        return self._gif_response(GifServices.trending_gifs)
+
+    def search(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        query = request.query_params.get("q", "").strip()
+        if not query:
+            return Response(
+                {"error": "Search text is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(query) > _MAX_GIF_QUERY_LENGTH:
+            return Response(
+                {"error": "Search text is too long."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return self._gif_response(lambda: GifServices.search_gifs(query))
+
+    @staticmethod
+    def _gif_response(fetch_gifs) -> Response:
+        # GifProviderNotConfigured is a subclass of GifProviderError,
+        # so it must be caught first.
+        try:
+            return Response({"gifs": fetch_gifs()}, status=status.HTTP_200_OK)
+        except GifProviderNotConfigured:
+            logger.error("GIF search called but GIPHY_API_KEY is not set")
+            return Response(
+                {"error": _GIF_UNAVAILABLE},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except GifProviderError as e:
+            logger.warning("GIF provider failed: %s", e)
+            return Response(
+                {"error": _GIF_UNAVAILABLE},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from posts.views import PostViewSet, CommentViewSet
+from posts.views import PostViewSet, CommentViewSet, GifViewSet
 
 
 urlpatterns = [
@@ -61,5 +61,15 @@ urlpatterns = [
         "post/<int:pk>/images/<int:image_id>/",
         PostViewSet.as_view({"delete": "delete_post_image"}),
         name="post_delete_image",
+    ),
+    path(
+        "gifs/trending/",
+        GifViewSet.as_view({"get": "trending"}),
+        name="gifs_trending",
+    ),
+    path(
+        "gifs/search/",
+        GifViewSet.as_view({"get": "search"}),
+        name="gifs_search",
     ),
 ]
