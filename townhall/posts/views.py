@@ -1,4 +1,7 @@
+import json
 import logging
+import re
+from urllib.parse import urlparse
 
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
@@ -41,6 +44,11 @@ _MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB — matches Cloudinary free pl
 _MAX_IMAGES_PER_POST = 10
 _MAX_GIF_QUERY_LENGTH = 50
 _GIF_UNAVAILABLE = "GIF search is unavailable right now."
+_INVALID_GIF = "Invalid GIF."
+_GIF_HOST_RE = re.compile(r"(media\d?|i)\.giphy\.com")
+_GIF_URL_KEYS = ("video_url", "preview_url", "still_url")
+_MAX_GIF_DIMENSION = 4096
+_MAX_GIF_TITLE_LENGTH = 200
 
 
 def _validate_images(images: list) -> str | None:
@@ -56,6 +64,56 @@ def _validate_images(images: list) -> str | None:
         if f.size > _MAX_IMAGE_SIZE_BYTES:
             return f"'{f.name}' exceeds the 10 MB size limit."
     return None
+
+
+def _is_giphy_url(value) -> bool:
+    if not isinstance(value, str):
+        return False
+    url = urlparse(value)
+    return url.scheme == "https" and bool(_GIF_HOST_RE.fullmatch(url.hostname or ""))
+
+
+def _is_gif_dimension(value) -> bool:
+    # bool is a subclass of int in Python, so rule it out explicitly.
+    return (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and 1 <= value <= _MAX_GIF_DIMENSION
+    )
+
+
+def _validate_gif(raw) -> tuple[dict | None, str | None]:
+    # The GIF comes from the browser, so treat it as untrusted: accept only
+    # https GIPHY media URLs and rebuild the dict from known keys only.
+    # Returns (clean_gif, None) or (None, error message).
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            return None, _INVALID_GIF
+    if not isinstance(raw, dict):
+        return None, _INVALID_GIF
+
+    gif_id = raw.get("id")
+    if not isinstance(gif_id, str) or not gif_id:
+        return None, _INVALID_GIF
+    if not all(_is_giphy_url(raw.get(key)) for key in _GIF_URL_KEYS):
+        return None, _INVALID_GIF
+    if not (
+        _is_gif_dimension(raw.get("width")) and _is_gif_dimension(raw.get("height"))
+    ):
+        return None, _INVALID_GIF
+
+    gif = {
+        "provider": "giphy",
+        "id": gif_id,
+        "title": str(raw.get("title") or "")[:_MAX_GIF_TITLE_LENGTH],
+        "width": raw["width"],
+        "height": raw["height"],
+    }
+    for key in _GIF_URL_KEYS:
+        gif[key] = raw[key]
+    return gif, None
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -153,6 +211,15 @@ class PostViewSet(viewsets.ModelViewSet):
         if image_error:
             return Response({"error": image_error}, status=status.HTTP_400_BAD_REQUEST)
 
+        gif = None
+        raw_gif = request.data.get("gif")
+        if raw_gif:
+            gif, gif_error = _validate_gif(raw_gif)
+            if gif_error:
+                return Response(
+                    {"error": gif_error}, status=status.HTTP_400_BAD_REQUEST
+                )
+
         create_post_data = CreatePostData(
             user_id=request.user.id,
             content=validated_data["content"],
@@ -161,6 +228,7 @@ class PostViewSet(viewsets.ModelViewSet):
             pinned=validated_data.get("pinned", False),
             tags=tag_names if tag_names else None,
             anonymous=validated_data.get("anonymous", False),
+            gif=gif,
         )
 
         try:
@@ -218,6 +286,14 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # Staff may remove a GIF from any post (moderation); others only their own.
+        remove_gif = request.data.get("remove_gif") in ("true", True)
+        if remove_gif and post.user_id != user.id and not user.is_staff:
+            return Response(
+                {"message": "Permission denied"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         tag_names = request.data.getlist("tags")
 
         update_post_data = UpdatePostData(
@@ -225,6 +301,7 @@ class PostViewSet(viewsets.ModelViewSet):
             pinned=serializer.validated_data.get("pinned", None),
             tags=tag_names if tag_names else None,
             user_id=user.id,
+            remove_gif=remove_gif,
         )
 
         try:

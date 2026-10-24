@@ -16,6 +16,8 @@ class Post(models.Model):
     pinned = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tag, blank=True, related_name="posts")
     anonymous = models.BooleanField(default=False)
+    # One GIPHY GIF, stored as the small Gif dict checked by views._validate_gif.
+    gif = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return str(self.id)

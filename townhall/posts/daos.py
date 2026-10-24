@@ -55,6 +55,7 @@ class PostDao:
             created_at=post_data.created_at,
             pinned=post_data.pinned,
             anonymous=post_data.anonymous,
+            gif=post_data.gif,
         )
 
         tag_objects = PostDao._create_tag_objects(post_data.tags)
@@ -73,6 +74,8 @@ class PostDao:
             post.content = post_data.content
         if post_data.pinned is not None:
             post.pinned = post_data.pinned
+        if post_data.remove_gif:
+            post.gif = None
 
         tag_objects = PostDao._create_tag_objects(post_data.tags)
         post.tags.set(tag_objects)

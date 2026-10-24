@@ -13,6 +13,7 @@ class CreatePostData:
     pinned: bool = False
     tags: Optional[List[str]] = None
     anonymous: bool = False
+    gif: Optional[dict] = None
 
 
 @dataclass
@@ -22,6 +23,7 @@ class UpdatePostData:
     # Images omitted — use add_post_images() / delete_post_image() endpoints.
     pinned: Optional[bool] = None
     tags: Optional[List[str]] = None
+    remove_gif: bool = False
 
 
 @dataclass

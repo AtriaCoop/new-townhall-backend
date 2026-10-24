@@ -90,6 +90,7 @@ class PostSerializer(serializers.ModelSerializer):
             "tags",
             "reactions",
             "anonymous",
+            "gif",
         ]
         read_only_fields = [
             "id",
@@ -101,6 +102,7 @@ class PostSerializer(serializers.ModelSerializer):
             "reactions",
             "tags",
             "images",
+            "gif",
         ]
 
     def get_images(self, obj):
