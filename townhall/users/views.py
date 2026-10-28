@@ -798,9 +798,8 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=["post"],
         url_path="user",
         throttle_classes=[SignupThrottle],
-        permission_classes=[AllowAny]
+        permission_classes=[AllowAny],
     )
-
     def create_user(self, request):
         serializer = CreateUserSerializer(data=request.data)
 
@@ -846,7 +845,12 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
     # COMPLETE USER INFORMATION (SETUP)
-    @action(detail=True, methods=["post"], url_path="complete_profile", permission_classes=[IsAuthenticated])
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="complete_profile",
+        permission_classes=[IsAuthenticated],
+    )
     def complete_profile(self, request, pk=None):
         try:
             user = User.objects.get(id=pk)
@@ -875,7 +879,12 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
     # GET a User
-    @action(detail=True, methods=["get"], url_path="user", permission_classes=[IsAuthenticated])
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="user",
+        permission_classes=[IsAuthenticated],
+    )
     def get_user(self, request, user_id):
         uid = user_id
 
@@ -900,7 +909,12 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
     # GET ALL USERS
-    @action(detail=False, methods=["get"], url_path="user", permission_classes=[IsAuthenticated])
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="user",
+        permission_classes=[IsAuthenticated],
+    )
     def get_user_all(self, request):
 
         serializer = UpdateUserSerializer(data=request.query_params)
@@ -1045,7 +1059,12 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
     # SEARCH USERS TO MENTION
-    @action(detail=False, methods=["get"], url_path="mention", permission_classes=[IsAuthenticated])
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="mention",
+        permission_classes=[IsAuthenticated],
+    )
     def mention_user(self, request):
 
         query = request.query_params.get("query", "")
