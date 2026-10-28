@@ -114,6 +114,8 @@ class MessageDao:
             message.image_content = update_message_data.image_content
         if update_message_data.sent_at:
             message.sent_at = update_message_data.sent_at
+        if update_message_data.isEdited:
+            message.isEdited = update_message_data.isEdited
 
         message.save()
 

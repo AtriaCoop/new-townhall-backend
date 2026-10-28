@@ -66,6 +66,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "sent_at",
             "reactions",
             "status",
+            "isEdited",
         ]
         read_only_fields = ["id", "reactions"]
 
@@ -102,6 +103,7 @@ class OptionalMessageSerializer(serializers.ModelSerializer):
             "image_content",
             "sent_at",
             "status",
+            "isEdited",
         ]
         read_only_fields = ["id"]
 
