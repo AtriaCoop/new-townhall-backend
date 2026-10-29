@@ -6,7 +6,8 @@
             "user": 1,
             "chat": 3,
             "content": "Test message",
-            "status": 2
+            "status": 2,
+            "isEdited": false
         }
     },
     {
@@ -16,7 +17,8 @@
             "user": 2,
             "chat": 3,
             "content": "Another test",
-            "status": 2
+            "status": 2,
+            "isEdited": false
         }
     }
 ]

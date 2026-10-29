@@ -116,10 +116,11 @@ class TestMessageService(TestCase):
         assert message_before_update.user_id == 1
         assert message_before_update.chat_id == 3
         assert message_before_update.content == "Test message"
+        assert not message_before_update.isEdited
 
         # Create data for updating
         update_message_data = UpdateMessageData(
-            id=3, user_id=4, chat_id=21, content="Updated message"
+            id=3, user_id=4, chat_id=21, content="Updated message", isEdited=True
         )
 
         # Update the message
@@ -131,6 +132,63 @@ class TestMessageService(TestCase):
         assert updated_message.user_id == 4
         assert updated_message.chat_id == 21
         assert updated_message.content == "Updated message"
+        assert updated_message.isEdited
+
+    def test_update_same_message_success(self):
+        # Check message before update
+        message_before_update = MessageServices.get_message(id=3)
+        assert message_before_update.user_id == 1
+        assert message_before_update.chat_id == 3
+        assert message_before_update.content == "Test message"
+        assert not message_before_update.isEdited
+
+        # Create data for updating
+        update_message_data = UpdateMessageData(
+            id=3, user_id=1, chat_id=3, content="Test message", isEdited=False
+        )
+
+        # Update the message
+        MessageServices.update_message(id=3, update_message_data=update_message_data)
+
+        # Get the updated message and assert
+        updated_message = MessageServices.get_message(id=3)
+
+        assert updated_message.user_id == 1
+        assert updated_message.chat_id == 3
+        assert updated_message.content == "Test message"
+        assert not updated_message.isEdited
+
+    def test_update_message_after_update_success(self):
+        # Check message before update
+        message_before_update = MessageServices.get_message(id=3)
+        assert message_before_update.user_id == 1
+        assert message_before_update.chat_id == 3
+        assert message_before_update.content == "Test message"
+        assert not message_before_update.isEdited
+
+        # Create data for updating
+        update_message_data = UpdateMessageData(
+            id=3, user_id=4, chat_id=21, content="Updated message", isEdited=True
+        )
+
+        # Update the message
+        MessageServices.update_message(id=3, update_message_data=update_message_data)
+
+        # Create data for updating again
+        update_message_data_again = UpdateMessageData(
+            id=3, user_id=2, chat_id=22, content="Updated message again", isEdited=True
+        )
+
+        MessageServices.update_message(
+            id=3, update_message_data=update_message_data_again
+        )
+
+        # Get the updated message and assert
+        updated_message = MessageServices.get_message(id=3)
+        assert updated_message.user_id == 2
+        assert updated_message.chat_id == 22
+        assert updated_message.content == "Updated message again"
+        assert updated_message.isEdited
 
     @patch("chats.daos.MessageDao.update_message")
     def test_update_message_failed_not_found(self, mock_update_data):
