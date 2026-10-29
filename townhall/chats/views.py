@@ -559,10 +559,14 @@ class MessageViewSet(viewsets.ModelViewSet):
         )
 
         try:
-            MessageServices.update_message(message_id, update_message_data)
+            isEdited = MessageServices.update_message(message_id, update_message_data)
 
             return Response(
-                {"message": "Message updated successfully", "success": True},
+                {
+                    "message": "Message updated successfully",
+                    "success": True,
+                    "isEdited": isEdited,
+                },
                 status=status.HTTP_200_OK,
             )
 

@@ -134,7 +134,7 @@ class TestMessageService(TestCase):
         assert updated_message.content == "Updated message"
         assert updated_message.isEdited
 
-    def test_update_same_message_success(self):
+    def test_update_message_unchanged_content_success(self):
         # Check message before update
         message_before_update = MessageServices.get_message(id=3)
         assert message_before_update.user_id == 1
@@ -158,7 +158,7 @@ class TestMessageService(TestCase):
         assert updated_message.content == "Test message"
         assert not updated_message.isEdited
 
-    def test_update_message_after_update_success(self):
+    def test_update_message_after_previous_update_success(self):
         # Check message before update
         message_before_update = MessageServices.get_message(id=3)
         assert message_before_update.user_id == 1

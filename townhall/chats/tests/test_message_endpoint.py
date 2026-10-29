@@ -114,6 +114,46 @@ class TestMessageEndpoint(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
         assert response.data["message"] == "Message updated successfully"
+        assert response.data["isEdited"]
+
+    def test_update_message_unchanged_content_success(self):
+        # Arrange
+        url = "/chats/messages/3/"
+        updated_data = {
+            "content": "Test message",
+        }
+
+        # Act
+        response = self.client.patch(url, updated_data, format="json")
+
+        # Assert
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"]
+        assert response.data["message"] == "Message updated successfully"
+        assert not response.data["isEdited"]
+
+    def test_update_message_after_previous_update_success(self):
+        # Arrange
+        url = "/chats/messages/3/"
+        updated_data = {
+            "content": "updated message",
+        }
+
+        # Act
+        self.client.patch(url, updated_data, format="json")
+
+        url = "/chats/messages/3/"
+        updated_data = {
+            "content": "new updated message",
+        }
+
+        response = self.client.patch(url, updated_data, format="json")
+
+        # Assert
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"]
+        assert response.data["message"] == "Message updated successfully"
+        assert response.data["isEdited"]
 
     def test_update_message_fail_does_not_exist(self):
         # Arrange

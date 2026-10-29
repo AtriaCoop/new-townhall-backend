@@ -90,6 +90,7 @@ class OptionalMessageSerializer(serializers.ModelSerializer):
     content = serializers.CharField(required=False)
     image_content = serializers.ImageField(required=False, allow_null=True)
     sent_at = serializers.DateTimeField(required=False)
+    isEdited = serializers.BooleanField(required=False)
 
     class Meta:
         model = Message

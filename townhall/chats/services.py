@@ -130,15 +130,21 @@ class MessageServices:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
 
     @staticmethod
-    def update_message(id: int, update_message_data: UpdateMessageData) -> None:
+    def update_message(id: int, update_message_data: UpdateMessageData) -> bool:
         try:
             original_message = Message.objects.get(id=id)
 
             # If the content changed, mark the message as edited
             if original_message.content != update_message_data.content:
                 update_message_data.isEdited = True
+            else:
+                update_message_data.isEdited = original_message.isEdited
 
-            MessageDao.update_message(id=id, update_message_data=update_message_data)
+            isEdited = MessageDao.update_message(
+                id=id, update_message_data=update_message_data
+            )
+
+            return isEdited
 
         except Message.DoesNotExist:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
