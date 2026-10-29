@@ -555,17 +555,17 @@ class MessageViewSet(viewsets.ModelViewSet):
             content=validated_data.get("content"),
             image_content=validated_data.get("image_content"),
             sent_at=validated_data.get("sent_at"),
-            isEdited=validated_data.get("isEdited"),
+            is_edited=validated_data.get("is_edited"),
         )
 
         try:
-            isEdited = MessageServices.update_message(message_id, update_message_data)
+            is_edited = MessageServices.update_message(message_id, update_message_data)
 
             return Response(
                 {
                     "message": "Message updated successfully",
                     "success": True,
-                    "isEdited": isEdited,
+                    "is_edited": is_edited,
                 },
                 status=status.HTTP_200_OK,
             )

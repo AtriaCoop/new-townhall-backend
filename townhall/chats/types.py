@@ -28,7 +28,7 @@ class UpdateMessageData:
     image_content: Optional[str] = None
     sent_at: Optional[datetime] = None
     status: Optional[int] = None
-    isEdited: Optional[bool] = None
+    is_edited: Optional[bool] = None
 
 
 @dataclass

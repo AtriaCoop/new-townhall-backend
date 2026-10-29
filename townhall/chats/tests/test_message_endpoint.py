@@ -114,7 +114,7 @@ class TestMessageEndpoint(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
         assert response.data["message"] == "Message updated successfully"
-        assert response.data["isEdited"]
+        assert response.data["is_edited"]
 
     def test_update_message_unchanged_content_success(self):
         # Arrange
@@ -130,7 +130,7 @@ class TestMessageEndpoint(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
         assert response.data["message"] == "Message updated successfully"
-        assert not response.data["isEdited"]
+        assert not response.data["is_edited"]
 
     def test_update_message_after_previous_update_success(self):
         # Arrange
@@ -140,20 +140,27 @@ class TestMessageEndpoint(TestCase):
         }
 
         # Act
-        self.client.patch(url, updated_data, format="json")
-
-        url = "/chats/messages/3/"
-        updated_data = {
-            "content": "new updated message",
-        }
-
         response = self.client.patch(url, updated_data, format="json")
 
         # Assert
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
         assert response.data["message"] == "Message updated successfully"
-        assert response.data["isEdited"]
+        assert response.data["is_edited"]
+
+        # Arrange again
+        url = "/chats/messages/3/"
+        updated_data_again = {
+            "content": "updated message again",
+        }
+
+        response_again = self.client.patch(url, updated_data_again, format="json")
+
+        # Assert
+        assert response_again.status_code == status.HTTP_200_OK
+        assert response_again.data["success"]
+        assert response_again.data["message"] == "Message updated successfully"
+        assert response_again.data["is_edited"]
 
     def test_update_message_fail_does_not_exist(self):
         # Arrange

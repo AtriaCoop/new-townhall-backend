@@ -114,12 +114,12 @@ class MessageDao:
             message.image_content = update_message_data.image_content
         if update_message_data.sent_at:
             message.sent_at = update_message_data.sent_at
-        if update_message_data.isEdited:
-            message.isEdited = update_message_data.isEdited
+        if update_message_data.is_edited:
+            message.is_edited = update_message_data.is_edited
 
         message.save()
 
-        return message.isEdited
+        return message.is_edited
 
 
 class ReactionDao:

@@ -7,7 +7,7 @@
             "chat": 3,
             "content": "Test message",
             "status": 2,
-            "isEdited": false
+            "is_edited": false
         }
     },
     {
@@ -18,7 +18,7 @@
             "chat": 3,
             "content": "Another test",
             "status": 2,
-            "isEdited": false
+            "is_edited": false
         }
     }
 ]
