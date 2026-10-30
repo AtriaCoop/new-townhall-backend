@@ -101,7 +101,7 @@ class MessageDao:
         Message.objects.get(id=id).delete()
 
     @staticmethod
-    def update_message(id: int, update_message_data: UpdateMessageData) -> None:
+    def update_message(id: int, update_message_data: UpdateMessageData) -> bool:
         message = Message.objects.get(id=id)
 
         if update_message_data.user_id:
@@ -114,8 +114,12 @@ class MessageDao:
             message.image_content = update_message_data.image_content
         if update_message_data.sent_at:
             message.sent_at = update_message_data.sent_at
+        if update_message_data.is_edited:
+            message.is_edited = update_message_data.is_edited
 
         message.save()
+
+        return message.is_edited
 
 
 class ReactionDao:
