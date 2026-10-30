@@ -132,7 +132,7 @@ class MessageServices:
     @staticmethod
     def update_message(id: int, update_message_data: UpdateMessageData) -> bool:
         try:
-            original_message = Message.objects.get(id=id)
+            original_message = MessageDao.get_message(id=id)
 
             # If the content changed, mark the message as edited
             if original_message.content != update_message_data.content:
