@@ -532,6 +532,12 @@ class MessageViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["patch"], url_path="messages")
     @permission_classes([IsAuthenticated])
     def update_message_request(self, request, id):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
         message_id = id
 
         # Use a serializer to check if the data is valid
