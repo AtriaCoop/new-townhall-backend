@@ -140,9 +140,8 @@ class MessageServices:
             else:
                 update_message_data.is_edited = original_message.is_edited
 
-            is_edited = MessageDao.update_message(
-                id=id, update_message_data=update_message_data
-            )
+            MessageDao.update_message(id=id, update_message_data=update_message_data)
+            is_edited = MessageDao.get_message_is_edited(id=id)
 
             return is_edited
 
