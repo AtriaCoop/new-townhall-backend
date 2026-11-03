@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from posts.models import Comment
 from posts.types import UpdateCommentData
 from posts.services import CommentServices
+from users.models import User
 
 # Running all tests: python3 manage.py test
 # Running only post tests: python3 manage.py test posts.tests
@@ -57,3 +58,34 @@ class TestCommentService(TestCase):
 
         # DB stores RAW content
         self.assertEqual(Comment.objects.get(pk=1).content, "hell")
+
+    def test_like_comment_success(self):
+        comment = Comment.objects.get(pk=1)
+        other_user = User.objects.get(pk=2)
+
+        liked, likes = CommentServices.like_comment(comment.id, other_user.id)
+
+        self.assertTrue(liked)
+        self.assertEqual(likes, 1)
+        comment.refresh_from_db()
+        self.assertEqual(comment.likes, 1)
+        self.assertTrue(comment.liked_by.filter(pk=other_user.pk).exists())
+
+    def test_unlike_comment_success(self):
+        comment = Comment.objects.get(pk=1)
+        other_user = User.objects.get(pk=2)
+        comment.liked_by.add(other_user)
+        comment.likes = 1
+        comment.save()
+
+        liked, likes = CommentServices.like_comment(comment.id, other_user.id)
+
+        self.assertFalse(liked)
+        self.assertEqual(likes, 0)
+        comment.refresh_from_db()
+        self.assertEqual(comment.likes, 0)
+        self.assertFalse(comment.liked_by.filter(pk=other_user.pk).exists())
+
+    def test_like_comment_not_found(self):
+        with self.assertRaises(ValidationError):
+            CommentServices.like_comment(9999, User.objects.get(pk=2).id)

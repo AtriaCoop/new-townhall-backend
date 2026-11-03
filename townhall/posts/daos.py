@@ -1,7 +1,7 @@
 import re
 import typing
 
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from django.forms import ValidationError
 from django.db import IntegrityError
 from .models import Post, PostImage, Comment, ReportedPost, Reaction, Tag
@@ -17,17 +17,24 @@ from .types import (
 
 class PostDao:
 
+    _COMMENT_PREFETCH = Prefetch(
+        "comment_set",
+        queryset=Comment.objects.prefetch_related("liked_by"),
+    )
+
     def get_post(id: int) -> typing.Optional[Post]:
-        return Post.objects.prefetch_related("tags", "images").get(id=id)
+        return Post.objects.prefetch_related(
+            "tags", "images", PostDao._COMMENT_PREFETCH
+        ).get(id=id)
 
     def get_all_posts(
         offset: int, limit: int, tag_names: list[str] | None = None
     ) -> tuple[typing.List[Post], int]:
         """Return recent posts paginated with total count,
         optionally filtered by tags."""
-        qs = Post.objects.prefetch_related("tags", "images").order_by(
-            "-pinned", "-created_at"
-        )
+        qs = Post.objects.prefetch_related(
+            "tags", "images", PostDao._COMMENT_PREFETCH
+        ).order_by("-pinned", "-created_at")
         if tag_names:
             qs = qs.filter(tags__name__in=tag_names).distinct()
         total_count = qs.count()
@@ -148,6 +155,24 @@ class CommentDao:
 
         comment.save()
         return comment
+
+    def toggle_like(id: int, user_id: int) -> typing.Tuple[bool, Comment]:
+        try:
+            comment = Comment.objects.get(id=id)
+        except Comment.DoesNotExist:
+            msg = f"Comment with ID {id} does not exist."
+            raise ValidationError(msg)
+
+        if comment.liked_by.filter(pk=user_id).exists():
+            comment.liked_by.remove(user_id)
+            comment.likes -= 1
+            comment.save()
+            return False, comment
+
+        comment.liked_by.add(user_id)
+        comment.likes += 1
+        comment.save()
+        return True, comment
 
 
 class ReportedPostDao:

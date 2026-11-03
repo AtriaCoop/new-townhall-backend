@@ -41,10 +41,21 @@ class CommentUserMiniSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     content = serializers.SerializerMethodField()
+    liked_by = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ["id", "user", "post", "content", "created_at", "anonymous"]
+        fields = [
+            "id",
+            "user",
+            "post",
+            "content",
+            "created_at",
+            "likes",
+            "liked_by",
+            "anonymous",
+        ]
+        read_only_fields = ["id", "created_at", "likes", "liked_by", "user"]
 
     def get_user(self, obj):
         request = self.context.get("request")
@@ -58,6 +69,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_content(self, obj):
         return censor_text(obj.content)
+
+    def get_liked_by(self, obj):
+        if not obj.pk:
+            return []
+
+        return UserMiniSerializer(obj.liked_by.all(), many=True).data
 
 
 class PostSerializer(serializers.ModelSerializer):
