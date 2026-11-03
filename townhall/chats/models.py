@@ -30,6 +30,7 @@ class Message(models.Model):
     image_content = CloudinaryField("image", null=True, blank=True)
     sent_at = models.DateTimeField(default=timezone.now)
     history = HistoricalRecords()
+    is_edited = models.BooleanField(default=False)
 
     status = models.IntegerField(
         choices=Status.choices,
