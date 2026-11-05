@@ -1,6 +1,8 @@
 import typing
 from typing import Optional
 
+from users.models import User
+
 from .models import Chat, Message, MessageReaction
 from .types import (
     CreateChatData,
@@ -35,6 +37,13 @@ class ChatDao:
             .exclude(hidden_by__id=user_id)
             .distinct()
         )
+
+    @staticmethod
+    def soft_delete_chat_request(id: int, user_id: int) -> None:
+        chat = Chat.objects.get(id=id)
+        user = User.objects.get(id=user_id)
+
+        chat.hidden_by.add(user)
 
     @staticmethod
     def delete_chat(id: int) -> None:

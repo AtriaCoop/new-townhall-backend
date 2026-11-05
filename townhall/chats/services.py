@@ -49,6 +49,15 @@ class ChatServices:
             ) from e
 
     @staticmethod
+    def soft_delete_chat_request(id: int, user_id: int) -> None:
+        try:
+            ChatDao.soft_delete_chat_request(id=id, user_id=user_id)
+        except DatabaseError as e:
+            raise APIException(
+                "A database error occurred while soft deleting the chat request."
+            ) from e
+
+    @staticmethod
     def delete_chat(id: int) -> None:
         try:
             ChatDao.delete_chat(id=id)

@@ -4,6 +4,8 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
+
+from users.models import User
 from .serializers import (
     ChatSerializer,
     MessageSerializer,
@@ -97,8 +99,7 @@ class ChatViewSet(viewsets.ModelViewSet):
     @permission_classes([IsAuthenticated])
     def delete_chat_request(self, request, id):
         try:
-            chat = Chat.objects.get(id=id)
-            chat.hidden_by.add(request.user)
+            ChatServices.soft_delete_chat_request(id=id, user_id=request.user.id)
 
             return Response(
                 {
@@ -111,6 +112,14 @@ class ChatViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "message": "Chat not found",
+                    "success": False,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except User.DoesNotExist:
+            return Response(
+                {
+                    "message": "User not found",
                     "success": False,
                 },
                 status=status.HTTP_404_NOT_FOUND,
