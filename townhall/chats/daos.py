@@ -132,6 +132,8 @@ class MessageDao:
             message.image_content = update_message_data.image_content
         if update_message_data.sent_at:
             message.sent_at = update_message_data.sent_at
+        if update_message_data.is_edited:
+            message.is_edited = update_message_data.is_edited
         if update_message_data.status is not None:
             message.status = update_message_data.status
 

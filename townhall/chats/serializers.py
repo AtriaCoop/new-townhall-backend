@@ -66,6 +66,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "sent_at",
             "reactions",
             "status",
+            "is_edited",
         ]
         read_only_fields = ["id", "reactions"]
 
@@ -89,6 +90,7 @@ class OptionalMessageSerializer(serializers.ModelSerializer):
     content = serializers.CharField(required=False)
     image_content = serializers.ImageField(required=False, allow_null=True)
     sent_at = serializers.DateTimeField(required=False)
+    is_edited = serializers.BooleanField(required=False)
 
     class Meta:
         model = Message
@@ -102,6 +104,7 @@ class OptionalMessageSerializer(serializers.ModelSerializer):
             "image_content",
             "sent_at",
             "status",
+            "is_edited",
         ]
         read_only_fields = ["id"]
 
