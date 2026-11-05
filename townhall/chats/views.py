@@ -69,30 +69,28 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         if not user_id:
             return Response(
-                {"message": "Missing user_id"},
+                {"message": "Missing user_id", "success": False},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            chats = (
-                Chat.objects.filter(participants__id=user_id)
-                .exclude(hidden_by__id=user_id)
-                .distinct()
-            )
-            serializer = ChatSerializer(chats, many=True)
+            user_id = int(user_id)
+        except ValueError:
             return Response(
-                {
-                    "message": "Chats fetched successfully",
-                    "success": True,
-                    "data": serializer.data,
-                },
-                status=status.HTTP_200_OK,
+                {"message": "user_id must be a valid integer", "success": False},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
-            return Response(
-                {"message": str(e), "success": False},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+
+        chats = ChatServices.get_user_chats(user_id=user_id)
+
+        return Response(
+            {
+                "message": "Chats fetched successfully",
+                "success": True,
+                "data": chats,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     # DELETE (Hide) Chat — soft delete, preserves messages
     @action(detail=True, methods=["delete"], url_path="chats")

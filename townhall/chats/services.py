@@ -4,7 +4,11 @@ from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
 from typing import Optional
 
+from psycopg2 import DatabaseError
+from rest_framework.exceptions import APIException
+
 from posts.services import ReactionServices as PostReactionServices
+from .serializers import ChatSerializer
 from users.models import User
 
 from .daos import ChatDao, MessageDao, ReactionDao
@@ -32,6 +36,17 @@ class ChatServices:
         if chats is None or not chats.exists():
             raise ValidationError("No chats were found.")
         return chats
+
+    @staticmethod
+    def get_user_chats(user_id: int):
+        try:
+            chats = ChatDao.get_user_chats(user_id=user_id)
+            serializer = ChatSerializer(chats, many=True)
+            return serializer.data
+        except DatabaseError as e:
+            raise APIException(
+                "A database error occurred while fetching user chats."
+            ) from e
 
     @staticmethod
     def delete_chat(id: int) -> None:

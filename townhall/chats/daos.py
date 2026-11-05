@@ -28,6 +28,15 @@ class ChatDao:
             return None
 
     @staticmethod
+    def get_user_chats(user_id: int) -> QuerySet[Chat]:
+        return (
+            Chat.objects.prefetch_related("participants")
+            .filter(participants__id=user_id)
+            .exclude(hidden_by__id=user_id)
+            .distinct()
+        )
+
+    @staticmethod
     def delete_chat(id: int) -> None:
         Chat.objects.get(id=id).delete()
 
