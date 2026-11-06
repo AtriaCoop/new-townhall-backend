@@ -16,6 +16,7 @@ class Post(models.Model):
     pinned = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tag, blank=True, related_name="posts")
     anonymous = models.BooleanField(default=False)
+    link_preview = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return str(self.id)
