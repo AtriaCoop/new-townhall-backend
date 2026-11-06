@@ -8,7 +8,7 @@ from psycopg2 import DatabaseError
 from rest_framework.exceptions import APIException
 
 from posts.services import ReactionServices as PostReactionServices
-from .serializers import ChatSerializer
+from .serializers import ChatSerializer, MessageSerializer
 from users.models import User
 
 from .daos import ChatDao, MessageDao, ReactionDao
@@ -92,6 +92,26 @@ class ChatServices:
 
         except ValidationError:
             raise
+
+    @staticmethod
+    def get_chat_messages(chat_id: int) -> QuerySet[Message]:
+        try:
+            messages = MessageDao.get_chat_messages(chat_id=chat_id)
+            return messages
+        except Chat.DoesNotExist:
+            raise ValidationError(f"Chat with the given id: {chat_id}, does not exist.")
+
+    @staticmethod
+    def get_chat_messages_order_by_sent_at(chat_id: int) -> QuerySet[Message]:
+        try:
+            messages = ChatDao.get_chat_messages_order_by_sent_at(chat_id=chat_id)
+            serializer = MessageSerializer(messages, many=True)
+            return serializer.data
+        except DatabaseError as e:
+            raise APIException(
+                "A database error occurred while fetching chat messages "
+                "ordered by sent_at."
+            ) from e
 
     @staticmethod
     def add_user(chat_id: int, user_id: int):

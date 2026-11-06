@@ -76,6 +76,10 @@ class ChatDao:
         chat.participants.add(user)
 
     @staticmethod
+    def get_chat_messages_order_by_sent_at(chat_id: int) -> QuerySet[Message]:
+        return Message.objects.filter(chat_id=chat_id).order_by("sent_at")
+
+    @staticmethod
     def update_chat_participants(chat_id: int, new_participant_ids: list[int]) -> Chat:
         chat = Chat.objects.get(id=chat_id)
         chat.participants.set(new_participant_ids)

@@ -211,9 +211,14 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="messages")
     @permission_classes([IsAuthenticated])
     def get_chat_messages(self, request, id):
-        messages = Message.objects.filter(chat_id=id).order_by("sent_at")
-        serializer = MessageSerializer(messages, many=True)
-        return Response({"messages": serializer.data})
+        try:
+            data = MessageServices.get_chat_messages_order_by_sent_at(chat_id=id)
+            return Response({"messages": data})
+        except Message.DoesNotExist:
+            return Response(
+                {"message": "Chat not found", "success": False},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     # POST Message
     @action(detail=False, methods=["post"], url_path="direct-message")
