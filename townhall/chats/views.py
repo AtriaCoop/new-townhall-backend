@@ -4,6 +4,8 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
+
+from users.models import User
 from .serializers import (
     ChatSerializer,
     MessageSerializer,
@@ -69,38 +71,35 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         if not user_id:
             return Response(
-                {"message": "Missing user_id"},
+                {"message": "Missing user_id", "success": False},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            chats = (
-                Chat.objects.filter(participants__id=user_id)
-                .exclude(hidden_by__id=user_id)
-                .distinct()
-            )
-            serializer = ChatSerializer(chats, many=True)
+            user_id = int(user_id)
+        except ValueError:
             return Response(
-                {
-                    "message": "Chats fetched successfully",
-                    "success": True,
-                    "data": serializer.data,
-                },
-                status=status.HTTP_200_OK,
+                {"message": "user_id must be a valid integer", "success": False},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
-            return Response(
-                {"message": str(e), "success": False},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+
+        chats = ChatServices.get_user_chats(user_id=user_id)
+
+        return Response(
+            {
+                "message": "Chats fetched successfully",
+                "success": True,
+                "data": chats,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     # DELETE (Hide) Chat — soft delete, preserves messages
     @action(detail=True, methods=["delete"], url_path="chats")
     @permission_classes([IsAuthenticated])
     def delete_chat_request(self, request, id):
         try:
-            chat = Chat.objects.get(id=id)
-            chat.hidden_by.add(request.user)
+            ChatServices.soft_delete_chat_request(id=id, user_id=request.user.id)
 
             return Response(
                 {
@@ -113,6 +112,14 @@ class ChatViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "message": "Chat not found",
+                    "success": False,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except User.DoesNotExist:
+            return Response(
+                {
+                    "message": "User not found",
                     "success": False,
                 },
                 status=status.HTTP_404_NOT_FOUND,
@@ -204,9 +211,14 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="messages")
     @permission_classes([IsAuthenticated])
     def get_chat_messages(self, request, id):
-        messages = Message.objects.filter(chat_id=id).order_by("sent_at")
-        serializer = MessageSerializer(messages, many=True)
-        return Response({"messages": serializer.data})
+        try:
+            data = MessageServices.get_chat_messages_order_by_sent_at(chat_id=id)
+            return Response({"messages": data})
+        except Message.DoesNotExist:
+            return Response(
+                {"message": "Chat not found", "success": False},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     # POST Message
     @action(detail=False, methods=["post"], url_path="direct-message")
@@ -536,6 +548,12 @@ class MessageViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["patch"], url_path="messages")
     @permission_classes([IsAuthenticated])
     def update_message_request(self, request, id):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
         message_id = id
 
         # Use a serializer to check if the data is valid
@@ -559,18 +577,21 @@ class MessageViewSet(viewsets.ModelViewSet):
             content=validated_data.get("content"),
             image_content=validated_data.get("image_content"),
             sent_at=validated_data.get("sent_at"),
+            is_edited=validated_data.get("is_edited"),
         )
 
         try:
-            MessageServices.update_message(message_id, update_message_data)
+            is_edited = MessageServices.update_message(message_id, update_message_data)
 
             return Response(
                 {
                     "message": "Message updated successfully",
                     "success": True,
+                    "is_edited": is_edited,
                 },
                 status=status.HTTP_200_OK,
             )
+
         except ValidationError as e:
             # Return an error if the services method returns an error
             return Response(

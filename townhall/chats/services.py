@@ -4,7 +4,11 @@ from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
 from typing import Optional
 
+from psycopg2 import DatabaseError
+from rest_framework.exceptions import APIException
+
 from posts.services import ReactionServices as PostReactionServices
+from .serializers import ChatSerializer, MessageSerializer
 from users.models import User
 
 from .daos import ChatDao, MessageDao, ReactionDao
@@ -32,6 +36,26 @@ class ChatServices:
         if chats is None or not chats.exists():
             raise ValidationError("No chats were found.")
         return chats
+
+    @staticmethod
+    def get_user_chats(user_id: int):
+        try:
+            chats = ChatDao.get_user_chats(user_id=user_id)
+            serializer = ChatSerializer(chats, many=True)
+            return serializer.data
+        except DatabaseError as e:
+            raise APIException(
+                "A database error occurred while fetching user chats."
+            ) from e
+
+    @staticmethod
+    def soft_delete_chat_request(id: int, user_id: int) -> None:
+        try:
+            ChatDao.soft_delete_chat_request(id=id, user_id=user_id)
+        except DatabaseError as e:
+            raise APIException(
+                "A database error occurred while soft deleting the chat request."
+            ) from e
 
     @staticmethod
     def delete_chat(id: int) -> None:
@@ -68,6 +92,26 @@ class ChatServices:
 
         except ValidationError:
             raise
+
+    @staticmethod
+    def get_chat_messages(chat_id: int) -> QuerySet[Message]:
+        try:
+            messages = MessageDao.get_chat_messages(chat_id=chat_id)
+            return messages
+        except Chat.DoesNotExist:
+            raise ValidationError(f"Chat with the given id: {chat_id}, does not exist.")
+
+    @staticmethod
+    def get_chat_messages_order_by_sent_at(chat_id: int) -> QuerySet[Message]:
+        try:
+            messages = ChatDao.get_chat_messages_order_by_sent_at(chat_id=chat_id)
+            serializer = MessageSerializer(messages, many=True)
+            return serializer.data
+        except DatabaseError as e:
+            raise APIException(
+                "A database error occurred while fetching chat messages "
+                "ordered by sent_at."
+            ) from e
 
     @staticmethod
     def add_user(chat_id: int, user_id: int):
@@ -130,9 +174,21 @@ class MessageServices:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
 
     @staticmethod
-    def update_message(id: int, update_message_data: UpdateMessageData) -> None:
+    def update_message(id: int, update_message_data: UpdateMessageData) -> bool:
         try:
+            original_message = MessageDao.get_message(id=id)
+
+            # If the content changed, mark the message as edited
+            if original_message.content != update_message_data.content:
+                update_message_data.is_edited = True
+            else:
+                update_message_data.is_edited = original_message.is_edited
+
             MessageDao.update_message(id=id, update_message_data=update_message_data)
+            is_edited = MessageDao.get_message(id=id).is_edited
+
+            return is_edited
+
         except Message.DoesNotExist:
             raise ValidationError(f"Message with the given id: {id}, does not exist.")
 

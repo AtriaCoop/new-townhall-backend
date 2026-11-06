@@ -1,6 +1,8 @@
 import typing
 from typing import Optional
 
+from users.models import User
+
 from .models import Chat, Message, MessageReaction
 from .types import (
     CreateChatData,
@@ -26,6 +28,22 @@ class ChatDao:
         except DatabaseError as error:
             print(f"A Database Error has occured {error}")
             return None
+
+    @staticmethod
+    def get_user_chats(user_id: int) -> QuerySet[Chat]:
+        return (
+            Chat.objects.prefetch_related("participants")
+            .filter(participants__id=user_id)
+            .exclude(hidden_by__id=user_id)
+            .distinct()
+        )
+
+    @staticmethod
+    def soft_delete_chat_request(id: int, user_id: int) -> None:
+        chat = Chat.objects.get(id=id)
+        user = User.objects.get(id=user_id)
+
+        chat.hidden_by.add(user)
 
     @staticmethod
     def delete_chat(id: int) -> None:
@@ -56,6 +74,10 @@ class ChatDao:
 
         user = UserServices.get_user(user_id)
         chat.participants.add(user)
+
+    @staticmethod
+    def get_chat_messages_order_by_sent_at(chat_id: int) -> QuerySet[Message]:
+        return Message.objects.filter(chat_id=chat_id).order_by("sent_at")
 
     @staticmethod
     def update_chat_participants(chat_id: int, new_participant_ids: list[int]) -> Chat:
@@ -114,6 +136,8 @@ class MessageDao:
             message.image_content = update_message_data.image_content
         if update_message_data.sent_at:
             message.sent_at = update_message_data.sent_at
+        if update_message_data.is_edited:
+            message.is_edited = update_message_data.is_edited
         if update_message_data.status is not None:
             message.status = update_message_data.status
 
