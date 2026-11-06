@@ -87,4 +87,9 @@ urlpatterns = [
         MessageViewSet.as_view({"patch": "toggle_reaction_on_message"}),
         name="message_reaction",
     ),
+    path(
+        "chats/messages/<int:id>/status/",
+        MessageViewSet.as_view({"patch": "update_status"}),
+        name="message_status",
+    ),
 ]

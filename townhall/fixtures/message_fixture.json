@@ -5,7 +5,18 @@
         "fields": {
             "user": 1,
             "chat": 3,
-            "content": "Test message"
+            "content": "Test message",
+            "status": 2
+        }
+    },
+    {
+        "model": "chats.message",
+        "pk": 4,
+        "fields": {
+            "user": 2,
+            "chat": 3,
+            "content": "Another test",
+            "status": 2
         }
     }
 ]

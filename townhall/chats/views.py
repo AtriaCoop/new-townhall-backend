@@ -9,6 +9,7 @@ from .serializers import (
     MessageSerializer,
     CreateChatSerializer,
     OptionalMessageSerializer,
+    MessageStatusSerializer,
 )
 from posts.views import PostViewSet
 from .services import ChatServices, MessageServices, ReactionServices
@@ -22,6 +23,10 @@ from django.utils import timezone
 from .models import Chat, Message, GroupMessage, ChatReadStatus
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -240,6 +245,9 @@ class ChatViewSet(viewsets.ModelViewSet):
                             "message": content,
                             "sender": user.id,
                             "full_name": user.full_name,
+                            "timestamp": message.sent_at.isoformat(),
+                            "message_id": message.id,
+                            "status": message.status,
                             "profile_image": (
                                 user.profile_image.url if user.profile_image else None
                             ),
@@ -264,6 +272,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                             if message.user.profile_image
                             else None
                         ),
+                        "status": message.status,
                     },
                 }
             )
@@ -311,12 +320,31 @@ class ChatViewSet(viewsets.ModelViewSet):
     def mark_chat_read(self, request, id):
         try:
             chat = Chat.objects.get(id=id)
+
+            # Keep the existing unread-count functionality
             ChatReadStatus.objects.update_or_create(
                 user=request.user,
                 chat=chat,
                 defaults={"last_read_at": timezone.now()},
             )
-            return Response({"success": True})
+
+            # Mark messages from the other participant as READ
+            messages = Message.objects.filter(
+                chat=chat,
+                status=Message.Status.DELIVERED,
+            ).exclude(user=request.user)
+
+            message_ids = list(messages.values_list("id", flat=True))
+
+            messages.update(status=Message.Status.READ)
+
+            return Response(
+                {
+                    "success": True,
+                    "message_ids": message_ids,
+                }
+            )
+
         except Chat.DoesNotExist:
             return Response(
                 {"success": False, "error": "Chat not found"},
@@ -549,6 +577,43 @@ class MessageViewSet(viewsets.ModelViewSet):
                 {"message": str(e), "success": False},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+    @action(detail=True, methods=["patch"])
+    def update_status(self, request, id):
+        message = MessageServices.get_message(id)
+
+        serializer = MessageStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        status = serializer.validated_data["status"]
+
+        update_data = UpdateMessageData(
+            id=message.id,
+            status=status,
+        )
+
+        MessageServices.update_message(message.id, update_data)
+
+        try:
+            channel_layer = get_channel_layer()
+
+            async_to_sync(channel_layer.group_send)(
+                f"chat_{message.chat_id}",
+                {
+                    "type": "message_status",
+                    "message_id": message.id,
+                    "status": status,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to broadcast message status update")
+
+        return Response(
+            {
+                "success": True,
+                "message": "Message status updated successfully",
+            }
+        )
 
     @action(detail=True, methods=["patch"], url_path="reaction")
     def toggle_reaction_on_message(self, request, id):

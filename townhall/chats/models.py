@@ -19,12 +19,22 @@ class Chat(models.Model):
 
 
 class Message(models.Model):
+    class Status(models.IntegerChoices):
+        SENT = 1, "Sent"
+        DELIVERED = 2, "Delivered"
+        READ = 3, "Read"
+
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     content = models.TextField()
     image_content = CloudinaryField("image", null=True, blank=True)
     sent_at = models.DateTimeField(default=timezone.now)
     history = HistoricalRecords()
+
+    status = models.IntegerField(
+        choices=Status.choices,
+        default=Status.SENT,
+    )
 
     def __str__(self):
         return str(self.id)

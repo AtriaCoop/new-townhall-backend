@@ -65,6 +65,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "image_content",
             "sent_at",
             "reactions",
+            "status",
         ]
         read_only_fields = ["id", "reactions"]
 
@@ -100,8 +101,13 @@ class OptionalMessageSerializer(serializers.ModelSerializer):
             "content",
             "image_content",
             "sent_at",
+            "status",
         ]
         read_only_fields = ["id"]
+
+
+class MessageStatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=Message.Status.choices)
 
 
 class GroupMessageSerializer(serializers.ModelSerializer):
