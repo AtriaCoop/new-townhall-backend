@@ -13,7 +13,7 @@ from .serializers import ChatSerializer, MessageSerializer
 from users.models import User
 
 from .daos import ChatDao, MessageDao, ReactionDao
-from .models import Chat, Message
+from .models import Chat, GroupMessage, Message
 from .types import (
     CreateChatData,
     CreateMessageData,
@@ -23,6 +23,15 @@ from .types import (
 
 
 class ChatServices:
+    @staticmethod
+    def get_group_messages(group_name: str) -> list[GroupMessage]:
+        try:
+            return list(ChatDao.get_group_messages(group_name=group_name))
+        except DatabaseError as error:
+            raise APIException(
+                "A database error occurred while fetching group messages."
+            ) from error
+
     @staticmethod
     def mark_chat_read(chat_id: int, user_id: int) -> list[int]:
         try:

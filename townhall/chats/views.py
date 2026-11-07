@@ -364,27 +364,38 @@ class ChatViewSet(viewsets.ModelViewSet):
     )
     @permission_classes([IsAuthenticated])
     def get_group_messages(self, request, group_name=None):
-        msgs = GroupMessage.objects.filter(group_name=group_name).order_by("sent_at")
-
-        return Response(
-            {
-                "messages": [
-                    {
-                        "id": m.id,
-                        "sender": m.user.id,
-                        "full_name": m.user.full_name,
-                        "content": m.content,
-                        "timestamp": m.sent_at,
-                        "organization": m.user.primary_organization,
-                        "profile_image": (
-                            (m.user.profile_image.url if m.user.profile_image else None)
-                        ),
-                        "image": m.image.url if m.image else None,
-                    }
-                    for m in msgs
-                ]
-            }
-        )
+        try:
+            messages = ChatServices.get_group_messages(group_name=group_name)
+            return Response(
+                {
+                    "messages": [
+                        {
+                            "id": message.id,
+                            "sender": message.user.id,
+                            "full_name": message.user.full_name,
+                            "content": message.content,
+                            "timestamp": message.sent_at,
+                            "organization": message.user.primary_organization,
+                            "profile_image": (
+                                message.user.profile_image.url
+                                if message.user.profile_image
+                                else None
+                            ),
+                            "image": message.image.url if message.image else None,
+                        }
+                        for message in messages
+                    ]
+                }
+            )
+        except APIException:
+            logger.exception("Database error while fetching group messages")
+            return Response(
+                {
+                    "success": False,
+                    "error": "A database error occurred while fetching group messages.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # POST Group Message
     @action(detail=False, methods=["post"], url_path="group-messages")

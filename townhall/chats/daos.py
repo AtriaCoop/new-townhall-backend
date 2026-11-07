@@ -4,7 +4,7 @@ from typing import Optional
 
 from users.models import User
 
-from .models import Chat, ChatReadStatus, Message, MessageReaction
+from .models import Chat, ChatReadStatus, GroupMessage, Message, MessageReaction
 from .types import (
     CreateChatData,
     CreateMessageData,
@@ -114,6 +114,14 @@ class ChatDao:
         message_ids = list(messages.values_list("id", flat=True))
         messages.update(status=Message.Status.READ)
         return message_ids
+
+    @staticmethod
+    def get_group_messages(group_name: str) -> QuerySet[GroupMessage]:
+        return (
+            GroupMessage.objects.filter(group_name=group_name)
+            .select_related("user")
+            .order_by("sent_at")
+        )
 
     @staticmethod
     def add_user(chat_id: int, user_id: int) -> None:
