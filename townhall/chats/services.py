@@ -23,6 +23,31 @@ from .types import (
 
 class ChatServices:
     @staticmethod
+    def get_unread_counts(user_id: int) -> dict[int, dict]:
+        try:
+            summaries = ChatDao.get_unread_message_summaries(user_id=user_id)
+        except DatabaseError as error:
+            raise APIException(
+                "A database error occurred while fetching unread counts."
+            ) from error
+
+        result = {}
+        for chat_id, count, latest_message in summaries:
+            sender = latest_message.user
+            result[chat_id] = {
+                "count": count,
+                "sender_id": sender.id,
+                "sender_name": sender.full_name,
+                "sender_image": (
+                    sender.profile_image.url if sender.profile_image else None
+                ),
+                "last_message": latest_message.content,
+                "timestamp": latest_message.sent_at.isoformat(),
+            }
+
+        return result
+
+    @staticmethod
     def get_chat(id: int) -> Optional[Chat]:
         try:
             chat = ChatDao.get_chat(id=id)

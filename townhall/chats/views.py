@@ -312,36 +312,18 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="unread-counts")
     @permission_classes([IsAuthenticated])
     def get_unread_counts(self, request):
-        user = request.user
-
-        chats = Chat.objects.filter(participants=user).exclude(hidden_by=user)
-
-        result = {}
-        for chat in chats:
-            read_status = ChatReadStatus.objects.filter(user=user, chat=chat).first()
-            last_read = read_status.last_read_at if read_status else None
-
-            msg_qs = Message.objects.filter(chat=chat).exclude(user=user)
-            if last_read:
-                msg_qs = msg_qs.filter(sent_at__gt=last_read)
-
-            count = msg_qs.count()
-            if count == 0:
-                continue
-
-            latest = msg_qs.order_by("-sent_at").first()
-            result[chat.id] = {
-                "count": count,
-                "sender_id": latest.user.id,
-                "sender_name": latest.user.full_name,
-                "sender_image": (
-                    latest.user.profile_image.url if latest.user.profile_image else None
-                ),
-                "last_message": latest.content,
-                "timestamp": latest.sent_at.isoformat(),
-            }
-
-        return Response({"success": True, "data": result})
+        try:
+            result = ChatServices.get_unread_counts(user_id=request.user.id)
+            return Response({"success": True, "data": result})
+        except APIException:
+            logger.exception("Database error while fetching unread chat counts")
+            return Response(
+                {
+                    "success": False,
+                    "error": "A database error occurred while fetching unread counts.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # POST mark a chat as read
     @action(detail=True, methods=["post"], url_path="read")

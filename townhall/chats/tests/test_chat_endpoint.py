@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.core.management import call_command
+from django.db import DatabaseError
 from unittest.mock import patch
 from django.core.exceptions import ValidationError
 from rest_framework import status
@@ -140,6 +141,31 @@ class TestChatEndpoint(TestCase):
         # Assert
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert not response.data["success"]
+
+    def test_get_unread_counts(self):
+        response = self.client.get("/chats/unread-counts/")
+
+        assert response.status_code == status.HTTP_200_OK
+        summary = response.data["data"][3]
+        assert response.data["success"]
+        assert summary["count"] == 1
+        assert summary["sender_id"] == 2
+        assert summary["sender_name"] == "Jerome The Jerome"
+        assert summary["sender_image"] is None
+        assert summary["last_message"] == "Another test"
+        assert summary["timestamp"]
+
+    @patch("chats.services.ChatDao.get_unread_message_summaries")
+    def test_get_unread_counts_database_error(self, mock_get_summaries):
+        mock_get_summaries.side_effect = DatabaseError("database unavailable")
+
+        response = self.client.get("/chats/unread-counts/")
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert response.data == {
+            "success": False,
+            "error": "A database error occurred while fetching unread counts.",
+        }
 
     @patch("chats.services.ChatServices.get_or_create_chat")
     def test_create_chat_fail_service_error(self, mock_create_chat):

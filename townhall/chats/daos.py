@@ -3,7 +3,7 @@ from typing import Optional
 
 from users.models import User
 
-from .models import Chat, Message, MessageReaction
+from .models import Chat, ChatReadStatus, Message, MessageReaction
 from .types import (
     CreateChatData,
     CreateMessageData,
@@ -64,6 +64,35 @@ class ChatDao:
         chat = Chat.objects.get(id=chat_id)
         chat.hidden_by.clear()
         return list(chat.participants.values_list("id", flat=True))
+
+    @staticmethod
+    def get_unread_message_summaries(
+        user_id: int,
+    ) -> list[tuple[int, int, Message]]:
+        summaries = []
+        chats = Chat.objects.filter(participants__id=user_id).exclude(
+            hidden_by__id=user_id
+        )
+
+        for chat in chats:
+            read_status = ChatReadStatus.objects.filter(
+                user_id=user_id, chat_id=chat.id
+            ).first()
+            messages = Message.objects.filter(chat_id=chat.id).exclude(user_id=user_id)
+            if read_status:
+                messages = messages.filter(sent_at__gt=read_status.last_read_at)
+
+            count = messages.count()
+            if count == 0:
+                continue
+
+            latest_message = (
+                messages.select_related("user").order_by("-sent_at").first()
+            )
+
+            summaries.append((chat.id, count, latest_message))
+
+        return summaries
 
     @staticmethod
     def add_user(chat_id: int, user_id: int) -> None:
