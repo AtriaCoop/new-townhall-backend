@@ -1,9 +1,12 @@
-from django.forms import ValidationError
+from django.core.exceptions import ValidationError
 from rest_framework import viewsets
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.exceptions import APIException
+
+from users.models import User
 from .serializers import (
     ChatSerializer,
     MessageSerializer,
@@ -20,7 +23,7 @@ from .types import (
     UpdateMessageData,
 )
 from django.utils import timezone
-from .models import Chat, Message, GroupMessage, ChatReadStatus
+from .models import Chat, Message
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import logging
@@ -69,38 +72,35 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         if not user_id:
             return Response(
-                {"message": "Missing user_id"},
+                {"message": "Missing user_id", "success": False},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            chats = (
-                Chat.objects.filter(participants__id=user_id)
-                .exclude(hidden_by__id=user_id)
-                .distinct()
-            )
-            serializer = ChatSerializer(chats, many=True)
+            user_id = int(user_id)
+        except ValueError:
             return Response(
-                {
-                    "message": "Chats fetched successfully",
-                    "success": True,
-                    "data": serializer.data,
-                },
-                status=status.HTTP_200_OK,
+                {"message": "user_id must be a valid integer", "success": False},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
-            return Response(
-                {"message": str(e), "success": False},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+
+        chats = ChatServices.get_user_chats(user_id=user_id)
+
+        return Response(
+            {
+                "message": "Chats fetched successfully",
+                "success": True,
+                "data": chats,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     # DELETE (Hide) Chat — soft delete, preserves messages
     @action(detail=True, methods=["delete"], url_path="chats")
     @permission_classes([IsAuthenticated])
     def delete_chat_request(self, request, id):
         try:
-            chat = Chat.objects.get(id=id)
-            chat.hidden_by.add(request.user)
+            ChatServices.soft_delete_chat_request(id=id, user_id=request.user.id)
 
             return Response(
                 {
@@ -113,6 +113,14 @@ class ChatViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "message": "Chat not found",
+                    "success": False,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except User.DoesNotExist:
+            return Response(
+                {
+                    "message": "User not found",
                     "success": False,
                 },
                 status=status.HTTP_404_NOT_FOUND,
@@ -204,9 +212,14 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="messages")
     @permission_classes([IsAuthenticated])
     def get_chat_messages(self, request, id):
-        messages = Message.objects.filter(chat_id=id).order_by("sent_at")
-        serializer = MessageSerializer(messages, many=True)
-        return Response({"messages": serializer.data})
+        try:
+            data = MessageServices.get_chat_messages_order_by_sent_at(chat_id=id)
+            return Response({"messages": data})
+        except Message.DoesNotExist:
+            return Response(
+                {"message": "Chat not found", "success": False},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     # POST Message
     @action(detail=False, methods=["post"], url_path="direct-message")
@@ -224,18 +237,24 @@ class ChatViewSet(viewsets.ModelViewSet):
                     status=400,
                 )
 
-            message = Message.objects.create(
-                user=user, chat_id=chat_id, content=content, image_content=image
-            )
+            try:
+                chat_id = int(chat_id)
+            except (TypeError, ValueError):
+                return Response(
+                    {"success": False, "error": "chat_id must be a valid integer"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-            # Unhide chat for all participants so the recipient sees it
-            chat = Chat.objects.get(id=chat_id)
-            chat.hidden_by.clear()
+            message, participant_ids = MessageServices.create_direct_message(
+                user_id=user.id,
+                chat_id=chat_id,
+                content=content,
+                image_content=image,
+            )
 
             # Broadcast to all participants via channel layer (like bell notifications)
             channel_layer = get_channel_layer()
             if channel_layer:
-                participant_ids = list(chat.participants.values_list("id", flat=True))
                 for pid in participant_ids:
                     async_to_sync(channel_layer.group_send)(
                         f"user_{pid}",
@@ -259,96 +278,82 @@ class ChatViewSet(viewsets.ModelViewSet):
                     "success": True,
                     "data": {
                         "id": message.id,
-                        "sender": message.user.id,
-                        "full_name": message.user.full_name,
+                        "sender": user.id,
+                        "full_name": user.full_name,
                         "content": message.content,
                         "image": (
                             message.image_content.url if message.image_content else None
                         ),
                         "timestamp": message.sent_at,
-                        "organization": message.user.primary_organization,
+                        "organization": user.primary_organization,
                         "profile_image": (
-                            message.user.profile_image.url
-                            if message.user.profile_image
-                            else None
+                            user.profile_image.url if user.profile_image else None
                         ),
                         "status": message.status,
                     },
                 }
             )
-        except Exception as e:
-            return Response({"success": False, "error": str(e)}, status=400)
+        except ValidationError as error:
+            return Response(
+                {"success": False, "error": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except APIException:
+            logger.exception("Database error while sending a direct message")
+            return Response(
+                {
+                    "success": False,
+                    "error": "A database error occurred while sending the message.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # GET unread DM counts per chat for the current user
     @action(detail=False, methods=["get"], url_path="unread-counts")
     @permission_classes([IsAuthenticated])
     def get_unread_counts(self, request):
-        user = request.user
-
-        chats = Chat.objects.filter(participants=user).exclude(hidden_by=user)
-
-        result = {}
-        for chat in chats:
-            read_status = ChatReadStatus.objects.filter(user=user, chat=chat).first()
-            last_read = read_status.last_read_at if read_status else None
-
-            msg_qs = Message.objects.filter(chat=chat).exclude(user=user)
-            if last_read:
-                msg_qs = msg_qs.filter(sent_at__gt=last_read)
-
-            count = msg_qs.count()
-            if count == 0:
-                continue
-
-            latest = msg_qs.order_by("-sent_at").first()
-            result[chat.id] = {
-                "count": count,
-                "sender_id": latest.user.id,
-                "sender_name": latest.user.full_name,
-                "sender_image": (
-                    latest.user.profile_image.url if latest.user.profile_image else None
-                ),
-                "last_message": latest.content,
-                "timestamp": latest.sent_at.isoformat(),
-            }
-
-        return Response({"success": True, "data": result})
+        try:
+            result = ChatServices.get_unread_counts(user_id=request.user.id)
+            return Response({"success": True, "data": result})
+        except APIException:
+            logger.exception("Database error while fetching unread chat counts")
+            return Response(
+                {
+                    "success": False,
+                    "error": "A database error occurred while fetching unread counts.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # POST mark a chat as read
     @action(detail=True, methods=["post"], url_path="read")
     @permission_classes([IsAuthenticated])
     def mark_chat_read(self, request, id):
         try:
-            chat = Chat.objects.get(id=id)
-
-            # Keep the existing unread-count functionality
-            ChatReadStatus.objects.update_or_create(
-                user=request.user,
-                chat=chat,
-                defaults={"last_read_at": timezone.now()},
+            message_ids = ChatServices.mark_chat_read(
+                chat_id=id,
+                user_id=request.user.id,
             )
-
-            # Mark messages from the other participant as READ
-            messages = Message.objects.filter(
-                chat=chat,
-                status=Message.Status.DELIVERED,
-            ).exclude(user=request.user)
-
-            message_ids = list(messages.values_list("id", flat=True))
-
-            messages.update(status=Message.Status.READ)
-
             return Response(
                 {
                     "success": True,
                     "message_ids": message_ids,
                 }
             )
-
-        except Chat.DoesNotExist:
+        except ValidationError:
             return Response(
                 {"success": False, "error": "Chat not found"},
-                status=404,
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except APIException:
+            logger.exception("Database error while marking chat as read")
+            return Response(
+                {
+                    "success": False,
+                    "error": "A database error occurred while marking the "
+                    "chat as read.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     # GET Group Message
@@ -359,42 +364,61 @@ class ChatViewSet(viewsets.ModelViewSet):
     )
     @permission_classes([IsAuthenticated])
     def get_group_messages(self, request, group_name=None):
-        msgs = GroupMessage.objects.filter(group_name=group_name).order_by("sent_at")
-
-        return Response(
-            {
-                "messages": [
-                    {
-                        "id": m.id,
-                        "sender": m.user.id,
-                        "full_name": m.user.full_name,
-                        "content": m.content,
-                        "timestamp": m.sent_at,
-                        "organization": m.user.primary_organization,
-                        "profile_image": (
-                            (m.user.profile_image.url if m.user.profile_image else None)
-                        ),
-                        "image": m.image.url if m.image else None,
-                    }
-                    for m in msgs
-                ]
-            }
-        )
+        try:
+            messages = ChatServices.get_group_messages(group_name=group_name)
+            return Response(
+                {
+                    "messages": [
+                        {
+                            "id": message.id,
+                            "sender": message.user.id,
+                            "full_name": message.user.full_name,
+                            "content": message.content,
+                            "timestamp": message.sent_at,
+                            "organization": message.user.primary_organization,
+                            "profile_image": (
+                                message.user.profile_image.url
+                                if message.user.profile_image
+                                else None
+                            ),
+                            "image": message.image.url if message.image else None,
+                        }
+                        for message in messages
+                    ]
+                }
+            )
+        except APIException:
+            logger.exception("Database error while fetching group messages")
+            return Response(
+                {
+                    "success": False,
+                    "error": "A database error occurred while fetching group messages.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # POST Group Message
     @action(detail=False, methods=["post"], url_path="group-messages")
     @permission_classes([IsAuthenticated])
     def create_group_message(self, request):
-        try:
-            user = request.user  # You must be using authentication
-            group_name = request.data.get("group_name")
-            content = request.data.get("content", "")
-            image = request.FILES.get("image", None)
+        user = request.user
+        group_name = request.data.get("group_name")
+        content = request.data.get("content", "")
+        image = request.FILES.get("image", None)
 
-            msg = GroupMessage.objects.create(
-                user=user, group_name=group_name, content=content, image=image
+        if not group_name:
+            return Response(
+                {"success": False, "error": "group_name is required"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
+        try:
+            msg = ChatServices.create_group_message(
+                user=user,
+                group_name=group_name,
+                content=content,
+                image=image,
+            )
             return Response(
                 {
                     "success": True,
@@ -414,24 +438,43 @@ class ChatViewSet(viewsets.ModelViewSet):
                     },
                 }
             )
-        except Exception as e:
-            return Response({"success": False, "error": str(e)}, status=400)
+        except APIException:
+            logger.exception("Database error while creating group message")
+            return Response(
+                {
+                    "success": False,
+                    "error": (
+                        "A database error occurred while creating a group message."
+                    ),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # DELETE Group Message
     @action(detail=True, methods=["delete"], url_path="group-messages")
     @permission_classes([IsAuthenticated])
     def delete_group_message(self, request, id):
         try:
-            msg = GroupMessage.objects.get(id=id)
-            msg.delete()
+            ChatServices.delete_group_message(message_id=id)
             return Response(
                 {"message": "Message Deleted Successfully", "success": True},
                 status=status.HTTP_200_OK,
             )
-        except GroupMessage.DoesNotExist:
+        except ValidationError:
             return Response(
                 {"message": "Message not found", "success": False},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        except APIException:
+            logger.exception("Database error while deleting group message")
+            return Response(
+                {
+                    "success": False,
+                    "error": (
+                        "A database error occurred while deleting a group message."
+                    ),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     # PATCH Group Message
@@ -439,19 +482,27 @@ class ChatViewSet(viewsets.ModelViewSet):
     @permission_classes([IsAuthenticated])
     def update_group_message(self, request, id):
         try:
-            msg = GroupMessage.objects.get(id=id)
             content = request.data.get("content")
-            if content is not None:
-                msg.content = content
-                msg.save()
+            ChatServices.update_group_message(message_id=id, content=content)
             return Response(
                 {"message": "Message updated successfully", "success": True},
                 status=status.HTTP_200_OK,
             )
-        except GroupMessage.DoesNotExist:
+        except ValidationError:
             return Response(
                 {"message": "Message not found", "success": False},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        except APIException:
+            logger.exception("Database error while updating group message")
+            return Response(
+                {
+                    "success": False,
+                    "error": (
+                        "A database error occurred while updating a group message."
+                    ),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -536,6 +587,12 @@ class MessageViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["patch"], url_path="messages")
     @permission_classes([IsAuthenticated])
     def update_message_request(self, request, id):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
         message_id = id
 
         # Use a serializer to check if the data is valid
@@ -559,18 +616,21 @@ class MessageViewSet(viewsets.ModelViewSet):
             content=validated_data.get("content"),
             image_content=validated_data.get("image_content"),
             sent_at=validated_data.get("sent_at"),
+            is_edited=validated_data.get("is_edited"),
         )
 
         try:
-            MessageServices.update_message(message_id, update_message_data)
+            is_edited = MessageServices.update_message(message_id, update_message_data)
 
             return Response(
                 {
                     "message": "Message updated successfully",
                     "success": True,
+                    "is_edited": is_edited,
                 },
                 status=status.HTTP_200_OK,
             )
+
         except ValidationError as e:
             # Return an error if the services method returns an error
             return Response(
@@ -631,10 +691,10 @@ class MessageViewSet(viewsets.ModelViewSet):
                     )
                 )
             )
+            message = MessageServices.get_message(id=int(id))
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        message = Message.objects.get(pk=id)
         if reaction_created:
             PostViewSet._notify_reaction(
                 recipient_id=message.user_id,
