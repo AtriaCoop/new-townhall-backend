@@ -12,7 +12,6 @@ from .types import (
     ToggleMessageReactionData,
 )
 from django.db.models import QuerySet
-from django.db import DatabaseError
 from django.core.exceptions import ValidationError
 from users.services import UserServices
 
@@ -23,12 +22,30 @@ class ChatDao:
         return Chat.objects.prefetch_related("participants").get(id=id)
 
     @staticmethod
-    def get_chat_all() -> QuerySet[Chat]:
-        try:
-            return Chat.objects.prefetch_related("participants").all()
-        except DatabaseError as error:
-            print(f"A Database Error has occured {error}")
-            return None
+    def get_chats_with_participants(
+        participant_ids: list[int],
+    ) -> list[tuple[Chat, list[int]]]:
+        possible_chats = Chat.objects.all()
+        for participant_id in participant_ids:
+            possible_chats = possible_chats.filter(participants__id=participant_id)
+
+        return [
+            (chat, [participant.id for participant in chat.participants.all()])
+            for chat in possible_chats.distinct().prefetch_related("participants")
+        ]
+
+    @staticmethod
+    def get_participant_dm_settings(
+        participant_ids: list[int],
+    ) -> list[tuple[int, bool]]:
+        return list(
+            User.objects.filter(id__in=participant_ids).values_list("id", "allow_dms")
+        )
+
+    @staticmethod
+    def get_chat_all() -> tuple[QuerySet[Chat], bool]:
+        chats = Chat.objects.prefetch_related("participants").all()
+        return chats, chats.exists()
 
     @staticmethod
     def get_user_chats(user_id: int) -> QuerySet[Chat]:

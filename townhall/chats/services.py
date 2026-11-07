@@ -129,8 +129,14 @@ class ChatServices:
 
     @staticmethod
     def get_chat_all() -> QuerySet[Chat]:
-        chats = ChatDao.get_chat_all()
-        if chats is None or not chats.exists():
+        try:
+            chats, has_chats = ChatDao.get_chat_all()
+        except DatabaseError as error:
+            raise APIException(
+                "A database error occurred while fetching chats."
+            ) from error
+
+        if not has_chats:
             raise ValidationError("No chats were found.")
         return chats
 
@@ -166,22 +172,22 @@ class ChatServices:
         try:
             participant_ids = sorted(data.participant_ids)
 
-            # Find chats containing ALL specified participants
-            possible_chats = Chat.objects.all()
-            for pid in participant_ids:
-                possible_chats = possible_chats.filter(participants__id=pid)
-
-            # Verify exact participant match (no extra participants)
-            for chat in possible_chats:
-                existing_ids = sorted(chat.participants.values_list("id", flat=True))
-                if existing_ids == participant_ids and chat.is_group == data.is_group:
-                    return chat, False  # Found existing chat
+            candidate_chats = ChatDao.get_chats_with_participants(
+                participant_ids=participant_ids,
+            )
+            for chat, existing_participant_ids in candidate_chats:
+                if (
+                    sorted(existing_participant_ids) == participant_ids
+                    and chat.is_group == data.is_group
+                ):
+                    return chat, False
 
             # Check if any participant has disabled DMs before creating
-            participants = User.objects.filter(id__in=participant_ids)
-            for participant in participants:
-                if not participant.allow_dms:
-                    raise ValidationError("This user does not accept direct messages.")
+            participant_dm_settings = ChatDao.get_participant_dm_settings(
+                participant_ids
+            )
+            if any(not allow_dms for _, allow_dms in participant_dm_settings):
+                raise ValidationError("This user does not accept direct messages.")
 
             # Create new chat if none found
             chat = ChatDao.create_chat(create_chat_data=data)
