@@ -64,3 +64,44 @@ class CommentEndpointTests(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 404)
+
+    def test_like_comment_success(self):
+        self.client.force_authenticate(user=self.other_user)
+        like_url = f"/comment/{self.comment.pk}/like/"
+
+        response = self.client.patch(like_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"], "Comment liked")
+        self.assertEqual(response.data["likes"], 1)
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.likes, 1)
+        self.assertTrue(self.comment.liked_by.filter(pk=self.other_user.pk).exists())
+
+    def test_unlike_comment_success(self):
+        self.comment.liked_by.add(self.other_user)
+        self.comment.likes = 1
+        self.comment.save()
+        self.client.force_authenticate(user=self.other_user)
+        like_url = f"/comment/{self.comment.pk}/like/"
+
+        response = self.client.patch(like_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"], "Comment unliked")
+        self.assertEqual(response.data["likes"], 0)
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.likes, 0)
+        self.assertFalse(self.comment.liked_by.filter(pk=self.other_user.pk).exists())
+
+    def test_like_comment_unauthenticated(self):
+        response = self.client.patch(f"/comment/{self.comment.pk}/like/")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_like_comment_not_found(self):
+        self.client.force_authenticate(user=self.other_user)
+
+        response = self.client.patch("/comment/9999/like/")
+
+        self.assertEqual(response.status_code, 404)

@@ -163,6 +163,11 @@ class CommentServices:
     def update_comment(id: int, update_comment_data: UpdateCommentData) -> Comment:
         return CommentDao.update_comment(id, update_comment_data)
 
+    @staticmethod
+    def like_comment(id: int, user_id: int) -> typing.Tuple[bool, int]:
+        liked, comment = CommentDao.toggle_like(id=id, user_id=user_id)
+        return liked, comment.likes
+
 
 class ReportedPostServices:
     @staticmethod
