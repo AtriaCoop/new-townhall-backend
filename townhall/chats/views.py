@@ -691,10 +691,10 @@ class MessageViewSet(viewsets.ModelViewSet):
                     )
                 )
             )
+            message = MessageServices.get_message(id=int(id))
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        message = Message.objects.get(pk=id)
         if reaction_created:
             PostViewSet._notify_reaction(
                 recipient_id=message.user_id,
