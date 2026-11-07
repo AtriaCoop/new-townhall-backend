@@ -135,6 +135,10 @@ class ChatDao:
         )
 
     @staticmethod
+    def delete_group_message(message_id: int) -> None:
+        GroupMessage.objects.get(id=message_id).delete()
+
+    @staticmethod
     def add_user(chat_id: int, user_id: int) -> None:
 
         try:

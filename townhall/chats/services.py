@@ -43,6 +43,17 @@ class ChatServices:
             ) from error
 
     @staticmethod
+    def delete_group_message(message_id: int) -> None:
+        try:
+            ChatDao.delete_group_message(message_id=message_id)
+        except GroupMessage.DoesNotExist as error:
+            raise ValidationError("Message not found") from error
+        except DatabaseError as error:
+            raise APIException(
+                "A database error occurred while deleting a group message."
+            ) from error
+
+    @staticmethod
     def get_group_messages(group_name: str) -> list[GroupMessage]:
         try:
             return list(ChatDao.get_group_messages(group_name=group_name))
