@@ -24,6 +24,25 @@ from .types import (
 
 class ChatServices:
     @staticmethod
+    def create_group_message(
+        user: User,
+        group_name: str,
+        content: str,
+        image=None,
+    ) -> GroupMessage:
+        try:
+            return ChatDao.create_group_message(
+                user=user,
+                group_name=group_name,
+                content=content,
+                image=image,
+            )
+        except DatabaseError as error:
+            raise APIException(
+                "A database error occurred while creating a group message."
+            ) from error
+
+    @staticmethod
     def get_group_messages(group_name: str) -> list[GroupMessage]:
         try:
             return list(ChatDao.get_group_messages(group_name=group_name))

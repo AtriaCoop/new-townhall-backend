@@ -124,6 +124,17 @@ class ChatDao:
         )
 
     @staticmethod
+    def create_group_message(
+        user: User, group_name: str, content: str, image=None
+    ) -> GroupMessage:
+        return GroupMessage.objects.create(
+            user=user,
+            group_name=group_name,
+            content=content,
+            image=image,
+        )
+
+    @staticmethod
     def add_user(chat_id: int, user_id: int) -> None:
 
         try:

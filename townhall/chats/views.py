@@ -401,16 +401,24 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="group-messages")
     @permission_classes([IsAuthenticated])
     def create_group_message(self, request):
-        try:
-            user = request.user  # You must be using authentication
-            group_name = request.data.get("group_name")
-            content = request.data.get("content", "")
-            image = request.FILES.get("image", None)
+        user = request.user
+        group_name = request.data.get("group_name")
+        content = request.data.get("content", "")
+        image = request.FILES.get("image", None)
 
-            msg = GroupMessage.objects.create(
-                user=user, group_name=group_name, content=content, image=image
+        if not group_name:
+            return Response(
+                {"success": False, "error": "group_name is required"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
+        try:
+            msg = ChatServices.create_group_message(
+                user=user,
+                group_name=group_name,
+                content=content,
+                image=image,
+            )
             return Response(
                 {
                     "success": True,
@@ -430,8 +438,17 @@ class ChatViewSet(viewsets.ModelViewSet):
                     },
                 }
             )
-        except Exception as e:
-            return Response({"success": False, "error": str(e)}, status=400)
+        except APIException:
+            logger.exception("Database error while creating group message")
+            return Response(
+                {
+                    "success": False,
+                    "error": (
+                        "A database error occurred while creating a group message."
+                    ),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # DELETE Group Message
     @action(detail=True, methods=["delete"], url_path="group-messages")
