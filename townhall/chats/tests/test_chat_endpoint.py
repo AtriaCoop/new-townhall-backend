@@ -242,6 +242,7 @@ class TestChatEndpoint(TestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["success"]
+        assert response.data["message_ids"] == [4]
         assert message.status == Message.Status.READ
 
     def test_mark_chat_read_fail_no_chat(self):
@@ -255,3 +256,15 @@ class TestChatEndpoint(TestCase):
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert not response.data["success"]
         assert response.data["error"] == "Chat not found"
+
+    @patch("chats.services.ChatDao.mark_delivered_messages_as_read")
+    def test_mark_chat_read_database_error(self, mock_mark_messages):
+        mock_mark_messages.side_effect = DatabaseError("database unavailable")
+
+        response = self.client.post("/chats/3/read/", format="json")
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert response.data == {
+            "success": False,
+            "error": "A database error occurred while marking the chat as read.",
+        }

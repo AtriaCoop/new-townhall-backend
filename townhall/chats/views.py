@@ -23,7 +23,7 @@ from .types import (
     UpdateMessageData,
 )
 from django.utils import timezone
-from .models import Chat, Message, GroupMessage, ChatReadStatus
+from .models import Chat, Message, GroupMessage
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import logging
@@ -330,36 +330,30 @@ class ChatViewSet(viewsets.ModelViewSet):
     @permission_classes([IsAuthenticated])
     def mark_chat_read(self, request, id):
         try:
-            chat = Chat.objects.get(id=id)
-
-            # Keep the existing unread-count functionality
-            ChatReadStatus.objects.update_or_create(
-                user=request.user,
-                chat=chat,
-                defaults={"last_read_at": timezone.now()},
+            message_ids = ChatServices.mark_chat_read(
+                chat_id=id,
+                user_id=request.user.id,
             )
-
-            # Mark messages from the other participant as READ
-            messages = Message.objects.filter(
-                chat=chat,
-                status=Message.Status.DELIVERED,
-            ).exclude(user=request.user)
-
-            message_ids = list(messages.values_list("id", flat=True))
-
-            messages.update(status=Message.Status.READ)
-
             return Response(
                 {
                     "success": True,
                     "message_ids": message_ids,
                 }
             )
-
-        except Chat.DoesNotExist:
+        except ValidationError:
             return Response(
                 {"success": False, "error": "Chat not found"},
-                status=404,
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except APIException:
+            logger.exception("Database error while marking chat as read")
+            return Response(
+                {
+                    "success": False,
+                    "error": "A database error occurred while marking the "
+                    "chat as read.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     # GET Group Message

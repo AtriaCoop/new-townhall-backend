@@ -1,4 +1,5 @@
 import typing
+from datetime import datetime
 from typing import Optional
 
 from users.models import User
@@ -93,6 +94,26 @@ class ChatDao:
             summaries.append((chat.id, count, latest_message))
 
         return summaries
+
+    @staticmethod
+    def update_chat_read_status(
+        chat_id: int, user_id: int, last_read_at: datetime
+    ) -> None:
+        ChatReadStatus.objects.update_or_create(
+            user_id=user_id,
+            chat_id=chat_id,
+            defaults={"last_read_at": last_read_at},
+        )
+
+    @staticmethod
+    def mark_delivered_messages_as_read(chat_id: int, user_id: int) -> list[int]:
+        messages = Message.objects.filter(
+            chat_id=chat_id,
+            status=Message.Status.DELIVERED,
+        ).exclude(user_id=user_id)
+        message_ids = list(messages.values_list("id", flat=True))
+        messages.update(status=Message.Status.READ)
+        return message_ids
 
     @staticmethod
     def add_user(chat_id: int, user_id: int) -> None:

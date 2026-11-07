@@ -3,6 +3,7 @@ import typing
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import QuerySet
+from django.utils import timezone
 from typing import Optional
 
 from rest_framework.exceptions import APIException
@@ -22,6 +23,27 @@ from .types import (
 
 
 class ChatServices:
+    @staticmethod
+    def mark_chat_read(chat_id: int, user_id: int) -> list[int]:
+        try:
+            with transaction.atomic():
+                ChatDao.get_chat(id=chat_id)
+                ChatDao.update_chat_read_status(
+                    chat_id=chat_id,
+                    user_id=user_id,
+                    last_read_at=timezone.now(),
+                )
+                return ChatDao.mark_delivered_messages_as_read(
+                    chat_id=chat_id,
+                    user_id=user_id,
+                )
+        except Chat.DoesNotExist as error:
+            raise ValidationError("Chat not found") from error
+        except DatabaseError as error:
+            raise APIException(
+                "A database error occurred while marking the chat as read."
+            ) from error
+
     @staticmethod
     def get_unread_counts(user_id: int) -> dict[int, dict]:
         try:
