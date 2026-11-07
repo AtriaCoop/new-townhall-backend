@@ -60,6 +60,12 @@ class ChatDao:
         return chat
 
     @staticmethod
+    def unhide_chat_and_get_participant_ids(chat_id: int) -> list[int]:
+        chat = Chat.objects.get(id=chat_id)
+        chat.hidden_by.clear()
+        return list(chat.participants.values_list("id", flat=True))
+
+    @staticmethod
     def add_user(chat_id: int, user_id: int) -> None:
 
         try:

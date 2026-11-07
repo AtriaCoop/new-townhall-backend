@@ -1,10 +1,10 @@
 import typing
 
 from django.core.exceptions import ValidationError
+from django.db import DatabaseError, transaction
 from django.db.models import QuerySet
 from typing import Optional
 
-from psycopg2 import DatabaseError
 from rest_framework.exceptions import APIException
 
 from posts.services import ReactionServices as PostReactionServices
@@ -149,6 +149,37 @@ class ChatServices:
 
 
 class MessageServices:
+    @staticmethod
+    def create_direct_message(
+        user_id: int,
+        chat_id: int,
+        content: str,
+        image_content: Optional[str] = None,
+    ) -> tuple[Message, list[int]]:
+        try:
+            with transaction.atomic():
+                ChatDao.get_chat(id=chat_id)
+                message = MessageDao.create_message(
+                    create_message_data=CreateMessageData(
+                        user_id=user_id,
+                        chat_id=chat_id,
+                        content=content,
+                        image_content=image_content,
+                    )
+                )
+                participant_ids = ChatDao.unhide_chat_and_get_participant_ids(
+                    chat_id=chat_id
+                )
+            return message, participant_ids
+        except Chat.DoesNotExist as error:
+            raise ValidationError(
+                f"Chat with the given id: {chat_id}, does not exist."
+            ) from error
+        except DatabaseError as error:
+            raise APIException(
+                "A database error occurred while sending the message."
+            ) from error
+
     @staticmethod
     def create_message(create_message_data: CreateMessageData) -> Optional[Message]:
         try:

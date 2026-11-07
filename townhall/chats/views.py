@@ -1,9 +1,10 @@
-from django.forms import ValidationError
+from django.core.exceptions import ValidationError
 from rest_framework import viewsets
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.exceptions import APIException
 
 from users.models import User
 from .serializers import (
@@ -236,18 +237,24 @@ class ChatViewSet(viewsets.ModelViewSet):
                     status=400,
                 )
 
-            message = Message.objects.create(
-                user=user, chat_id=chat_id, content=content, image_content=image
-            )
+            try:
+                chat_id = int(chat_id)
+            except (TypeError, ValueError):
+                return Response(
+                    {"success": False, "error": "chat_id must be a valid integer"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-            # Unhide chat for all participants so the recipient sees it
-            chat = Chat.objects.get(id=chat_id)
-            chat.hidden_by.clear()
+            message, participant_ids = MessageServices.create_direct_message(
+                user_id=user.id,
+                chat_id=chat_id,
+                content=content,
+                image_content=image,
+            )
 
             # Broadcast to all participants via channel layer (like bell notifications)
             channel_layer = get_channel_layer()
             if channel_layer:
-                participant_ids = list(chat.participants.values_list("id", flat=True))
                 for pid in participant_ids:
                     async_to_sync(channel_layer.group_send)(
                         f"user_{pid}",
@@ -271,25 +278,35 @@ class ChatViewSet(viewsets.ModelViewSet):
                     "success": True,
                     "data": {
                         "id": message.id,
-                        "sender": message.user.id,
-                        "full_name": message.user.full_name,
+                        "sender": user.id,
+                        "full_name": user.full_name,
                         "content": message.content,
                         "image": (
                             message.image_content.url if message.image_content else None
                         ),
                         "timestamp": message.sent_at,
-                        "organization": message.user.primary_organization,
+                        "organization": user.primary_organization,
                         "profile_image": (
-                            message.user.profile_image.url
-                            if message.user.profile_image
-                            else None
+                            user.profile_image.url if user.profile_image else None
                         ),
                         "status": message.status,
                     },
                 }
             )
-        except Exception as e:
-            return Response({"success": False, "error": str(e)}, status=400)
+        except ValidationError as error:
+            return Response(
+                {"success": False, "error": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except APIException:
+            logger.exception("Database error while sending a direct message")
+            return Response(
+                {
+                    "success": False,
+                    "error": "A database error occurred while sending the message.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     # GET unread DM counts per chat for the current user
     @action(detail=False, methods=["get"], url_path="unread-counts")
