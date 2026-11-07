@@ -54,6 +54,17 @@ class ChatServices:
             ) from error
 
     @staticmethod
+    def update_group_message(message_id: int, content: Optional[str]) -> None:
+        try:
+            ChatDao.update_group_message(message_id=message_id, content=content)
+        except GroupMessage.DoesNotExist as error:
+            raise ValidationError("Message not found") from error
+        except DatabaseError as error:
+            raise APIException(
+                "A database error occurred while updating a group message."
+            ) from error
+
+    @staticmethod
     def get_group_messages(group_name: str) -> list[GroupMessage]:
         try:
             return list(ChatDao.get_group_messages(group_name=group_name))

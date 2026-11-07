@@ -139,6 +139,13 @@ class ChatDao:
         GroupMessage.objects.get(id=message_id).delete()
 
     @staticmethod
+    def update_group_message(message_id: int, content: Optional[str]) -> None:
+        message = GroupMessage.objects.get(id=message_id)
+        if content is not None:
+            message.content = content
+            message.save()
+
+    @staticmethod
     def add_user(chat_id: int, user_id: int) -> None:
 
         try:

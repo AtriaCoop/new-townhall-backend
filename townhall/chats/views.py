@@ -23,7 +23,7 @@ from .types import (
     UpdateMessageData,
 )
 from django.utils import timezone
-from .models import Chat, Message, GroupMessage
+from .models import Chat, Message
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import logging
@@ -482,19 +482,27 @@ class ChatViewSet(viewsets.ModelViewSet):
     @permission_classes([IsAuthenticated])
     def update_group_message(self, request, id):
         try:
-            msg = GroupMessage.objects.get(id=id)
             content = request.data.get("content")
-            if content is not None:
-                msg.content = content
-                msg.save()
+            ChatServices.update_group_message(message_id=id, content=content)
             return Response(
                 {"message": "Message updated successfully", "success": True},
                 status=status.HTTP_200_OK,
             )
-        except GroupMessage.DoesNotExist:
+        except ValidationError:
             return Response(
                 {"message": "Message not found", "success": False},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        except APIException:
+            logger.exception("Database error while updating group message")
+            return Response(
+                {
+                    "success": False,
+                    "error": (
+                        "A database error occurred while updating a group message."
+                    ),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
