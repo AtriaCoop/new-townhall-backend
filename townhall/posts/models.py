@@ -17,6 +17,14 @@ class Post(models.Model):
     tags = models.ManyToManyField(Tag, blank=True, related_name="posts")
     anonymous = models.BooleanField(default=False)
 
+    class Status(models.TextChoices):
+        PUBLISHED = "published", "Published"
+        CANCELLED = "cancelled", "Cancelled"
+
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PUBLISHED
+    )
+
     def __str__(self):
         return str(self.id)
 
