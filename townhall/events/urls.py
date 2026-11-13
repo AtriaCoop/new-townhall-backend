@@ -28,4 +28,9 @@ urlpatterns = [
         EventViewSet.as_view({"post": "unenroll"}),
         name="event_unenroll",
     ),
+    path(
+        "event/<int:pk>/create-event-post/",
+        EventViewSet.as_view({"post": "create_event_post"}),
+        name="event_create_post",
+    ),
 ]

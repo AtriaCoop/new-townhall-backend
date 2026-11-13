@@ -1,4 +1,8 @@
 from django.forms import ValidationError
+
+from events.serializers import ShareEventSearializer
+from posts.services import PostServices
+from posts.types import CreatePostData
 from .models import Event
 from .types import CreateEventData, UpdateEventData
 from .daos import EventDao
@@ -47,3 +51,34 @@ class EventServices:
 
         event.participants.remove(user_id)
         return EventDao.get_event(id=event_id)
+
+    @staticmethod
+    def create_event_post(event: Event, request) -> Event:
+        if event.post:
+            raise ValidationError("Event post already exists.")
+
+        serializer = ShareEventSearializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        create_post_data = CreatePostData(
+            user_id=event.admin.id,
+            content=(
+                f"Join us for the event '{event.title}' "
+                f"on {event.date} at {event.time} "
+                f"in {event.location}."
+            ),
+            created_at=event.created_at,
+            images=[],
+            pinned=False,
+            tags=["event"],
+            anonymous=False,
+        )
+
+        try:
+            post = PostServices.create_post(create_post_data=create_post_data)
+            event = EventDao.update_event(
+                event=event, event_data=UpdateEventData(post=post)
+            )
+            return event
+        except Exception as e:
+            raise ValidationError(f"Error occurred while creating event post: {str(e)}")
