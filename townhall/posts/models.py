@@ -18,6 +18,14 @@ class Post(models.Model):
     anonymous = models.BooleanField(default=False)
     link_preview = models.JSONField(null=True, blank=True)
 
+    class Status(models.TextChoices):
+        PUBLISHED = "published", "Published"
+        CANCELLED = "cancelled", "Cancelled"
+
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PUBLISHED
+    )
+
     def __str__(self):
         return str(self.id)
 
