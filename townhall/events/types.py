@@ -2,6 +2,8 @@ import datetime
 from typing import Optional
 from dataclasses import dataclass
 
+from posts.models import Post
+
 
 @dataclass
 class CreateEventData:
@@ -20,3 +22,4 @@ class UpdateEventData:
     date: Optional[datetime.date] = None
     time: Optional[str] = None
     location: Optional[str] = None
+    post: Optional["Post"] = None  # Forward reference to Post model

@@ -201,9 +201,7 @@ class EventViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        participant_ids = list(
-            event.participants.values_list("id", flat=True)
-        )
+        participant_ids = list(event.participants.values_list("id", flat=True))
         event_title = event.title
         event_id = event.id
 
@@ -255,6 +253,37 @@ class EventViewSet(viewsets.GenericViewSet):
             return Response(
                 {"message": "Successfully unenrolled", "event": serializer.data},
                 status=status.HTTP_200_OK,
+            )
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["post"], url_path="create-event-post")
+    def create_event_post(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not request.user.is_staff:
+            return Response(
+                {"error": "Only organizers can create event posts"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            event = EventServices.get_event(id=pk)
+            event_post = EventServices.create_event_post(event=event, request=request)
+
+            response_serializer = EventSerializer(
+                event_post, context={"request": request}
+            )
+
+            return Response(
+                {
+                    "message": "Event post created successfully",
+                    "event_post": response_serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
