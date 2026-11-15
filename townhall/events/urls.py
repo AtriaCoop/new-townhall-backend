@@ -34,7 +34,7 @@ urlpatterns = [
         name="event_create_post",
     ),
     path(
-        "event/<int:pk>/update_event_post/",
+        "event/<int:pk>/update-event-post/",
         EventViewSet.as_view({"patch": "update_event_post"}),
         name="event_update_post",
     ),

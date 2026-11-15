@@ -302,7 +302,7 @@ class EventViewSet(viewsets.GenericViewSet):
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=["patch"], url_path="update_event_post")
+    @action(detail=True, methods=["patch"], url_path="update-event-post")
     def update_event_post(self, request, pk=None):
         if not request.user.is_authenticated:
             return Response(
