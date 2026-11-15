@@ -34,3 +34,19 @@ class TestPostSerialization(TestCase):
         data = serializer.data
 
         self.assertEqual(data[0]["content"], "**** happens")
+
+    def test_post_serializer_includes_status(self):
+        post = Post.objects.create(
+            content="Published post",
+            anonymous=False,
+            user=None,
+        )
+
+        data = PostSerializer(post, context={"request": None}).data
+        self.assertEqual(data["status"], Post.Status.PUBLISHED)
+
+        post.status = Post.Status.CANCELLED
+        post.save(update_fields=["status"])
+
+        data = PostSerializer(post, context={"request": None}).data
+        self.assertEqual(data["status"], Post.Status.CANCELLED)
