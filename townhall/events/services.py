@@ -1,6 +1,5 @@
 from django.forms import ValidationError
 
-from events.serializers import ShareEventSearializer
 from posts.services import PostServices
 from posts.types import CreatePostData
 from .models import Event
@@ -53,20 +52,13 @@ class EventServices:
         return EventDao.get_event(id=event_id)
 
     @staticmethod
-    def create_event_post(event: Event, request) -> Event:
+    def create_event_post(event: Event, data: dict) -> Event:
         if event.post:
             raise ValidationError("Event post already exists.")
 
-        serializer = ShareEventSearializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
         create_post_data = CreatePostData(
             user_id=event.admin.id,
-            content=(
-                f"Join us for the event '{event.title}' "
-                f"on {event.date} at {event.time} "
-                f"in {event.location}."
-            ),
+            content=data["content"],
             created_at=event.created_at,
             images=[],
             pinned=False,

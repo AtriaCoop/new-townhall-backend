@@ -5,6 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.forms import ValidationError
 
+from posts.serializers import PostCreateUpdateSerializer
+
 from .models import Event
 from .serializers import EventSerializer, CreateEventSerializer
 from .services import EventServices
@@ -271,8 +273,16 @@ class EventViewSet(viewsets.GenericViewSet):
             )
 
         try:
+            serializer = PostCreateUpdateSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             event = EventServices.get_event(id=pk)
-            event_post = EventServices.create_event_post(event=event, request=request)
+            event_post = EventServices.create_event_post(
+                event=event, data=serializer.validated_data
+            )
 
             response_serializer = EventSerializer(
                 event_post, context={"request": request}

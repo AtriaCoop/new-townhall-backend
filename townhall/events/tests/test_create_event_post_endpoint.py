@@ -32,7 +32,7 @@ class CreateEventPostEndpointTests(TestCase):
             admin=self.organizer,
         )
         self.url = f"/event/{self.event.pk}/create-event-post/"
-        self.valid_payload = {"share_to_newsfeed": True}
+        self.valid_payload = {"content": "Join us at the community meetup!"}
 
     def test_create_event_post_success(self):
         self.client.force_authenticate(user=self.organizer)
@@ -55,11 +55,7 @@ class CreateEventPostEndpointTests(TestCase):
         post = self.event.post
         self.assertIsNotNone(post)
         self.assertEqual(post.user, self.organizer)
-        self.assertEqual(
-            post.content,
-            "Join us for the event 'Community Meetup' "
-            "on 2026-12-01 at 6:00 PM - 8:00 PM in Town Hall.",
-        )
+        self.assertEqual(post.content, self.valid_payload["content"])
         post_tags = list(post.tags.values_list("name", flat=True))
         self.assertEqual(post_tags, ["event"])
 
@@ -92,14 +88,14 @@ class CreateEventPostEndpointTests(TestCase):
         )
         self.assertFalse(Post.objects.exists())
 
-    def test_create_event_post_rejects_missing_share_flag(self):
+    def test_create_event_post_rejects_missing_content(self):
         self.client.force_authenticate(user=self.organizer)
 
         response = self.client.post(self.url, {}, format="json")
 
         expected_status = status.HTTP_400_BAD_REQUEST
         self.assertEqual(response.status_code, expected_status)
-        self.assertIn("share_to_newsfeed", response.data)
+        self.assertIn("content", response.data)
         self.assertFalse(Post.objects.exists())
 
     def test_create_event_post_returns_error_for_missing_event(self):

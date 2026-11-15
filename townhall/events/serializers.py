@@ -40,7 +40,3 @@ class CreateEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = ["title", "description", "date", "time", "location"]
-
-
-class ShareEventSearializer(serializers.Serializer):
-    share_to_newsfeed = serializers.BooleanField()
