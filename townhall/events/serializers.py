@@ -40,3 +40,7 @@ class CreateEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = ["title", "description", "date", "time", "location"]
+
+
+class UpdateEventPostSerializer(serializers.Serializer):
+    content = serializers.CharField(max_length=1000, required=False)
