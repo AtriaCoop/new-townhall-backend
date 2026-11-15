@@ -31,7 +31,7 @@ class CreateEventPostEndpointTests(TestCase):
             location="Town Hall",
             admin=self.organizer,
         )
-        self.url = f"/event/{self.event.pk}/create-event-post/"
+        self.url = f"/event/{self.event.pk}/create_event_post/"
         self.valid_payload = {"content": "Join us at the community meetup!"}
 
     def test_create_event_post_success(self):
@@ -102,7 +102,7 @@ class CreateEventPostEndpointTests(TestCase):
         self.client.force_authenticate(user=self.organizer)
 
         response = self.client.post(
-            "/event/99999/create-event-post/",
+            "/event/99999/create_event_post/",
             self.valid_payload,
             format="json",
         )
