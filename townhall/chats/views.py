@@ -23,6 +23,10 @@ from django.utils import timezone
 from .models import Chat, Message, GroupMessage, ChatReadStatus
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -576,18 +580,33 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["patch"])
     def update_status(self, request, id):
-
         message = MessageServices.get_message(id)
 
         serializer = MessageStatusSerializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
 
+        status = serializer.validated_data["status"]
+
         update_data = UpdateMessageData(
-            id=message.id, status=serializer.validated_data["status"]
+            id=message.id,
+            status=status,
         )
 
         MessageServices.update_message(message.id, update_data)
+
+        try:
+            channel_layer = get_channel_layer()
+
+            async_to_sync(channel_layer.group_send)(
+                f"chat_{message.chat_id}",
+                {
+                    "type": "message_status",
+                    "message_id": message.id,
+                    "status": status,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to broadcast message status update")
 
         return Response(
             {
