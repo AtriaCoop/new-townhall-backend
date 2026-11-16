@@ -41,6 +41,7 @@ class CommentUserMiniSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     content = serializers.SerializerMethodField()
+    likes = serializers.SerializerMethodField()
     liked_by = serializers.SerializerMethodField()
 
     class Meta:
@@ -69,6 +70,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_content(self, obj):
         return censor_text(obj.content)
+
+    def get_likes(self, obj):
+        if not obj.pk:
+            return 0
+
+        return obj.liked_by.count()
 
     def get_liked_by(self, obj):
         if not obj.pk:

@@ -68,22 +68,20 @@ class TestCommentService(TestCase):
         self.assertTrue(liked)
         self.assertEqual(likes, 1)
         comment.refresh_from_db()
-        self.assertEqual(comment.likes, 1)
+        self.assertEqual(comment.liked_by.count(), 1)
         self.assertTrue(comment.liked_by.filter(pk=other_user.pk).exists())
 
     def test_unlike_comment_success(self):
         comment = Comment.objects.get(pk=1)
         other_user = User.objects.get(pk=2)
         comment.liked_by.add(other_user)
-        comment.likes = 1
-        comment.save()
 
         liked, likes = CommentServices.like_comment(comment.id, other_user.id)
 
         self.assertFalse(liked)
         self.assertEqual(likes, 0)
         comment.refresh_from_db()
-        self.assertEqual(comment.likes, 0)
+        self.assertEqual(comment.liked_by.count(), 0)
         self.assertFalse(comment.liked_by.filter(pk=other_user.pk).exists())
 
     def test_like_comment_not_found(self):

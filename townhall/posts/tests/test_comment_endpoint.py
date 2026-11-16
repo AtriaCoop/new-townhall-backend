@@ -75,13 +75,11 @@ class CommentEndpointTests(TestCase):
         self.assertEqual(response.data["message"], "Comment liked")
         self.assertEqual(response.data["likes"], 1)
         self.comment.refresh_from_db()
-        self.assertEqual(self.comment.likes, 1)
+        self.assertEqual(self.comment.liked_by.count(), 1)
         self.assertTrue(self.comment.liked_by.filter(pk=self.other_user.pk).exists())
 
     def test_unlike_comment_success(self):
         self.comment.liked_by.add(self.other_user)
-        self.comment.likes = 1
-        self.comment.save()
         self.client.force_authenticate(user=self.other_user)
         like_url = f"/comment/{self.comment.pk}/like/"
 
@@ -91,7 +89,7 @@ class CommentEndpointTests(TestCase):
         self.assertEqual(response.data["message"], "Comment unliked")
         self.assertEqual(response.data["likes"], 0)
         self.comment.refresh_from_db()
-        self.assertEqual(self.comment.likes, 0)
+        self.assertEqual(self.comment.liked_by.count(), 0)
         self.assertFalse(self.comment.liked_by.filter(pk=self.other_user.pk).exists())
 
     def test_like_comment_unauthenticated(self):

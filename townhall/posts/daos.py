@@ -165,13 +165,9 @@ class CommentDao:
 
         if comment.liked_by.filter(pk=user_id).exists():
             comment.liked_by.remove(user_id)
-            comment.likes -= 1
-            comment.save()
             return False, comment
 
         comment.liked_by.add(user_id)
-        comment.likes += 1
-        comment.save()
         return True, comment
 
 

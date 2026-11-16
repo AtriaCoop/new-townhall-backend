@@ -166,7 +166,7 @@ class CommentServices:
     @staticmethod
     def like_comment(id: int, user_id: int) -> typing.Tuple[bool, int]:
         liked, comment = CommentDao.toggle_like(id=id, user_id=user_id)
-        return liked, comment.likes
+        return liked, comment.liked_by.count()
 
 
 class ReportedPostServices:
