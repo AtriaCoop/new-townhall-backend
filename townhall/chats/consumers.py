@@ -27,6 +27,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data["message"]
         sender = data["sender"]
         message_id = data.get("id")
+        status = data.get("status")
 
         user = await sync_to_async(User.objects.get)(id=sender)
 
@@ -44,6 +45,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     user.profile_image.url if user.profile_image else None
                 ),
                 "timestamp": str(timezone.now()),
+                "status": status,
             },
         )
 
@@ -63,6 +65,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "organization": event["organization"],
                     "profile_image": event["profile_image"],
                     "timestamp": event.get("timestamp", ""),
+                    "status": event.get("status"),
+                }
+            )
+        )
+
+    async def message_status(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "message_status",
+                    "message_id": event["message_id"],
+                    "status": event["status"],
                 }
             )
         )
