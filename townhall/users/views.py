@@ -916,6 +916,10 @@ class UserViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def get_user_all(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
 
         serializer = UpdateUserSerializer(data=request.query_params)
 
