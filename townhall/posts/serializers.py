@@ -81,6 +81,7 @@ class PostSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "content",
+            "status",
             "created_at",
             "images",
             "likes",
@@ -93,6 +94,7 @@ class PostSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "status",
             "created_at",
             "likes",
             "liked_by",

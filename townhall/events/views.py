@@ -5,8 +5,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.forms import ValidationError
 
+from posts.serializers import PostCreateUpdateSerializer
+
 from .models import Event
-from .serializers import EventSerializer, CreateEventSerializer
+from .serializers import (
+    EventSerializer,
+    CreateEventSerializer,
+    UpdateEventPostSerializer,
+)
 from .services import EventServices
 from .types import CreateEventData, UpdateEventData
 
@@ -201,9 +207,7 @@ class EventViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        participant_ids = list(
-            event.participants.values_list("id", flat=True)
-        )
+        participant_ids = list(event.participants.values_list("id", flat=True))
         event_title = event.title
         event_id = event.id
 
@@ -254,6 +258,84 @@ class EventViewSet(viewsets.GenericViewSet):
             serializer = EventSerializer(event, context={"request": request})
             return Response(
                 {"message": "Successfully unenrolled", "event": serializer.data},
+                status=status.HTTP_200_OK,
+            )
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["post"], url_path="create_event_post")
+    def create_event_post(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not request.user.is_staff:
+            return Response(
+                {"error": "Only organizers can create event posts"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            serializer = PostCreateUpdateSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            event = EventServices.get_event(id=pk)
+            event_post = EventServices.create_event_post(
+                event=event, data=serializer.validated_data
+            )
+
+            response_serializer = EventSerializer(
+                event_post, context={"request": request}
+            )
+
+            return Response(
+                {
+                    "message": "Event post created successfully",
+                    "event_post": response_serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["patch"], url_path="update_event_post")
+    def update_event_post(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            event = EventServices.get_event(id=pk)
+            if request.user.id != event.admin_id:
+                return Response(
+                    {"error": "Only the event organizer can edit this event"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            serializer = UpdateEventPostSerializer(data=request.data, partial=True)
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            event_post = EventServices.update_event_post(
+                event=event, data=serializer.validated_data
+            )
+            response_serializer = EventSerializer(
+                event_post, context={"request": request}
+            )
+
+            return Response(
+                {
+                    "message": "Event post updated successfully",
+                    "event_post": response_serializer.data,
+                },
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:

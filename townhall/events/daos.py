@@ -14,9 +14,7 @@ class EventDao:
     @staticmethod
     def get_all_events() -> list[Event]:
         return list(
-            Event.objects.select_related("admin")
-            .prefetch_related("participants")
-            .all()
+            Event.objects.select_related("admin").prefetch_related("participants").all()
         )
 
     @staticmethod
@@ -43,6 +41,8 @@ class EventDao:
             event.time = event_data.time
         if event_data.location is not None:
             event.location = event_data.location
+        if event_data.post is not None:
+            event.post = event_data.post
 
         event.save()
         return event
