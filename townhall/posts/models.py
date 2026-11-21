@@ -35,6 +35,7 @@ class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
     content = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
+    liked_by = models.ManyToManyField(User, blank=True, related_name="liked_comments")
     history = HistoricalRecords()
     anonymous = models.BooleanField(default=False)
 

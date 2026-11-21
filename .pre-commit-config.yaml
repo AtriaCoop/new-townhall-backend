@@ -15,7 +15,7 @@ repos:
     hooks:
       - id: run-tests
         name: Run All Tests Before Commit
-        entry: bash -c 'cd townhall && python manage.py test'
+        entry: bash -c 'cd townhall && if [ -x ../.venv/Scripts/python.exe ]; then ../.venv/Scripts/python.exe manage.py test; elif [ -x ../.venv/bin/python ]; then ../.venv/bin/python manage.py test; else python manage.py test; fi'
         language: system
         types: [python]
         pass_filenames: false
