@@ -5,6 +5,7 @@ from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny
+from rest_framework.throttling import UserRateThrottle
 from rest_framework import status
 from rest_framework.response import Response
 from django.forms import ValidationError
@@ -51,6 +52,10 @@ def _validate_images(images: list) -> str | None:
         if f.size > _MAX_IMAGE_SIZE_BYTES:
             return f"'{f.name}' exceeds the 10 MB size limit."
     return None
+
+
+class LinkPreviewThrottle(UserRateThrottle):
+    rate = "20/min"
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -121,6 +126,39 @@ class PostViewSet(viewsets.ModelViewSet):
                 {"error": "An internal error occurred"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    # GET LINK PREVIEW
+    @action(detail=False, methods=["get"], url_path="link-preview")
+    def get_link_preview(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        url = request.query_params.get("url")
+        if not url:
+            return Response(
+                {"error": "Missing required 'url' query parameter"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            preview = PostServices.get_link_preview(url)
+        except Exception:
+            logger.exception("Unexpected error fetching link preview")
+            return Response(
+                {"error": "An internal error occurred"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        if preview is None:
+            return Response(
+                {"error": "Unable to fetch a preview for this URL"},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+
+        return Response(preview, status=status.HTTP_200_OK)
 
     # CREATE POST
     @action(detail=False, methods=["post"], url_path="post")

@@ -43,13 +43,16 @@ class PostDao:
         )
         return [{"name": t.name, "count": t.post_count} for t in tags]
 
-    def create_post(post_data: CreatePostData) -> Post:
+    def create_post(
+        post_data: CreatePostData, link_preview: dict | None = None
+    ) -> Post:
         post = Post.objects.create(
             user_id=post_data.user_id,
             content=post_data.content,
             created_at=post_data.created_at,
             pinned=post_data.pinned,
             anonymous=post_data.anonymous,
+            link_preview=link_preview,
         )
 
         tag_objects = PostDao._create_tag_objects(post_data.tags)
