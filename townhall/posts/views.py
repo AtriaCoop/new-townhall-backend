@@ -664,7 +664,7 @@ class CommentViewSet(viewsets.ModelViewSet):
                         )
                     )
                 except Exception:
-                    pass
+                    logger.exception("Failed to send 'comment like' notification")
 
             message = "Comment liked" if liked else "Comment unliked"
             return Response(
