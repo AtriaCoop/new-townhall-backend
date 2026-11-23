@@ -310,7 +310,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 try:
                     recipient = User.objects.get(id=pid)
 
-                    if not recipient.enable_notifications or not recipient.email:
+                    if not recipient.is_notification_enabled or not recipient.email:
                         continue
                     next_url = (
                         f"/DirectMessagesPage?chat_id={chat.id}"
