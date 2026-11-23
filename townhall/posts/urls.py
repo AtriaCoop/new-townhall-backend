@@ -1,6 +1,6 @@
 from django.urls import path
 
-from posts.views import PostViewSet, CommentViewSet
+from posts.views import PostViewSet, CommentViewSet, LinkPreviewThrottle
 
 
 urlpatterns = [
@@ -8,6 +8,13 @@ urlpatterns = [
         "post/tags/trending/",
         PostViewSet.as_view({"get": "get_trending_tags"}),
         name="post_trending_tags",
+    ),
+    path(
+        "post/link-preview/",
+        PostViewSet.as_view(
+            {"get": "get_link_preview"}, throttle_classes=[LinkPreviewThrottle]
+        ),
+        name="post_link_preview",
     ),
     path(
         "post/",
