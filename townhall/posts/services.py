@@ -1,8 +1,15 @@
+import logging
+from urllib.parse import urlparse, urljoin
+
+import requests
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from django.forms import ValidationError
 import typing
 
+from core.url_safety import is_safe_url
+from .link_preview_parser import parse_metadata, extract_first_url
 from .models import Post, ReportedPost, Comment, Reaction
 from .types import (
     CreatePostData,
@@ -15,6 +22,14 @@ from .types import (
 from .daos import PostDao, PostImageDao, CommentDao, ReportedPostDao, ReactionDao
 from users.models import User
 from .profanity import _CENSOR_RE
+
+logger = logging.getLogger(__name__)
+
+_LINK_PREVIEW_TIMEOUT = (3, 5)  # (connect, read) seconds
+_LINK_PREVIEW_MAX_BYTES = 1 * 1024 * 1024  # 1 MB
+_LINK_PREVIEW_MAX_REDIRECTS = 3
+_LINK_PREVIEW_CACHE_TTL = 60 * 60  # 1 hour
+_LINK_PREVIEW_USER_AGENT = "TownhallLinkPreviewBot/1.0"
 
 
 class PostServices:
@@ -48,6 +63,72 @@ class PostServices:
         return PostDao.get_trending_tags(limit)
 
     @staticmethod
+    def get_link_preview(url: str) -> typing.Optional[dict]:
+        """Fetch and parse metadata for a URL that a user is
+        typing in a post. Returns None on any failure."""
+        cache_key = f"link_preview:{url}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        if not is_safe_url(url):
+            return None
+
+        current_url = url
+        response = None
+        try:
+            for _ in range(_LINK_PREVIEW_MAX_REDIRECTS + 1):
+                response = requests.get(
+                    current_url,
+                    timeout=_LINK_PREVIEW_TIMEOUT,
+                    allow_redirects=False,
+                    headers={"User-Agent": _LINK_PREVIEW_USER_AGENT},
+                    stream=True,
+                )
+
+                if response.status_code in (301, 302, 303, 307, 308):
+                    location = response.headers.get("Location")
+                    response.close()
+                    if not location:
+                        return None
+                    next_url = urljoin(current_url, location)
+                    if not is_safe_url(next_url):
+                        return None
+                    current_url = next_url
+                    continue
+
+                break
+            else:
+                return None
+
+            if response.status_code != 200:
+                return None
+
+            content_type = response.headers.get("Content-Type", "")
+            if "text/html" not in content_type:
+                return None
+
+            raw = response.raw.read(_LINK_PREVIEW_MAX_BYTES, decode_content=True)
+            html = raw.decode(response.encoding or "utf-8", errors="ignore")
+        except requests.RequestException:
+            logger.exception("Unexpected error fetching link preview for %s", url)
+            return None
+        finally:
+            if response is not None:
+                response.close()
+
+        metadata = parse_metadata(html)
+        result = {
+            "title": metadata["title"],
+            "image": metadata["image"],
+            "description": metadata["description"],
+            "domain": urlparse(current_url).netloc,
+        }
+
+        cache.set(cache_key, result, _LINK_PREVIEW_CACHE_TTL)
+        return result
+
+    @staticmethod
     def create_post(create_post_data: CreatePostData) -> Post:
         user = User.objects.get(id=create_post_data.user_id)
         if not user.is_staff and create_post_data.pinned:
@@ -56,7 +137,14 @@ class PostServices:
         # Validate tags for the post
         PostServices._validate_tags(create_post_data.tags)
 
-        post = PostDao.create_post(post_data=create_post_data)
+        link_preview = None
+        url = extract_first_url(create_post_data.content)
+        if url:
+            link_preview = PostServices.get_link_preview(url)
+
+        post = PostDao.create_post(
+            post_data=create_post_data, link_preview=link_preview
+        )
 
         # Images are uploaded at creation time as one atomic user action,
         # so the service orchestrates PostDao + PostImageDao together here.
