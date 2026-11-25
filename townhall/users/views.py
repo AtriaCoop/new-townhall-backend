@@ -1026,6 +1026,7 @@ class UserViewSet(viewsets.ModelViewSet):
             show_email=validated_data.get("show_email"),
             show_in_directory=validated_data.get("show_in_directory"),
             allow_dms=validated_data.get("allow_dms"),
+            is_notification_enabled=validated_data.get("is_notification_enabled"),
             tags=validated_data.get("tags", []),
             linkedin_url=validated_data.get("linkedin_url"),
             facebook_url=validated_data.get("facebook_url"),
