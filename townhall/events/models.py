@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from posts.models import Post
 from users.models import User
 from simple_history.models import HistoricalRecords
 
@@ -18,9 +19,19 @@ class Event(models.Model):
     )
     created_at = models.DateTimeField(default=timezone.now)
     history = HistoricalRecords()
+    post = models.OneToOneField(
+        Post, on_delete=models.SET_NULL, null=True, blank=True, related_name="event"
+    )
 
     class Meta:
         ordering = ["date"]
+
+    def delete(self, *args, **kwargs):
+        if self.post:
+            self.post.status = Post.Status.CANCELLED
+            self.post.save(update_fields=["status"])
+
+        return super().delete(*args, **kwargs)
 
     def __str__(self):
         return self.title

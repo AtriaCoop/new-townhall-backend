@@ -1,4 +1,7 @@
 from django.forms import ValidationError
+
+from posts.services import PostServices
+from posts.types import CreatePostData, UpdatePostData
 from .models import Event
 from .types import CreateEventData, UpdateEventData
 from .daos import EventDao
@@ -47,3 +50,46 @@ class EventServices:
 
         event.participants.remove(user_id)
         return EventDao.get_event(id=event_id)
+
+    @staticmethod
+    def create_event_post(event: Event, data: dict) -> Event:
+        if event.post:
+            raise ValidationError("Event post already exists.")
+
+        create_post_data = CreatePostData(
+            user_id=event.admin.id,
+            content=data["content"],
+            created_at=event.created_at,
+            images=[],
+            pinned=False,
+            tags=["event"],
+            anonymous=False,
+        )
+
+        try:
+            post = PostServices.create_post(create_post_data=create_post_data)
+            event = EventDao.update_event(
+                event=event, event_data=UpdateEventData(post=post)
+            )
+            return event
+        except Exception as e:
+            raise ValidationError(f"Error occurred while creating event post: {str(e)}")
+
+    @staticmethod
+    def update_event_post(event: Event, data: dict) -> Event:
+        if not event.post:
+            raise ValidationError("Event post does not exist.")
+
+        try:
+            update_data = UpdatePostData(
+                user_id=event.admin_id,
+                content=data.get("content"),
+                tags=list(event.post.tags.values_list("name", flat=True)),
+            )
+            post = PostServices.update_post(event.post_id, update_data)
+            event = EventDao.update_event(
+                event=event, event_data=UpdateEventData(post=post)
+            )
+            return event
+        except Exception as e:
+            raise ValidationError(f"Error occurred while updating event post: {str(e)}")
