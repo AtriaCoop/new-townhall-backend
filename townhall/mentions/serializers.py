@@ -15,10 +15,17 @@ class MentionSerializer(serializers.ModelSerializer):
     post_id = serializers.PrimaryKeyRelatedField(
         queryset=Post.objects.all(), source="post", write_only=True
     )
+
     mentioned_user_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), source="mentioned_user", write_only=True
     )
 
     class Meta:
         model = Mention
-        fields = ["id", "post", "mentioned_user"]
+        fields = [
+            "id",
+            "post",
+            "mentioned_user",
+            "post_id",
+            "mentioned_user_id",
+        ]
