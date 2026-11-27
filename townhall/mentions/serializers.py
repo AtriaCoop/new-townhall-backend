@@ -16,8 +16,8 @@ class MentionSerializer(serializers.ModelSerializer):
         queryset=Post.objects.all(), source="post", write_only=True
     )
 
-    mentioned_user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), source="mentioned_user", write_only=True
+    mentioned_user_ids = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), write_only=True, many=True
     )
 
     class Meta:
@@ -27,5 +27,5 @@ class MentionSerializer(serializers.ModelSerializer):
             "post",
             "mentioned_user",
             "post_id",
-            "mentioned_user_id",
+            "mentioned_user_ids",
         ]
