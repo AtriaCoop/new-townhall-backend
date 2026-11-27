@@ -40,6 +40,7 @@ urlpatterns = [
     path("", include("activities.urls")),
     path("", include("events.urls")),
     path("", include("notifications.urls")),
+    path("", include("mentions.urls")),
     path("", root),
 ]
 
