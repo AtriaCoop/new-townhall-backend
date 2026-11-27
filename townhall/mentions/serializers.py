@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from townhall.posts.models import Post
-from townhall.users.models import User
+from posts.models import Post
+from users.models import User
 from .models import Mention
 
 from posts.serializers import PostSerializer
