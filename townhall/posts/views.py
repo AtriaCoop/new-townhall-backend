@@ -179,7 +179,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
         validated_data = serializer.validated_data
 
-        tag_names = request.data.getlist("tags")
+        tag_names = request.data.get("tags", [])
         images = request.FILES.getlist("images")
 
         image_error = _validate_images(images)
@@ -194,6 +194,7 @@ class PostViewSet(viewsets.ModelViewSet):
             pinned=validated_data.get("pinned", False),
             tags=tag_names if tag_names else None,
             anonymous=validated_data.get("anonymous", False),
+            mentioned_user_ids=validated_data.get("mentioned_user_ids", []),
         )
 
         try:

@@ -13,6 +13,7 @@ class CreatePostData:
     pinned: bool = False
     tags: Optional[List[str]] = None
     anonymous: bool = False
+    mentioned_user_ids: list[int] = field(default_factory=list)
 
 
 @dataclass

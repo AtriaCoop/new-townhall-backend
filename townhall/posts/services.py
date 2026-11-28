@@ -23,6 +23,9 @@ from .daos import PostDao, PostImageDao, CommentDao, ReportedPostDao, ReactionDa
 from users.models import User
 from .profanity import _CENSOR_RE
 
+from mentions.services import MentionServices
+from mentions.types import CreateMentionData
+
 logger = logging.getLogger(__name__)
 
 _LINK_PREVIEW_TIMEOUT = (3, 5)  # (connect, read) seconds
@@ -150,6 +153,16 @@ class PostServices:
         # so the service orchestrates PostDao + PostImageDao together here.
         if create_post_data.images:
             PostImageDao.create_images(post.id, create_post_data.images)
+
+        # Add mentions
+        if create_post_data.mentioned_user_ids:
+            create_mention_data = CreateMentionData(
+                post_id=post.id,
+                mentioned_user_ids=[
+                    user.id for user in create_post_data.mentioned_user_ids
+                ],
+            )
+            MentionServices.create_mentions(create_mention_data)
 
         return post
 
