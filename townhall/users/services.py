@@ -161,6 +161,9 @@ class UserServices:
         if update_user_data.allow_dms is not None:
             user.allow_dms = update_user_data.allow_dms
 
+        if update_user_data.is_notification_enabled is not None:
+            user.is_notification_enabled = update_user_data.is_notification_enabled
+
         if update_user_data.tags is not None:
             tags = Tag.objects.filter(name__in=update_user_data.tags)
             user.tags.set(tags)

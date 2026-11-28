@@ -15,6 +15,12 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
     content = serializers.CharField(max_length=1000)
     tags = serializers.ListField(child=serializers.CharField(), required=False)
 
+    mentioned_user_ids = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        many=True,
+        required=False,
+    )
+
     class Meta:
         model = Post
         fields = [
@@ -22,6 +28,7 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
             "tags",
             "pinned",
             "anonymous",
+            "mentioned_user_ids",
         ]
 
 
